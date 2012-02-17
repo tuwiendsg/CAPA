@@ -101,7 +101,7 @@ object Amber extends Build {
     "amber",
     file("."),
     settings = defaultSettings
-  ) aggregate(core)
+  ) aggregate(core, simple)
 
   lazy val core = module(
     name = "core",
@@ -112,6 +112,8 @@ object Amber extends Build {
                      Mockito.all % "test"
                    )
   )
+
+  lazy val simple = module("simple") dependsOn(core % "test->test;compile")
 
   val defaultSettings = Defaults.defaultSettings ++
                         Info.settings ++
