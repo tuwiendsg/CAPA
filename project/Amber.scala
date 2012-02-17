@@ -72,6 +72,13 @@ object Shell {
 
 object Dependency {
 
+  object Akka {
+    val version = "1.3.1"
+    val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
+    val actor = "se.scalablesolutions.akka" % "akka-actor" % version
+    val testkit = "se.scalablesolutions.akka" % "akka-testkit" % version
+  }
+
   object Scalaz {
     val version = "6.0.4"
     val core = "org.scalaz" %% "scalaz-core" % version
@@ -101,7 +108,7 @@ object Amber extends Build {
     "amber",
     file("."),
     settings = defaultSettings
-  ) aggregate(core, simple)
+  ) aggregate(core, simple, akka)
 
   lazy val core = module(
     name = "core",
@@ -114,6 +121,11 @@ object Amber extends Build {
   )
 
   lazy val simple = module("simple") dependsOn(core % "test->test;compile")
+  lazy val akka = module(
+    name = "akka",
+    dependencies = Seq(Akka.actor, Akka.testkit % "test"),
+    resolvers = Seq(Akka.repo)
+  ) dependsOn(core % "test->test;compile")
 
   val defaultSettings = Defaults.defaultSettings ++
                         Info.settings ++
