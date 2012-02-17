@@ -33,7 +33,7 @@ case class Property[+A <: AnyRef : Manifest](name: Property.Name, value: A) {
 
 object Property {
 
-  case class Name(private val property: String, private val child: Option[Name] = None)
+  case class Name(private[amber] val property: String, private[amber] val child: Option[Name] = None)
       extends Filterable[Origin.Meta.Readable, Query] {
 
     def /:(parent: String) = new Name(parent, Some(this))
