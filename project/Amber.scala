@@ -77,6 +77,11 @@ object Dependency {
     val core = "org.scalaz" %% "scalaz-core" % version
   }
 
+  object SLF4J {
+    val version = "1.6.6"
+    val api = "org.slf4j" % "slf4j-api" % version
+  }
+
   object ScalaTest {
     val version = "1.8"
     val core = "org.scalatest" %% "scalatest" % version
@@ -102,6 +107,7 @@ object Amber extends Build {
     name = "core",
     dependencies = Seq(
                      Scalaz.core,
+                     SLF4J.api % "provided",
                      ScalaTest.core % "test",
                      Mockito.all % "test"
                    )
