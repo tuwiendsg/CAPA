@@ -70,12 +70,41 @@ object Shell {
   )
 }
 
+object Dependency {
+
+  object Scalaz {
+    val version = "6.0.4"
+    val core = "org.scalaz" %% "scalaz-core" % version
+  }
+
+  object ScalaTest {
+    val version = "1.8"
+    val core = "org.scalatest" %% "scalatest" % version
+  }
+
+  object Mockito {
+    val version = "1.9.0"
+    val all = "org.mockito" % "mockito-all" % version
+  }
+}
+
 object Amber extends Build {
+
+  import Dependency._
 
   lazy val amber = Project(
     "amber",
     file("."),
     settings = defaultSettings
+  ) aggregate(core)
+
+  lazy val core = module(
+    name = "core",
+    dependencies = Seq(
+                     Scalaz.core,
+                     ScalaTest.core % "test",
+                     Mockito.all % "test"
+                   )
   )
 
   val defaultSettings = Defaults.defaultSettings ++
@@ -83,4 +112,16 @@ object Amber extends Build {
                         Layout.settings ++
                         Build.settings ++
                         Shell.settings
+
+  def module(name: String,
+             dependencies: Seq[ModuleID] = Nil,
+             resolvers: Seq[Resolver] = Nil) = Project(
+    name,
+    file(name),
+    settings = defaultSettings ++
+               Seq(
+                 Keys.resolvers ++= resolvers,
+                 libraryDependencies ++= dependencies
+               )
+  )
 }
