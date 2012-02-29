@@ -79,6 +79,11 @@ object Dependency {
     val testkit = "se.scalablesolutions.akka" % "akka-testkit" % version
   }
 
+  object Logback {
+    val version = "1.0.6"
+    val classic = "ch.qos.logback" % "logback-classic" % version
+  }
+
   object Scalaz {
     val version = "6.0.4"
     val core = "org.scalaz" %% "scalaz-core" % version
@@ -108,7 +113,7 @@ object Amber extends Build {
     "amber",
     file("."),
     settings = defaultSettings
-  ) aggregate(core, simple, akka)
+  ) aggregate(core, simple, akka, demo)
 
   lazy val core = module(
     name = "core",
@@ -126,6 +131,10 @@ object Amber extends Build {
     dependencies = Seq(Akka.actor, Akka.testkit % "test"),
     resolvers = Seq(Akka.repo)
   ) dependsOn(core % "test->test;compile")
+  lazy val demo = module(
+    name = "demo",
+    dependencies = Seq(Logback.classic % "runtime")
+  ) dependsOn(core, simple, akka)
 
   val defaultSettings = Defaults.defaultSettings ++
                         Info.settings ++
