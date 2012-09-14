@@ -19,7 +19,7 @@ import Keys._
 
 object Info {
 
-  val version = "0.1-SNAPSHOT"
+  val version = "0.1"
 
   val settings: Seq[Setting[_]] = Seq(
     Keys.version := version,
