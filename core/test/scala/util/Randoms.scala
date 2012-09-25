@@ -21,11 +21,15 @@ package util
 import scala.collection.immutable.Stream
 import scala.util.Random.alphanumeric
 
+import scalaz.Equal
+import scalaz.std.anyVal._
+import scalaz.syntax.equal._
+
 trait Randoms {
 
   import Randoms.Manifest
 
-  def different[A: Manifest](value: A): A = random[A](value != (_: A))
+  def different[A: Equal : Manifest](value: A): A = random[A](value =/= (_: A))
 
   def random[A : Manifest](p: A => Boolean): A = {
     Stream.continually(random[A]).dropWhile(!p(_)).head
@@ -35,7 +39,7 @@ trait Randoms {
 
   private def randomFor(m: Manifest[_]): Any = m match {
     case Manifest.Family => Family.random()
-    case Manifest.PropertyName => Property.Name(random((_: String) forall {_ != '/'}))
+    case Manifest.PropertyName => Property.Name(random((_: String) forall {_ =/= '/'}))
     case Manifest.String => new String(alphanumeric.take(10).toArray)
   }
 }

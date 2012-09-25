@@ -20,6 +20,8 @@ package mock.family
 
 import scala.collection.immutable.Vector
 
+import scalaz.syntax.equal._
+
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when
@@ -49,7 +51,7 @@ trait FinderComponent extends amber.family.FinderComponent
       when(families.find(anything())) thenAnswer {
         args: Array[AnyRef] =>
           val family = args(0).asInstanceOf[Family]
-          added filter {family == _.family}
+          added filter {family === _.family}
       }
 
       when(families.all()) thenAnswer {

@@ -17,8 +17,11 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scalaz.Equal.equalA
 import scalaz.std.option._
+import scalaz.std.string._
 import scalaz.syntax.apply._
+import scalaz.syntax.equal._
 import scalaz.syntax.std.option._
 
 import util.{Filter, Filterable, NotNothing}
@@ -43,7 +46,7 @@ object Property {
       copy(child = Some((child map {_ / part}) | Name(part)))
 
     def >:>(that: Name): Boolean =
-      (this.property == that.property) &&
+      (this.property === that.property) &&
       ((!this.child.isDefined) ||
       (((this.child |@| that.child) {_ >:> _}) | false))
 
@@ -61,6 +64,8 @@ object Property {
         case (parent, child) => new Name(parent, Some(child))
       }
     }
+
+    implicit val hasEqual = equalA[Name]
 
     implicit def fromString(property: String): Name = Name(property)
   }

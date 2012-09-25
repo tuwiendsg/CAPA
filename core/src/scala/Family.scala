@@ -19,8 +19,13 @@ package amber
 
 import java.util.UUID.randomUUID
 
+import scalaz.Equal.equalA
+
 case class Family private(private val id: String)
 
 object Family {
+
   def random() = Family(randomUUID().toString)
+
+  implicit val hasEqual = equalA[Family]
 }

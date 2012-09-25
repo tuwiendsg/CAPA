@@ -19,6 +19,8 @@ package amber
 
 import scala.collection.immutable.{Seq, Vector}
 
+import scalaz.syntax.equal._
+
 import util.Observer
 import util.Events.observe
 
@@ -64,7 +66,7 @@ trait Processing {
     def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
         (input: Property.Name, output: Property.Name)(f: A => B): Observer =
       process {
-        case name if input == name => output -> f
+        case name if input === name => output -> f
       }
   }
 

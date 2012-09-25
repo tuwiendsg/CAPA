@@ -21,6 +21,9 @@ package temperature
 
 import java.lang.Double
 
+import scalaz.std.string._
+import scalaz.syntax.equal._
+
 import Property.Name.fromString
 
 trait Client extends amber.Client {
@@ -33,14 +36,14 @@ trait Client extends amber.Client {
           meta =>
             for {
               location <- meta[String]("location")
-            } yield location == "A"}).
+            } yield location === "A"}).
       field[Double](
         "kelvin",
         "temperature/kelvin/max" where {
           meta =>
             for {
               location <- meta[String]("location")
-            } yield location == "B"}).
+            } yield location === "B"}).
       where {
         entity =>
           for {

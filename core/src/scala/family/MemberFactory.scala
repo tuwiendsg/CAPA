@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
+import scalaz.syntax.equal._
+
 import util.{Logger, NotNothing}
 
 trait MemberFactoryComponent {
@@ -61,7 +63,7 @@ object MemberFactoryComponent {
           (name: Property.Name)(read: Origin.Read.Filtered[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
-            origin => (name == origin.name) && origin.returns[A]
+            origin => (name === origin.name) && origin.returns[A]
           }
           if (exists) None
           else Some(

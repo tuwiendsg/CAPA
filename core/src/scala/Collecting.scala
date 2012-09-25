@@ -19,6 +19,7 @@ package amber
 
 import scala.collection.immutable.Seq
 
+import scalaz.syntax.equal._
 import scalaz.syntax.std.option._
 
 import util.{Filter, NotNothing, Observer}
@@ -41,7 +42,7 @@ trait Collecting {
         (name: Property.Name, filter: Filter[Origin.Meta.Readable]): Seq[Property[A]] =
       for {
         origin <- origins.find(name)
-        if (name == origin.name) && origin.returns(notNothing, manifest[A])
+        if (name === origin.name) && origin.returns(notNothing, manifest[A])
         property <- origin.asInstanceOf[Origin[A]].apply(filter)
       } yield property
 
@@ -51,7 +52,7 @@ trait Collecting {
           observer = Some {
             observer | observe(origin.created) {
               case (o, manifest) =>
-                if (family != o.family) {
+                if (family =/= o.family) {
                   in(family).create(o.name) {
                     filter =>
                       val result = for {

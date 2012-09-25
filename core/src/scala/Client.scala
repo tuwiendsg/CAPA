@@ -19,6 +19,8 @@ package amber
 
 import scala.collection.immutable.{HashMap, Seq, Stream, Vector}
 
+import scalaz.syntax.equal._
+
 import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {
@@ -34,7 +36,7 @@ trait Client extends origin.FinderComponent {
       (query: Query): Stream[A] =
     for {
       origin <- origins.find(query.property).toStream
-      if (query.property == origin.name) && origin.returns[A]
+      if (query.property === origin.name) && origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property.value
 
