@@ -17,7 +17,7 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.collection.immutable.{HashMap, Seq, Stream, Vector}
+import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 
 import scalaz.syntax.equal._
 
@@ -47,7 +47,7 @@ trait Client extends origin.FinderComponent {
   def selectAll(definition: Entity.Definition): Stream[Entity.Instance] =
     definition.instances()
 
-  def selectOne(definition: Entity.Definition) =
+  def selectOne(definition: Entity.Definition): Option[Entity.Instance] =
     selectAll(definition).headOption
 
   def entity(name: Entity.Name) = Entity.Definition(name, HashMap.empty, Filter.tautology)
@@ -80,8 +80,8 @@ trait Client extends origin.FinderComponent {
       }
 
       private[amber] object Values {
-        def apply(types: Seq[Type[_ <: AnyRef]]): Seq[Stream[Value[_ <: AnyRef]]] =
-          types map {_.values()}
+        def apply(types: Set[Type[_ <: AnyRef]]): Seq[Stream[Value[_ <: AnyRef]]] =
+          (Vector.empty ++ types) map {_.values()}
       }
     }
 
@@ -101,13 +101,13 @@ trait Client extends origin.FinderComponent {
 
       def instances(): Stream[Instance] = {
         def cartesianProduct(values: Seq[Stream[Field.Value[_ <: AnyRef]]]) =
-          values.foldRight(Stream(Stream.empty[Field.Value[_ <: AnyRef]])) {
-            for {a <- _; bs <- _} yield a #:: bs
+          values.foldRight(Stream(Vector.empty[Field.Value[_ <: AnyRef]])) {
+            for {a <- _; bs <- _} yield bs :+ a
           }
 
         Instances(
           name,
-          cartesianProduct(Field.Values(Seq.empty ++ fields.values))
+          cartesianProduct(Field.Values(Set.empty ++ fields.values))
         ) filter {filter(_)}
       }
 
@@ -119,7 +119,7 @@ trait Client extends origin.FinderComponent {
 
       private lazy val properties =
         HashMap.empty ++ (values map {value => (value.name, value)})
-      lazy val fields: Seq[Field.Name] = Vector(values map {_.name}: _*)
+      lazy val fields: Set[Field.Name] = Set.empty ++ (values map {_.name})
 
       def apply[A : NotNothing : Manifest](name: Field.Name): Option[A] =
         properties.get(name) flatMap {_.as[A]}

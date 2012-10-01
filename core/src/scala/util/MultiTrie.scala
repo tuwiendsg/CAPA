@@ -18,9 +18,9 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
-import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArrayList}
+import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
-import scala.collection.immutable.{Seq, Vector}
+import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
 
 import scalaz.syntax.std.option._
@@ -28,7 +28,7 @@ import scalaz.syntax.std.option._
 class MultiTrie[A : MultiTrie.Key, B] {
 
   private val subtries = new ConcurrentHashMap[String, MultiTrie[A, B]]
-  private val values = new CopyOnWriteArrayList[B]
+  private val values = new CopyOnWriteArraySet[B]
 
   def +=(key: Option[A], value: B) {
     key match {
@@ -40,11 +40,11 @@ class MultiTrie[A : MultiTrie.Key, B] {
     }
   }
 
-  def apply(key: Option[A]): Seq[B] = key match {
+  def apply(key: Option[A]): Set[B] = key match {
     case MultiTrie.Key(x, xs) =>
-      (Option(subtries get x) map {_(xs)}) | Vector.empty
+      (Option(subtries get x) map {_(xs)}) | Set.empty
     case _ =>
-      val builder = Vector.newBuilder[B]
+      val builder = Set.newBuilder[B]
       builder ++= values
       for (subtrie <- subtries.values) builder ++= subtrie(key)
       builder.result()

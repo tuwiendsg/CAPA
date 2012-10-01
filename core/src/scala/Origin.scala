@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import util.{Filter, NotNothing, Union}
 
-trait Origin[+A <: AnyRef] {
+trait Origin[+A <: AnyRef] extends Equals {
 
   def name: Property.Name
   def family: Family

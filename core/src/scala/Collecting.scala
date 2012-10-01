@@ -17,7 +17,7 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable.{Seq, Stream}
 
 import scalaz.syntax.equal._
 import scalaz.syntax.std.option._
@@ -39,9 +39,9 @@ trait Collecting {
     private var observer: Option[Observer] = None
 
     def apply[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name, filter: Filter[Origin.Meta.Readable]): Seq[Property[A]] =
+        (name: Property.Name, filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
       for {
-        origin <- origins.find(name)
+        origin <- origins.find(name).toStream
         if (name === origin.name) && origin.returns(notNothing, manifest[A])
         property <- origin.asInstanceOf[Origin[A]].apply(filter)
       } yield property
@@ -55,12 +55,12 @@ trait Collecting {
                 if (family =/= o.family) {
                   in(family).create(o.name) {
                     filter =>
-                      val result = for {
+                      val result: Seq[AnyRef] = for {
                         property <- apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[AnyRef]])
                       } yield property.value
-                      if (result.length > 0) Some(result)
+                      if (!result.isEmpty) Some(result)
                       else None
-                  }(notNothing, Manifest.classType(classOf[Seq[_ <: AnyRef]], manifest))
+                  }(notNothing, Manifest.classType(classOf[Seq[AnyRef]], manifest))
                 }
             }
           }

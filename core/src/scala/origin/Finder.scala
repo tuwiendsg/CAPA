@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.collection.immutable.Seq
+import scala.collection.immutable.Set
 
 import util.{MultiTrie, NotNothing}
 
@@ -28,8 +28,8 @@ trait FinderComponent {
   protected def origins: OriginFinder
 
   protected trait OriginFinder {
-    def all(): Seq[Origin[_ <: AnyRef]]
-    def find(name: Property.Name): Seq[Origin[_ <: AnyRef]]
+    def all(): Set[Origin[_ <: AnyRef]]
+    def find(name: Property.Name): Set[Origin[_ <: AnyRef]]
   }
 }
 

@@ -19,6 +19,8 @@ package amber
 package demo
 package temperature
 
+import scala.collection.immutable.Set
+
 import util.Scheduling
 
 trait Demo extends Runnable with Scheduling {
@@ -27,7 +29,7 @@ trait Demo extends Runnable with Scheduling {
   def client: temperature.Client
 
   protected val delimiter = "-" * 40
-  protected val locations = Seq("A", "B")
+  protected val locations = Set("A", "B")
   protected val origins = 5
 
   override def run() {

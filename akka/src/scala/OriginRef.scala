@@ -20,6 +20,8 @@ package akka
 
 import _root_.akka.actor.{ActorRef, PoisonPill}
 
+import scalaz.syntax.equal._
+
 import amber.Origin.{Meta, MetaInfo}
 import amber.util.{Filter, NotNothing}
 import Message.Request
@@ -44,6 +46,20 @@ private[akka] case class OriginRef[+A <: AnyRef : Manifest]
   }
 
   private[akka] def kill() {ref ! PoisonPill}
+
+  override lazy val hashCode =
+    41 * (41 * (41 + name.hashCode) + family.hashCode) + manifest[A].hashCode
+
+  override def equals(other: Any) = other match {
+    case that: Origin[_] =>
+      (that canEqual this) &&
+      (this.name === that.name) &&
+      (this.family === that.family) &&
+      that.returns[A]
+    case _ => false
+  }
+
+  override def canEqual(other: Any) = other.isInstanceOf[Origin[_]]
 
   override lazy val toString = "akka.Origin[" + manifest[A] + "](" + name + ")"
 }

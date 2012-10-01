@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import scala.collection.immutable.Vector
+import scala.collection.immutable.List
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatest.mock.MockitoSugar.mock
@@ -30,13 +30,13 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   this: Suite =>
 
   override def beforeEach() {
-    built = Vector.empty
+    built = List.empty
     build = mock[(Property.Name, Family, Any) => Unit]("mock.OriginBuilder.build")
 
     super.beforeEach()
   }
 
-  var built: Vector[Origin[AnyRef]] = _
+  var built: List[Origin[AnyRef]] = _
   var build: (Property.Name, Family, Any) => Unit = _
 
   override protected type Origin[+A <: AnyRef] = amber.Origin[A]

@@ -103,16 +103,16 @@ object Processing {
         xs => xs map {_.longValue} reduceLeft {_ + _}
       }
       operation[Seq[Integer], Double]("avg") {
-        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
       }
       operation[Seq[Integer], Double]("stddev") {
         xs =>
-          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
       }
 
@@ -120,31 +120,31 @@ object Processing {
       operation[Seq[Long], Long]("max") {xs => xs.max}
       operation[Seq[Long], Long]("sum") {xs => xs reduceLeft {_ + _}}
       operation[Seq[Long], Double]("avg") {
-        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
       }
       operation[Seq[Long], Double]("stddev") {
         xs =>
-          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
       }
 
       operation[Seq[Double], Double]("min") {xs => xs.min}
       operation[Seq[Double], Double]("max") {xs => xs.max}
       operation[Seq[Double], Double]("sum") {xs => xs reduceLeft {_ + _}}
-      operation[Seq[Double], Double]("avg") {xs => (xs reduceLeft {_ + _}) / xs.length}
+      operation[Seq[Double], Double]("avg") {xs => (xs reduceLeft {_ + _}) / xs.size}
       operation[Seq[Double], Double]("stddev") {
         xs =>
-          val average = (xs reduceLeft {_ + _}) / xs.length
+          val average = (xs reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
       }
     }

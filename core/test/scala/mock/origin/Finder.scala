@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import scala.collection.immutable.Vector
+import scala.collection.immutable.Set
 
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.mockito.Matchers.{anyObject => anything}
@@ -35,14 +35,14 @@ trait FinderComponent extends amber.origin.FinderComponent
 
   object OriginFinder {
 
-    var added: Vector[Origin[_ <: AnyRef]] = _
+    var added: Set[Origin[_ <: AnyRef]] = _
 
     def add(origin: Origin[_ <: AnyRef]) {
-      added = added :+ origin
+      added = added + origin
     }
 
     def reset() {
-      added = Vector.empty
+      added = Set.empty
       origins = mock[OriginFinder]("mock.OriginFinder")
 
       when(origins.find(anything())) thenAnswer {

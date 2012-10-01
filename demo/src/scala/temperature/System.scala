@@ -21,7 +21,6 @@ package temperature
 
 import java.lang.{Double, Integer}
 
-import scala.collection.immutable.Seq
 import scala.util.Random
 
 trait System extends amber.System {

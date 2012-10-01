@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package mock.family
 
-import scala.collection.immutable.Vector
+import scala.collection.immutable.Set
 
 import scalaz.syntax.equal._
 
@@ -38,14 +38,14 @@ trait FinderComponent extends amber.family.FinderComponent
 
   object FamilyFinder {
 
-    var added: Vector[Origin[_ <: AnyRef]] = _
+    var added: Set[Origin[_ <: AnyRef]] = _
 
     def add(origin: Origin[_ <: AnyRef]) {
-      added = added :+ origin
+      added = added + origin
     }
 
     def reset() {
-      added = Vector.empty
+      added = Set.empty
       families = mock[FamilyFinder]("mock.FamilyFinder")
 
       when(families.find(anything())) thenAnswer {

@@ -102,7 +102,7 @@ class CollectingSpec extends Spec
               val underlying = origin.create(name)(read)
 
               families.find(collect.family) should have size(1)
-              val result = families.find(collect.family).last(filter).value.asInstanceOf[Property[Seq[A]]]
+              val result = families.find(collect.family).last(filter).value.asInstanceOf[Property[Set[A]]]
 
               result.name should be(name)
               result.value should contain(value)

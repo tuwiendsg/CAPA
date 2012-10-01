@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package simple
 
+import scalaz.syntax.equal._
+
 import amber.Origin.Meta
 import amber.util.{Filter, Logger, NotNothing}
 
@@ -34,6 +36,20 @@ private[simple] abstract class Origin[+A <: AnyRef : Manifest]
     }
 
   override def returns[B <: AnyRef : NotNothing : Manifest] = manifest[A] <:< manifest[B]
+
+  override lazy val hashCode =
+    41 * (41 * (41 + name.hashCode) + family.hashCode) + manifest[A].hashCode
+
+  override def equals(other: Any) = other match {
+    case that: amber.Origin[_] =>
+      (that canEqual this) &&
+      (this.name === that.name) &&
+      (this.family === that.family) &&
+      that.returns[A]
+    case _ => false
+  }
+
+  override def canEqual(other: Any) = other.isInstanceOf[amber.Origin[_]]
 
   override lazy val toString = "simple.Origin[" + manifest[A] + "](" + name + ")"
 }
