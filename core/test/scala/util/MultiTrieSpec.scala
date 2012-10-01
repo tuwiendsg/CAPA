@@ -21,62 +21,62 @@ package util
 class MultiTrieSpec extends Spec {
 
   trait Fixture {
-    val trie = MultiTrie[Origin.Name, String]()
+    val trie = MultiTrie[String]()
     val value = random[String]
   }
 
   "MultiTrie" when {
-    "a value is added using a key" should {
+    "a value is added using a path" should {
       "be able to get the value" when {
-        "using the same key" in {
+        "using the same path" in {
           new Fixture {
-            val key = random[Origin.Name]
+            val path = random[Path]
 
-            trie += (Some(key), value)
+            trie.add(path, value)
 
-            trie(Some(key)) should contain(value)
+            trie.find(path) should contain(value)
           }
         }
 
-        "using a parent key" in {
+        "using a parent path" in {
           new Fixture {
-            val superKey = random[Origin.Name]
-            val key = superKey / random[String]
+            val parent = random[Path]
+            val path = parent / random[String]
 
-            trie += (Some(key), value)
+            trie.add(path, value)
 
-            trie(Some(superKey)) should contain(value)
+            trie.find(parent) should contain(value)
           }
         }
 
-        "using no key" in {
+        "using root path" in {
           new Fixture {
-            trie += (Some(random[Origin.Name]), value)
+            trie.add(random[Path], value)
 
-            trie(None) should contain(value)
+            trie.find(Path.Root) should contain(value)
           }
         }
       }
 
       "not be able to get the value" when {
-        "using a different key" in {
+        "using a different path" in {
           new Fixture {
-            val key = random[Origin.Name]
+            val path = random[Path]
 
-            trie += (Some(key), value)
+            trie.add(path, value)
 
-            trie(Some(different(key))) should not(contain(value))
+            trie.find(different(path)) should not(contain(value))
           }
         }
 
-        "using a child key" in {
+        "using a child path" in {
           new Fixture {
-            val key = random[Origin.Name]
-            val subKey = key / random[String]
+            val path = random[Path]
+            val child = path / random[String]
 
-            trie += (Some(key), value)
+            trie.add(path, value)
 
-            trie(Some(subKey)) should not(contain(value))
+            trie.find(child) should not(contain(value))
           }
         }
       }

@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import util.Path.Root
+
 trait FinderBehaviors {
   this: Spec with FinderComponent =>
 
@@ -64,7 +66,7 @@ trait FinderBehaviors {
       "return all origins" in {
         val origin = fixture.create(random[Origin.Name])
 
-        origins.all() should contain(origin)
+        origins.find(Root) should contain(origin)
       }
     }
   }

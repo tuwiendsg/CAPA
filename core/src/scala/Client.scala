@@ -27,14 +27,14 @@ trait Client extends origin.FinderComponent {
 
   def select[A: NotNothing : Manifest](query: Query): Stream[Property[A]] =
     for {
-      origin <- origins.find(query.property).toStream if origin.returns[A]
+      origin <- origins.find(query.path).toStream if origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property
 
   def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] =
     for {
-      origin <- origins.find(query.property).toStream
-      if (query.property === origin.name) && origin.returns[A]
+      origin <- origins.find(query.path).toStream
+      if (query.path === origin.name) && origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property.value
 

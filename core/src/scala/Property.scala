@@ -17,14 +17,7 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scalaz.Equal.equalA
-import scalaz.std.option._
-import scalaz.std.string._
-import scalaz.syntax.apply._
-import scalaz.syntax.equal._
-import scalaz.syntax.std.option._
-
-import util.{Filter, Filterable, NotNothing}
+import util.{Filter, Filterable, NotNothing, Path}
 
 case class Property[+A: Manifest](name: Property.Name, value: A) {
 
@@ -35,35 +28,5 @@ case class Property[+A: Manifest](name: Property.Name, value: A) {
 }
 
 object Property {
-
-  case class Name(private[amber] val property: String, private[amber] val child: Option[Name] = None)
-      extends Filterable[Origin.Meta.Readable, Query] {
-
-    def /:(parent: String) = new Name(parent, Some(this))
-
-    def /(part: String): Name = copy(child = Some((child map {_ / part}) | Name(part)))
-
-    def >:>(that: Name): Boolean =
-      (this.property === that.property) &&
-      ((!this.child.isDefined) ||
-      (((this.child |@| that.child) {_ >:> _}) | false))
-
-    override def where(filter: Filter[Origin.Meta.Readable]) = Query(this, filter)
-
-    override lazy val toString: String = property + ((child map {"/" + _.toString}) | "")
-  }
-
-  object Name {
-
-    def apply(property: String): Name = {
-      val parts = property.split("/") dropWhile {_.isEmpty}
-      parts.init.foldRight(new Name(parts.last)) {
-        case (parent, child) => new Name(parent, Some(child))
-      }
-    }
-
-    implicit val hasEqual = equalA[Name]
-
-    implicit def fromString(property: String): Name = Name(property)
-  }
+  type Name = Path
 }

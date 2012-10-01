@@ -28,7 +28,6 @@ trait FinderComponent {
   protected def origins: OriginFinder
 
   protected trait OriginFinder {
-    def all(): Set[Origin[_]]
     def find(name: Origin.Name): Set[Origin[_]]
   }
 }
@@ -41,10 +40,9 @@ object FinderComponent {
     override protected def origins: OriginFinder = _origins
 
     protected trait OriginFinder extends super.OriginFinder {
-      private val trie = MultiTrie[Origin.Name, Origin[_]]()
-      override def all() = trie(None)
-      override def find(name: Origin.Name) = trie(Some(name))
-      def add(origin: Origin[_]) {trie += (Some(origin.name), origin)}
+      private val trie = MultiTrie[Origin[_]]()
+      override def find(name: Origin.Name) = trie.find(name)
+      def add(origin: Origin[_]) {trie add (origin.name, origin)}
     }
 
     private object _builder extends OriginBuilder {
@@ -66,7 +64,6 @@ object FinderComponent {
 
     override protected type Origin[+A] = finder.Origin[A]
     override protected object origins extends OriginFinder {
-      override def all() = finder.origins.all()
       override def find(name: Origin.Name) = finder.origins.find(name)
     }
   }

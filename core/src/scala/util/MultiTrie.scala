@@ -20,51 +20,36 @@ package util
 
 import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
+import scalaz.syntax.std.option._
+
 import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
 
-import scalaz.syntax.std.option._
+class MultiTrie[A] {
 
-class MultiTrie[A: MultiTrie.Key, B] {
+  private val subtries = new ConcurrentHashMap[String, MultiTrie[A]]
+  private val values = new CopyOnWriteArraySet[A]
 
-  private val subtries = new ConcurrentHashMap[String, MultiTrie[A, B]]
-  private val values = new CopyOnWriteArraySet[B]
-
-  def +=(key: Option[A], value: B) {
-    key match {
-      case MultiTrie.Key(x, xs) =>
-        if (subtries get x eq null) subtries.putIfAbsent(x, new MultiTrie[A, B])
-        subtries get x += (xs, value)
-      case _ => values.add(value)
+  def add(path: Path, value: A) {
+    path match {
+      case Path.End => values add value
+      case Path.Sub(parent, child) =>
+        if (!(subtries containsKey parent)) subtries putIfAbsent (parent, new MultiTrie[A])
+        (subtries get parent) add (child, value)
     }
   }
 
-  def apply(key: Option[A]): Set[B] = key match {
-    case MultiTrie.Key(x, xs) =>
-      (Option(subtries get x) map {_(xs)}) | Set.empty
-    case _ =>
-      val builder = Set.newBuilder[B]
+  def find(path: Path): Set[A] = path match {
+    case Path.Sub(parent, child) =>
+      (Option(subtries get parent) map {_ find child}) | Set.empty[A]
+    case Path.End =>
+      val builder = Set.newBuilder[A]
       builder ++= values
-      for (subtrie <- subtries.values) builder ++= subtrie(key)
+      for (subtrie <- subtries.values) builder ++= (subtrie find path)
       builder.result()
   }
 }
 
 object MultiTrie {
-
-  trait Key[A] {
-    def parts(key: A): (String, Option[A])
-  }
-
-  object Key {
-
-    implicit object fromOriginName extends MultiTrie.Key[Origin.Name] {
-      override def parts(name: Origin.Name) = (name.property, name.child)
-    }
-
-    def unapply[A: Key](key: Option[A]): Option[(String, Option[A])] =
-      key map {implicitly[Key[A]].parts(_)}
-  }
-
-  def apply[K : Key, V]() = new MultiTrie[K, V]
+  def apply[A]() = new MultiTrie[A]
 }

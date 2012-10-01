@@ -39,8 +39,8 @@ trait Randoms {
     override def instance() = new String(alphanumeric.take(10).toArray)
   }
 
-  implicit object PropertyNameHasRandom extends Random[Property.Name] {
-    override def instance() = Property.Name(random((_: String) forall {_ =/= '/'}))
+  implicit object PathHasRandom extends Random[Path] {
+    override def instance() = Path(random((_: String) forall {_ =/= '/'}))
   }
 
   implicit object OriginFamilyHasRandom extends Random[Origin.Family] {

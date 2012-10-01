@@ -22,7 +22,7 @@ import java.util.UUID.randomUUID
 
 import scalaz.Equal.equalA
 
-import util.{Filter, NotNothing, Union}
+import util.{Filter, NotNothing, Path, Union}
 
 trait Origin[+A] extends Equals {
 
@@ -36,7 +36,7 @@ trait Origin[+A] extends Equals {
 
 object Origin {
 
-  type Name = Property.Name
+  type Name = Path
   type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
 
   case class Family private(private val id: String)

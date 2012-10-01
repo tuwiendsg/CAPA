@@ -17,11 +17,11 @@
 package at.ac.tuwien.infosys
 package amber
 
-import util.Filter
+import util.{Filter, Path}
 
-case class Query(property: Property.Name, filter: Filter[Origin.Meta.Readable])
+case class Query(path: Path, filter: Filter[Origin.Meta.Readable])
 
 object Query {
-  implicit def fromPropertyName(property: Property.Name): Query = Query(property, Filter.tautology)
-  implicit def fromString(property: String): Query = fromPropertyName(property)
+  implicit def fromPath(path: Path): Query = Query(path, Filter.tautology)
+  implicit def fromString(path: String): Query = fromPath(path)
 }

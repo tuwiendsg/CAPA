@@ -22,7 +22,7 @@ package temperature
 import scalaz.std.string._
 import scalaz.syntax.equal._
 
-import amber.Property.Name.fromString
+import util.Path.fromString
 
 trait Client extends amber.Client {
 
