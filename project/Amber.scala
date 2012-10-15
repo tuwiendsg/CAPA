@@ -149,6 +149,7 @@ object Amber extends Build {
     file(name),
     settings = defaultSettings ++
                Seq(
+                 fork in test := true,
                  Keys.resolvers ++= resolvers,
                  libraryDependencies ++= dependencies
                )
