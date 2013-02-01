@@ -80,7 +80,7 @@ object Dependency {
   }
 
   object Logback {
-    val version = "1.0.6"
+    val version = "1.0.9"
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
@@ -90,17 +90,17 @@ object Dependency {
   }
 
   object SLF4J {
-    val version = "1.6.6"
+    val version = "1.7.2"
     val api = "org.slf4j" % "slf4j-api" % version
   }
 
   object ScalaTest {
-    val version = "1.8"
+    val version = "2.0.M5b"
     val core = "org.scalatest" %% "scalatest" % version
   }
 
   object Mockito {
-    val version = "1.9.0"
+    val version = "1.9.5"
     val all = "org.mockito" % "mockito-all" % version
   }
 }
