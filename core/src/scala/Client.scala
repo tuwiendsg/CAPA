@@ -19,9 +19,6 @@ package amber
 
 import scala.collection.immutable.{HashMap, Seq, Stream, Vector}
 
-import scalaz._
-import Scalaz._
-
 import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {

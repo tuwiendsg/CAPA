@@ -23,8 +23,7 @@ import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArrayList}
 import scala.collection.immutable.{Seq, Vector}
 import scala.collection.JavaConversions._
 
-import scalaz._
-import Scalaz._
+import scalaz.syntax.std.option._
 
 class MultiTrie[A : MultiTrie.Key, B] {
 

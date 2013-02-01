@@ -17,8 +17,9 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scalaz._
-import Scalaz._
+import scalaz.std.option._
+import scalaz.syntax.apply._
+import scalaz.syntax.std.option._
 
 import util.{Filter, Filterable, NotNothing}
 

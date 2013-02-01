@@ -85,7 +85,7 @@ object Dependency {
   }
 
   object Scalaz {
-    val version = "6.0.4"
+    val version = "7.0.0-M7"
     val core = "org.scalaz" %% "scalaz-core" % version
   }
 

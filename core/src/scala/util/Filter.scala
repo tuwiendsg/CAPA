@@ -18,8 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
-import scalaz._
-import Scalaz._
+import scalaz.syntax.std.option._
 
 class Filter[-A](conditional: A => Option[Boolean], default: Boolean) extends (A => Boolean) {
   def apply(a: A) = conditional(a) | default

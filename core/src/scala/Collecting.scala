@@ -19,8 +19,7 @@ package amber
 
 import scala.collection.immutable.Seq
 
-import scalaz._
-import Scalaz._
+import scalaz.syntax.std.option._
 
 import util.{Filter, NotNothing, Observer}
 import NotNothing.notNothing

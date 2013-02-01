@@ -18,11 +18,10 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scalaz._
-import Scalaz._
-
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
+
+import scalaz.std.option._
 
 import util.NotNothing
 import util.Events.observe
