@@ -30,9 +30,9 @@ class EventsSpec extends Spec {
         class A
         class B
 
-        val eventsA = amber.mock.util.Events[A]()
-        val eventsB = amber.mock.util.Events[B]()
-        val observe = amber.mock.util.Events.Observe[Any]()
+        val eventsA = EventSource[A]()
+        val eventsB = EventSource[B]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
       }
 
       "invoke a subscribed observer" when {
@@ -74,8 +74,8 @@ class EventsSpec extends Spec {
         class A
         class B
 
-        val events = amber.mock.util.Events[A]()
-        val observe = amber.mock.util.Events.Observe[Any]()
+        val events = EventSource[A]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
         val mapper = mock[A => B]("Events.map")
       }
 
@@ -119,8 +119,8 @@ class EventsSpec extends Spec {
         class A
 
         val event = new A
-        val events = amber.mock.util.Events[A]()
-        val observe = amber.mock.util.Events.Observe[Any]()
+        val events = EventSource[A]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
         val predicate = mock[A => Boolean]("Events.filter")
       }
 

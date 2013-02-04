@@ -21,7 +21,7 @@ package origin
 trait FinderBehaviors {
   this: Spec with FinderComponent =>
 
-  val fixture: Fixture
+  def fixture: Fixture
 
   trait Fixture {
     def create(name: Property.Name): Origin[_]

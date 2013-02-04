@@ -21,47 +21,33 @@ package origin
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
 
-import util.NotNothing
-import util.Events.observe
+import util.Events
 
-trait FactoryBehaviors extends OriginBehaviors {
+trait FactoryBehaviors {
   this: Spec with FactoryComponent =>
 
-  val fixture = new OriginBehaviors.Fixture.WithFilteredRead {
+  trait Fixture {
 
-    override protected type Origin[+A] = FactoryBehaviors.this.Origin[A]
+    class A
 
-    override def create[A: NotNothing : Manifest](name: Property.Name, family: Family) =
-      origin.create[A](name) {() => None}
-
-    override def create[A: Manifest](read: Origin.Read.Unfiltered[A]) =
-      origin.create(random[Property.Name])(read)
-  }
-
-  def anOrigin() {
-    behave like (AnOrigin withName fixture)
-    behave like (AnOrigin withMetaInfo fixture)
-    behave like (AnOrigin withType fixture)
-    behave like (AnOrigin withFilteredRead fixture)
+    val name = random[Property.Name]
+    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
   }
 
   def aFactory() {
-    "return the origin" which {
-      behave like anOrigin
-    }
-
     "notify the creation of the origin" when {
       "an origin is created" in {
-        class A
-        val observed = amber.mock.util.Events.Observe[Any]()
-        when(observed.isDefinedAt(anything())) thenReturn true
-        val observer = observe(origin.created)(observed)
+        new Fixture {
+          val observe = mock[Events.Observe[Any]]("Events.observe")
+          when(observe.isDefinedAt(anything())) thenReturn true
+          val observer = Events.observe(origin.created)(observe)
 
-        try {
-          val result = origin.create[A](random[Property.Name]) {() => None}
-          verify(observed).apply((result, manifest[A]))
-        } finally {
-          observer.dispose()
+          try {
+            val result = origin.create(name)(read)
+            verify(observe).apply((result, manifest[A]))
+          } finally {
+            observer.dispose()
+          }
         }
       }
     }

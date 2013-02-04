@@ -23,39 +23,42 @@ import org.mockito.Mockito.{times, verify, when}
 
 class DefaultMemberFactorySpec extends Spec
                                with mock.origin.BuilderComponent
-                               with mock.family.FinderComponent.WithBuilder
+                               with family.FinderComponent.Default
                                with MemberFactoryComponent.Default
                                with MemberFactoryBehaviors {
+
+  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, _, manifest), origin) =>
+      when(origin.name) thenReturn name
+      when(origin.family) thenReturn family
+      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+    }
 
   "Default.MemberFactory" should {
     behave like aFactory
 
     "invoke the builder" in {
-      val name = random[Property.Name]
-      val family = random[Family]
-      val read: Origin.Read.Filtered[_] = _ => None
+      new Fixture {
+        in(family).create(name)(read)
 
-      in(family).create(name)(read)
-
-      verify(build).apply(name, family, read)
+        verify(build).apply(name, family, read)
+      }
     }
 
     "return the result of the build method" in {
-      val result = in(random[Family]).create(random[Property.Name])(_ => None).value
-
-      result should be(built.last)
+      new Fixture {
+        in(family).create(name)(read).value should be(built.last)
+      }
     }
 
     "not invoke the builder for the second time" when {
       "there is already a same member in the origin family" in {
-        class A
-        val name = random[Property.Name]
-        val family = random[Family]
-        in(family).create[A](name)(_ => None) should be('defined)
+        new Fixture {
+          in(family).create(name)(read)
+          in(family).create(name)(read)
 
-        in(family).create[A](name) {_ => None}
-
-        verify(build, times(1)).apply(equalTo(name), equalTo(family), anything())
+          verify(build, times(1)).apply(equalTo(name), equalTo(family), anything())
+        }
       }
     }
   }

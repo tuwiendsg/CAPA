@@ -19,7 +19,6 @@ package amber
 
 import org.scalatest.{BeforeAndAfterEach, OptionValues, WordSpec}
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.mock.MockitoSugar
 
 import util.{Mocking, Randoms}
 
@@ -27,6 +26,5 @@ trait Spec extends WordSpec
            with BeforeAndAfterEach
            with ShouldMatchers
            with OptionValues
-           with MockitoSugar
            with Mocking
            with Randoms

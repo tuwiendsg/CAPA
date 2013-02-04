@@ -38,7 +38,7 @@ trait EventsBehaviors {
     "invoke a subscribed observer" in {
       val event = new A
       val events = fixture.create[A]()
-      val observe = amber.mock.util.Events.Observe[A]()
+      val observe = mock[Events.Observe[A]]("Events.observe")
       when(observe.isDefinedAt(event)) thenReturn true
 
       val observer = events.subscribe(observe)
@@ -54,7 +54,7 @@ trait EventsBehaviors {
       "it is not defined for the event" in {
         val event = new A
         val events = fixture.create[A]()
-        val observe = amber.mock.util.Events.Observe[A]()
+        val observe = mock[Events.Observe[A]]("Events.observe")
         when(observe.isDefinedAt(event)) thenReturn false
 
         val observer = events.subscribe(observe)
@@ -69,7 +69,7 @@ trait EventsBehaviors {
       "it is disposed" in {
         val event = new A
         val events = fixture.create[A]()
-        val observe = amber.mock.util.Events.Observe[A]()
+        val observe = mock[Events.Observe[A]]("Events.observe")
 
         val observer = events.subscribe(observe)
         observer.dispose()

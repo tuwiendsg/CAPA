@@ -16,27 +16,20 @@
 
 package at.ac.tuwien.infosys
 package amber
-package mock.family
+package util
 
-import org.mockito.Matchers.{eq => equalTo}
-import org.mockito.Mockito.verify
+trait Mocker[-A, B] {
 
-class MemberFactorySpec extends Spec
-                        with MemberFactoryComponent
-                        with amber.family.MemberFactoryBehaviors {
+  def mock(a: A): B
 
-  "mock.MemberFactory" should {
-    behave like aFactory
-
-    "allow verifying invocations of its create method" in {
-      class A
-      val name = random[Property.Name]
-      val family = random[Family]
-      val read = mock[Origin.Read.Filtered[A]]("Origin.read")
-
-      in(family).create(name)(read)
-
-      verify(in(family)).create(equalTo(name))(equalTo(read))(equalTo(manifest[A]))
+  def andThen[C <: A](f: (C, B) => Unit): Mocker[C, B] = {
+    val self = this
+    new Mocker[C, B] {
+      def mock(c: C) = {
+        val b = self.mock(c)
+        f(c, b)
+        b
+      }
     }
   }
 }

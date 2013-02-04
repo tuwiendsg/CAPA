@@ -21,7 +21,7 @@ package origin
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
-import util.Events.observe
+import util.Events
 
 class DefaultFactorySpec extends Spec
                          with mock.origin.BuilderComponent
@@ -32,32 +32,32 @@ class DefaultFactorySpec extends Spec
     behave like aFactory
 
     "invoke the builder" in {
-      val name = random[Property.Name]
-      val read = () => None
+      new Fixture {
+        origin.create(name)(read)
 
-      origin.create(name)(read)
-
-      verify(build).apply(equalTo(name), any(classOf[Family]), equalTo(read))
+        verify(build).apply(equalTo(name), any(classOf[Family]), equalTo(read))
+      }
     }
 
     "return the result of the builder" in {
-      val result = origin.create(random[Property.Name]) {() => None}
-
-      result should be(built.last)
+      new Fixture {
+        origin.create(name)(read) should be(built.last)
+      }
     }
 
     "notify the creation of the origin" when {
       "an origin is built" in {
-        class A
-        val observed = amber.mock.util.Events.Observe[Any]()
-        when(observed.isDefinedAt(anything())) thenReturn true
-        val observer = observe(origin.created)(observed)
+        new Fixture {
+          val observe = mock[Events.Observe[Any]]("Events.observe")
+          when(observe.isDefinedAt(anything())) thenReturn true
+          val observer = Events.observe(origin.created)(observe)
 
-        try {
-          val result = builder.build[A, Origin.Read.Unfiltered[A]](random[Property.Name], random[Family], () => None)
-          verify(observed).apply((result, manifest[A]))
-        } finally {
-          observer.dispose()
+          try {
+            val result = builder.build[A, Origin.Read.Unfiltered[A]](name, random[Family], read)
+            verify(observe).apply((result, manifest[A]))
+          } finally {
+            observer.dispose()
+          }
         }
       }
     }

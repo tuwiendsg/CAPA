@@ -21,27 +21,35 @@ package mock.origin
 import org.mockito.Mockito.verify
 
 class BuilderSpec extends Spec
-                  with BuilderComponent
-                  with amber.origin.BuilderBehaviors {
+                  with BuilderComponent {
+
+  trait Fixture {
+
+    val name = random[Property.Name]
+    val family = random[Family]
+    val read = mock[Origin.Read.Filtered[_]]("Origin.read")
+
+    object origin {
+      def build(): Origin[_] = builder.build[Any, Origin.Read.Filtered[Any]](name, family, read)
+    }
+  }
 
   "mock.OriginBuilder" when {
     "an origin is built" should {
-      behave like (aBuilder onBuild)
-
       "invoke the mocked build method" in {
-        val name = random[Property.Name]
-        val family = random[Family]
-        val read = () => None
+        new Fixture{
+          origin.build()
 
-        builder.build(name, family, read)
-
-        verify(build).apply(name, family, read)
+          verify(build).apply(name, family, read)
+        }
       }
 
       "save the origin that was last built" in {
-        val origin = builder.build(random[Property.Name], random[Family], () => None)
+        new Fixture {
+          val result = origin.build()
 
-        built.last should be(origin)
+          built.last should be(result)
+        }
       }
     }
   }

@@ -19,17 +19,28 @@ package amber
 package simple
 package origin
 
-import amber.origin.BuilderBehaviors
 import amber.util.NoLogging
 
 class BuilderSpec extends Spec
                   with BuilderComponent
                   with NoLogging
-                  with BuilderBehaviors {
+                  with OriginBehaviors {
+
+  override val fixture = new Fixture {
+
+    protected type Origin[+A] = BuilderSpec.this.Origin[A]
+
+    override def create[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                              family: Family,
+                                                              read: B) =
+      builder.build(name, family, read)
+  }
 
   "simple.OriginBuilder" when {
     "an origin is built" should {
-      behave like (aBuilder onBuild)
+      "return the origin" which {
+        behave like anOrigin
+      }
     }
   }
 }

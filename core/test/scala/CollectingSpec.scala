@@ -19,19 +19,32 @@ package amber
 
 import scala.collection.immutable.Seq
 
-import org.mockito.Matchers.{anyObject => anything}
+import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
 import util.Filter
-import util.Events.observe
 
 class CollectingSpec extends Spec
-                     with mock.origin.FinderComponent.WithSuite
-                     with mock.origin.FactoryComponent
-                     with mock.family.MemberFactoryComponent
+                     with mock.origin.BuilderComponent
+                     with origin.FinderComponent.Default
+                     with family.FinderComponent.Default
+                     with origin.FactoryComponent.Default
+                     with family.MemberFactoryComponent.Default
                      with Collecting {
 
-  override protected type Origin[+A] = amber.Origin[A]
+  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, read, manifest), origin) =>
+      when(origin.name) thenReturn name
+      when(origin.family) thenReturn family
+      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+      when(origin(anything())) thenAnswer {
+        args: Array[AnyRef] =>
+          (read match {
+            case f: Origin.Read.Unfiltered[_] => f()
+            case f: Origin.Read.Filtered[_] => f(args(0).asInstanceOf[Filter[Origin.Meta.Readable]])
+          }) map {Property(name, _)}
+      }
+    }
 
   trait Fixture {
 
@@ -45,11 +58,6 @@ class CollectingSpec extends Spec
     super.beforeEach()
 
     collect.start()
-    observe(origin.created) {
-      case (origin, _) =>
-        OriginFinder.add(origin)
-        FamilyFinder.add(origin)
-    }
   }
 
   override def afterEach() {
@@ -65,8 +73,15 @@ class CollectingSpec extends Spec
           new Fixture {
             origin.create(name)(read)
 
-            families.find(collect.family) should have size(1)
-            families.find(collect.family).last.name should be(name)
+            built.last.name should be(name)
+          }
+        }
+
+        "belongs to collect's family" in {
+          new Fixture {
+            origin.create(name)(read)
+
+            built.last.family should be(collect.family)
           }
         }
 
@@ -74,8 +89,7 @@ class CollectingSpec extends Spec
           new Fixture {
             origin.create(name)(read)
 
-            families.find(collect.family) should have size(1)
-            families.find(collect.family).last.returns[Seq[A]] should be(true)
+            built.last.returns[Seq[A]] should be(true)
           }
         }
 
@@ -88,8 +102,7 @@ class CollectingSpec extends Spec
               when(read()) thenReturn None
               val underlying = origin.create(name)(read)
 
-              families.find(collect.family) should have size(1)
-              families.find(collect.family).last(filter)
+              built.last(filter)
 
               verify(underlying).apply(filter)
             }
@@ -99,10 +112,9 @@ class CollectingSpec extends Spec
             new Fixture {
               val value = new A
               when(read()) thenReturn Some(value)
-              val underlying = origin.create(name)(read)
+              origin.create(name)(read)
 
-              families.find(collect.family) should have size(1)
-              val result = families.find(collect.family).last(filter).value.asInstanceOf[Property[Set[A]]]
+              val result = built.last(filter).value.asInstanceOf[Property[Set[A]]]
 
               result.name should be(name)
               result.value should contain(value)
@@ -112,12 +124,9 @@ class CollectingSpec extends Spec
           "return None if the result of the underlying origin is not defined" in {
             new Fixture {
               when(read()) thenReturn None
-              val underlying = origin.create(name)(read)
+              origin.create(name)(read)
 
-              families.find(collect.family) should have size(1)
-              val result = families.find(collect.family).last(filter)
-
-              result should not be('defined)
+              built.last(filter) should not be('defined)
             }
           }
         }

@@ -18,13 +18,16 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import org.scalatest.mock.MockitoSugar
+
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 trait Mocking {
+
+  def mock[A <: AnyRef : Manifest](name: String): A = MockitoSugar.mock[A](name)
+
   implicit def functionToAnswer[A](f: Array[AnyRef] => A): Answer[A] = new Answer[A] {
     override def answer(invocation: InvocationOnMock) = f(invocation.getArguments)
   }
 }
-
-object Mocking extends Mocking

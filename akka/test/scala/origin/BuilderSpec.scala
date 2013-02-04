@@ -19,7 +19,6 @@ package amber
 package akka
 package origin
 
-import amber.origin.BuilderBehaviors
 import amber.util.NoLogging
 import akka.util.KillActorsAfterTest
 
@@ -27,11 +26,23 @@ class BuilderSpec extends Spec
                   with KillActorsAfterTest
                   with BuilderComponent
                   with NoLogging
-                  with BuilderBehaviors {
+                  with OriginBehaviors {
+
+  override val fixture = new Fixture {
+
+    protected type Origin[+A] = BuilderSpec.this.Origin[A]
+
+    override def create[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                              family: Family,
+                                                              read: B) =
+      builder.build(name, family, read)
+  }
 
   "akka.OriginBuilder" when {
     "an origin is built" should {
-      behave like (aBuilder onBuild)
+      "return the origin" which {
+        behave like anOrigin
+      }
     }
   }
 }

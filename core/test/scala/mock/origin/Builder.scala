@@ -20,12 +20,14 @@ package mock.origin
 
 import scala.collection.immutable.List
 
-import org.scalatest.{BeforeAndAfterEach, Suite}
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar.mock
+
+import util.Mocker
 
 trait BuilderComponent extends amber.origin.BuilderComponent
                        with BeforeAndAfterEach {
-  this: Suite =>
+  this: Spec =>
 
   override def beforeEach() {
     built = List.empty
@@ -37,12 +39,18 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   var built: List[Origin[_]] = _
   var build: (Property.Name, Family, Any) => Unit = _
 
+  def mocker[A: Manifest, B: Origin.Read[A]#apply] =
+    new Mocker[(Property.Name, Family, B, Manifest[A]), amber.Origin[A]] {
+      def mock(args: (Property.Name, Family, B, Manifest[A])) =
+        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]]("mock.Origin[" + manifest[A] + "]")
+    }
+
   override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
     override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
                                                              family: Family,
                                                              read: B) = {
-      val origin = amber.mock.Origin(name, family, read)
+      val origin = mocker[A, B].mock(name, family, read, manifest[A])
 
       built = built :+ origin
       BuilderComponent.this.build(name, family, read)

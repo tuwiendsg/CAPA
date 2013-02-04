@@ -18,43 +18,34 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
-import util.NotNothing
-
-trait MemberFactoryBehaviors extends OriginBehaviors {
+trait MemberFactoryBehaviors {
   this: Spec with MemberFactoryComponent =>
 
-  val fixture = new OriginBehaviors.Fixture.WithUnfilteredRead {
+  trait Fixture {
 
-    override protected type Origin[+A] = MemberFactoryBehaviors.this.Origin[A]
+    class A
 
-    override def create[A: NotNothing : Manifest](name: Property.Name, family: Family) =
-      (in(family).create[A](name) {_ => None}).value
-
-    override def create[A: Manifest](read: Origin.Read.Filtered[A]) =
-      in(random[Family]).create(random[Property.Name])(read).value
-  }
-
-  def anOrigin() {
-    behave like (AnOrigin withName fixture)
-    behave like (AnOrigin withFamily fixture)
-    behave like (AnOrigin withMetaInfo fixture)
-    behave like (AnOrigin withType fixture)
-    behave like (AnOrigin withUnfilteredRead fixture)
+    val name = random[Property.Name]
+    val family = random[Family]
+    val read = mock[Origin.Read.Filtered[A]]("Origin.read")
   }
 
   def aFactory() {
-    "return an origin" which {
-      behave like anOrigin
+    "return Some origin" when {
+      "origin's family does not have such memeber" in {
+        new Fixture {
+          in(family).create(name)(read) should be('defined)
+        }
+      }
     }
 
     "return None" when {
-      "there is already a same member in the origin family" in {
-        class A
-        val name = random[Property.Name]
-        val family = random[Family]
-        in(family).create[A](name)(_ => None) should be('defined)
+      "origin's family already does have such memeber" in {
+        new Fixture {
+          in(family).create(name)(read)
 
-        in(family).create[A](name)(_ => None) should not be('defined)
+          in(family).create(name)(read) should not be('defined)
+        }
       }
     }
   }

@@ -21,20 +21,28 @@ import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{never, verify, when}
 
 import util.Filter
-import util.Events.observe
 
 class ProcessingSpec extends Spec
-                     with mock.origin.FactoryComponent
-                     with mock.family.MemberFactoryComponent
+                     with mock.origin.BuilderComponent
+                     with origin.FinderComponent.Default
+                     with family.FinderComponent.Default
+                     with origin.FactoryComponent.Default
+                     with family.MemberFactoryComponent.Default
                      with Processing {
 
-  override protected type Origin[+A] = amber.Origin[A]
-
-  override def beforeEach() {
-    super.beforeEach()
-
-    observe(origin.created) {case (origin, _) => FamilyFinder.add(origin)}
-  }
+  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, read, manifest), origin) =>
+      when(origin.name) thenReturn name
+      when(origin.family) thenReturn family
+      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+      when(origin(anything())) thenAnswer {
+        args: Array[AnyRef] =>
+          (read match {
+            case f: Origin.Read.Unfiltered[_] => f()
+            case f: Origin.Read.Filtered[_] => f(args(0).asInstanceOf[Filter[Origin.Meta.Readable]])
+          }) map {Property(name, _)}
+      }
+    }
 
   "Process" when {
 
@@ -68,20 +76,27 @@ class ProcessingSpec extends Spec
         "has expected name" in {
           new Fixture {
             process(definition)
+            origin.create(input)(read)
+
+            built.last.name should be(output)
+          }
+        }
+
+        "has same family as the underlying origin" in {
+          new Fixture {
+            process(definition)
             val underlying = origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.name should be(output)
+            built.last.family should be(underlying.family)
           }
         }
 
         "has expected type" in {
           new Fixture {
             process(definition)
-            val underlying = origin.create(input)(read)
+            origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.returns[B] should be(true)
+            built.last.returns[B] should be(true)
           }
         }
 
@@ -95,8 +110,7 @@ class ProcessingSpec extends Spec
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(underlying).apply(filter)
             }
@@ -108,10 +122,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(value)
 
               process(definition)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(processor).apply(value)
             }
@@ -124,10 +137,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(new A)
 
               process(definition)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Property[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -139,13 +151,10 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn None
 
               process(definition)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter)
-
+              built.last(filter) should not be('defined)
               verify(processor, never()).apply(anything())
-              result should not be('defined)
             }
           }
         }
@@ -199,20 +208,27 @@ class ProcessingSpec extends Spec
         "has expected name" in {
           new Fixture {
             map(input, output)(mapper)
+            origin.create(input)(read)
+
+            built.last.name should be(output)
+          }
+        }
+
+        "has same family as the underlying origin" in {
+          new Fixture {
+            map(input, output)(mapper)
             val underlying = origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.name should be(output)
+            built.last.family should be(underlying.family)
           }
         }
 
         "has expected type" in {
           new Fixture {
             map(input, output)(mapper)
-            val underlying = origin.create(input)(read)
+            origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.returns[B] should be(true)
+            built.last.returns[B] should be(true)
           }
         }
 
@@ -226,8 +242,7 @@ class ProcessingSpec extends Spec
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(underlying).apply(filter)
             }
@@ -239,10 +254,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(value)
 
               map(input, output)(mapper)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(mapper).apply(value)
             }
@@ -255,10 +269,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(new A)
 
               map(input, output)(mapper)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Property[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -270,13 +283,10 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn None
 
               map(input, output)(mapper)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter)
-
+              built.last(filter) should not be('defined)
               verify(mapper, never()).apply(anything())
-              result should not be('defined)
             }
           }
         }
@@ -287,9 +297,9 @@ class ProcessingSpec extends Spec
       "not create an additional origin" in {
         new Fixture {
           map(input, output)(mapper)
-          val underlying = origin.create(different(input))(read)
+          origin.create(different(input))(read)
 
-          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything())
+          verify(build, never()).apply(equalTo(output), anything(), anything())
         }
       }
     }
@@ -300,9 +310,9 @@ class ProcessingSpec extends Spec
           class C
 
           map(input, output)(mapper)
-          val underlying = origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
+          origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
-          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything())
+          verify(build, never()).apply(equalTo(output), anything(), anything())
         }
       }
     }
@@ -325,20 +335,27 @@ class ProcessingSpec extends Spec
         "has expected name" in {
           new Fixture {
             operation(output)(function)
+            origin.create(input)(read)
+
+            built.last.name should be(input / output)
+          }
+        }
+
+        "has same family as the underlying origin" in {
+          new Fixture {
+            operation(output)(function)
             val underlying = origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.name should be(input / output)
+            built.last.family should be(underlying.family)
           }
         }
 
         "has expected type" in {
           new Fixture {
             operation(output)(function)
-            val underlying = origin.create(input)(read)
+            origin.create(input)(read)
 
-            families.find(underlying.family) should have size(2)
-            families.find(underlying.family).last.returns[B] should be(true)
+            built.last.returns[B] should be(true)
           }
         }
 
@@ -352,8 +369,7 @@ class ProcessingSpec extends Spec
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(underlying).apply(filter)
             }
@@ -365,10 +381,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(value)
 
               operation(output)(function)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              families.find(underlying.family).last(filter)
+              built.last(filter)
 
               verify(function).apply(value)
             }
@@ -381,10 +396,9 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn Some(new A)
 
               operation(output)(function)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Property[B]]
 
               result.name should be(input / output)
               result.value should be(value)
@@ -396,13 +410,10 @@ class ProcessingSpec extends Spec
               when(read()) thenReturn None
 
               operation(output)(function)
-              val underlying = origin.create(input)(read)
+              origin.create(input)(read)
 
-              families.find(underlying.family) should have size(2)
-              val result = families.find(underlying.family).last(filter)
-
+              built.last(filter) should not be('defined)
               verify(function, never()).apply(anything())
-              result should not be('defined)
             }
           }
         }
@@ -415,9 +426,9 @@ class ProcessingSpec extends Spec
           class C
 
           operation(output)(function)
-          val underlying = origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
+          origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
-          verify(in(underlying.family), never()).create(equalTo(input / output))(anything())(anything())
+          verify(build, never()).apply(equalTo(input / output), anything(), anything())
         }
       }
     }
