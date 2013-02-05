@@ -25,28 +25,23 @@ import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {
 
-  def select[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Stream[Property[A]] =
+  def select[A <: AnyRef : NotNothing : Manifest](query: Query): Stream[Property[A]] =
     for {
       origin <- origins.find(query.property).toStream if origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property
 
-  def selectAll[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Stream[A] =
+  def selectAll[A <: AnyRef : NotNothing : Manifest](query: Query): Stream[A] =
     for {
       origin <- origins.find(query.property).toStream
       if (query.property === origin.name) && origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property.value
 
-  def selectOne[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Option[A] =
+  def selectOne[A <: AnyRef : NotNothing : Manifest](query: Query): Option[A] =
     selectAll[A](query).headOption
 
-  def selectAll(definition: Entity.Definition): Stream[Entity.Instance] =
-    definition.instances()
-
+  def selectAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
   def selectOne(definition: Entity.Definition): Option[Entity.Instance] =
     selectAll(definition).headOption
 
@@ -60,21 +55,15 @@ trait Client extends origin.FinderComponent {
 
       type Name = String
 
-      private[amber] case class Type[+A <: AnyRef : Manifest]
-          (name: Field.Name, query: Query) {
-
-        def values(): Stream[Value[A]] =
-          selectAll[A](query) map {Value(name, _)}
-
+      private[amber] case class Type[+A <: AnyRef : Manifest](name: Field.Name, query: Query) {
+        def values(): Stream[Value[A]] = selectAll[A](query) map {Value(name, _)}
         override lazy val toString = name + ": " + manifest[A]
       }
 
-      private[amber] case class Value[+A <: AnyRef : Manifest]
-          (name: Field.Name, value: A) {
+      private[amber] case class Value[+A <: AnyRef : Manifest](name: Field.Name, value: A) {
 
         def as[B : NotNothing : Manifest]: Option[B] =
-          if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B])
-          else None
+          if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
 
         override lazy val toString = name + " = " + value
       }
@@ -85,18 +74,14 @@ trait Client extends origin.FinderComponent {
       }
     }
 
-    case class Definition private[amber]
-        (name: Entity.Name,
-         fields: HashMap[Field.Name, Field.Type[_ <: AnyRef]],
-         filter: Filter[Instance]) extends Filterable[Instance, Definition] {
+    case class Definition private[amber](name: Entity.Name,
+                                         fields: HashMap[Field.Name, Field.Type[_ <: AnyRef]],
+                                         filter: Filter[Instance])
+        extends Filterable[Instance, Definition] {
 
       override def where(filter: Filter[Instance]) = copy(filter = filter)
 
-      def field[A <: AnyRef : NotNothing : Manifest](name: Field.Name) =
-        field[A](name, Query(name, Filter.tautology))
-
-      def field[A <: AnyRef : NotNothing : Manifest]
-          (name: Field.Name, query: Query) =
+      def field[A <: AnyRef : NotNothing : Manifest](name: Field.Name, query: Query): Definition =
         copy(fields = fields.updated(name, Field.Type[A](name, query)))
 
       def instances(): Stream[Instance] = {
@@ -105,23 +90,19 @@ trait Client extends origin.FinderComponent {
             for {a <- _; bs <- _} yield bs :+ a
           }
 
-        Instances(
-          name,
-          cartesianProduct(Field.Values(Set.empty ++ fields.values))
-        ) filter {filter(_)}
+        Instances(name, cartesianProduct(Field.Values(Set.empty ++ fields.values))) filter {filter(_)}
       }
 
       override lazy val toString = name + fields.mkString("(", ", " ,")")
     }
 
-    case class Instance private[amber]
-        (name: Entity.Name, values: Seq[Field.Value[_ <: AnyRef]]) {
+    case class Instance private[amber](name: Entity.Name,
+                                       values: Seq[Field.Value[_ <: AnyRef]]) {
 
-      private lazy val properties =
-        HashMap.empty ++ (values map {value => (value.name, value)})
+      private lazy val properties = HashMap.empty ++ (values map {value => (value.name, value)})
       lazy val fields: Set[Field.Name] = Set.empty ++ (values map {_.name})
 
-      def apply[A : NotNothing : Manifest](name: Field.Name): Option[A] =
+      def apply[A: NotNothing : Manifest](name: Field.Name): Option[A] =
         properties.get(name) flatMap {_.as[A]}
 
       override lazy val toString = name + values.mkString("(", ", " ,")")

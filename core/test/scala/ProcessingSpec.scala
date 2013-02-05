@@ -33,9 +33,7 @@ class ProcessingSpec extends Spec
   override def beforeEach() {
     super.beforeEach()
 
-    observe(origin.created) {
-      case (origin, _) => FamilyFinder.add(origin)
-    }
+    observe(origin.created) {case (origin, _) => FamilyFinder.add(origin)}
   }
 
   "Process" when {

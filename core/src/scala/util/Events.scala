@@ -23,6 +23,7 @@ trait Events[+A] {
 }
 
 object Events {
+
   type Observe[-A] = PartialFunction[A, Unit]
 
   def observe[A](events: Events[A])(f: Observe[A]) = events.subscribe(f)

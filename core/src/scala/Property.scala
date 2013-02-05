@@ -28,9 +28,8 @@ import util.{Filter, Filterable, NotNothing}
 
 case class Property[+A <: AnyRef : Manifest](name: Property.Name, value: A) {
 
-  def as[B : NotNothing : Manifest]: Option[B] =
-    if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B])
-    else None
+  def as[B: NotNothing : Manifest]: Option[B] =
+    if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
 
   override lazy val toString = name + " = " + value
 }
@@ -42,8 +41,7 @@ object Property {
 
     def /:(parent: String) = new Name(parent, Some(this))
 
-    def /(part: String): Name =
-      copy(child = Some((child map {_ / part}) | Name(part)))
+    def /(part: String): Name = copy(child = Some((child map {_ / part}) | Name(part)))
 
     def >:>(that: Name): Boolean =
       (this.property === that.property) &&
@@ -52,8 +50,7 @@ object Property {
 
     override def where(filter: Filter[Origin.Meta.Readable]) = Query(this, filter)
 
-    override lazy val toString: String =
-      property + ((child map {"/" + _.toString}) | "")
+    override lazy val toString: String = property + ((child map {"/" + _.toString}) | "")
   }
 
   object Name {

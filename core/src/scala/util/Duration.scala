@@ -19,7 +19,7 @@ package amber
 package util
 
 import java.util.concurrent.TimeUnit
-import TimeUnit._
+import java.util.concurrent.TimeUnit._
 
 case class Duration(length: Long, unit: TimeUnit) {
   def inNanoseconds = NANOSECONDS.convert(length, unit)

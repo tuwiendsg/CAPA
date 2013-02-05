@@ -26,6 +26,7 @@ class EventsSpec extends Spec {
   "Events.Enriched" when {
     "two sources are merged" should {
       trait Fixture {
+
         class A
         class B
 
@@ -69,6 +70,7 @@ class EventsSpec extends Spec {
 
     "a source is mapped over with a mapper function" when {
       trait Fixture {
+
         class A
         class B
 
@@ -113,6 +115,7 @@ class EventsSpec extends Spec {
 
     "a source is filtered with a predicate function" when {
       trait Fixture {
+
         class A
 
         val event = new A

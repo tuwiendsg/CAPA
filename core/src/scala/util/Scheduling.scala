@@ -19,7 +19,7 @@ package amber
 package util
 
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
 trait Scheduling extends Duration.Conversions {
 
@@ -29,8 +29,11 @@ trait Scheduling extends Duration.Conversions {
     scheduler.schedule(toRunnable(f), delay.length, delay.unit)
   }
 
-  def every(period: Duration, delay: Duration = 0.nanoseconds)(f: () => Unit) {
-    scheduler.scheduleAtFixedRate(toRunnable(f), delay.inNanoseconds, period.inNanoseconds, TimeUnit.NANOSECONDS)
+  def every(period: Duration, delay: Duration = 0 nanoseconds)(f: () => Unit) {
+    scheduler.scheduleAtFixedRate(toRunnable(f),
+                                  delay.inNanoseconds,
+                                  period.inNanoseconds,
+                                  NANOSECONDS)
   }
 
   def shutdown() {scheduler.shutdown()}

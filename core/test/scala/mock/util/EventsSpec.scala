@@ -24,9 +24,9 @@ import amber.util.{EventsBehaviors, NotNothing}
 
 class EventsSpec extends Spec with EventsBehaviors {
 
-  override protected type Events[A] = amber.mock.util.Events[A]
+  override type Events[A] = amber.mock.util.Events[A]
   override val fixture = new Fixture {
-    override def create[A : NotNothing : Manifest]() = Events[A]()
+    override def create[A: NotNothing : Manifest]() = Events[A]()
     override def emit[A](events: Events[A])(event: A) {events.emit(event)}
   }
 

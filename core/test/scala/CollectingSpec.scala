@@ -52,7 +52,7 @@ class CollectingSpec extends Spec
     }
   }
 
-  override def afterEach {
+  override def afterEach() {
     collect.stop()
 
     super.afterEach()

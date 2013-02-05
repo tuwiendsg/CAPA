@@ -28,7 +28,7 @@ trait FinderBehaviors {
   }
 
   object aFinder {
-    def forOrigins {
+    def forOrigins() {
       "find an origin" when {
         "using the origin's name" in {
           val name = random[Property.Name]

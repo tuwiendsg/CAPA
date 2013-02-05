@@ -19,18 +19,17 @@ package amber
 package akka
 
 import _root_.akka.actor.Actor
-import Actor.spawn
+import _root_.akka.actor.Actor.spawn
 
-import amber.Origin.Meta
 import amber.util.{Filter, Logger, NotNothing}
-import Message.Request
+import akka.Message.Request
 
-private[akka] abstract class OriginActor[+A <: AnyRef : Manifest]
-    (name: Property.Name, log: Logger) extends Actor {
+private[akka] abstract class OriginActor[+A <: AnyRef : Manifest](name: Property.Name)(log: Logger)
+    extends Actor {
 
-  protected def read(filter: Filter[Meta.Readable]): Option[A]
+  protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
 
-  protected val meta = Meta.Writable()
+  protected val meta = Origin.Meta.Writable()
 
   self.id = name.toString
 

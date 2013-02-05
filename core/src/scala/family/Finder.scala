@@ -42,9 +42,8 @@ object FinderComponent {
 
   trait Default extends FinderComponent with origin.BuilderComponent {
 
-    abstract override protected def builder: OriginBuilder =
-      new Wrapper(super.builder)
-    override protected def families: FamilyFinder = Finder
+    abstract override protected def builder: OriginBuilder = new Wrapper(super.builder)
+    override protected def families: FamilyFinder = _families
 
     protected trait FamilyFinder extends super.FamilyFinder {
 
@@ -57,9 +56,7 @@ object FinderComponent {
       }
 
       override def find(family: Family) =
-        (for {
-           origins <- Option(families.get(family))
-         } yield origins.toSet) | Set.empty
+        (for {origins <- Option(families.get(family))} yield origins.toSet) | Set.empty
 
       def add(origin: Origin[_ <: AnyRef]) {
         val family = origin.family
@@ -69,16 +66,16 @@ object FinderComponent {
       }
     }
 
-    private object Finder extends FamilyFinder
-
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
+      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
           (name: Property.Name, family: Family, read: B) = {
         val result = underlying.build(name, family, read)
         families.add(result)
         result
       }
     }
+
+    private object _families extends FamilyFinder
   }
 
   trait Delegator extends FinderComponent {
@@ -86,13 +83,13 @@ object FinderComponent {
     protected val delegatee: FinderComponent
 
     override protected type Origin[+A <: AnyRef] = delegatee.Origin[A]
-    override protected def families: super.FamilyFinder = Finder
+    override protected def families: super.FamilyFinder = _families
 
     protected trait FamilyFinder extends super.FamilyFinder {
       override def all() = delegatee.families.all()
       override def find(name: Family) = delegatee.families.find(name)
     }
 
-    private object Finder extends FamilyFinder
+    private object _families extends FamilyFinder
   }
 }

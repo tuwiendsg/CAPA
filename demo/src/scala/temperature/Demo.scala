@@ -34,15 +34,9 @@ trait Demo extends Runnable with Scheduling {
 
   override def run() {
     try {
-      for {
-        location <- locations
-        _ <- 1 to origins
-      } system.Temperature.createCelsius(location)
+      for {location <- locations; _ <- 1 to origins} system.Temperature.createCelsius(location)
       println(delimiter)
-      every(2.seconds) {
-        () => client.printTemperature()
-        println(delimiter)
-      }
+      every(2 seconds) {() => client.printTemperature(); println(delimiter)}
       readLine()
     } finally {
       shutdown()

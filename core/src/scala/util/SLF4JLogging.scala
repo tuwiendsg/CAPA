@@ -28,14 +28,13 @@ trait SLF4JLogging extends Logging {
 
       @transient private[this] lazy val log = SLF4JLoggerFactory.getLogger(name)
 
-      override final def isEnabled(level: Logging.Level) = {
+      override final def isEnabled(level: Logging.Level) =
         level match {
           case Debug => log.isDebugEnabled
           case Info => log.isInfoEnabled
           case Warn => log.isWarnEnabled
           case Error => log.isErrorEnabled
         }
-      }
 
       override final def logAt(level: Logging.Level)
                               (message: => String, cause: Option[Throwable] = None) {

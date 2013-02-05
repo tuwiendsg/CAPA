@@ -26,7 +26,7 @@ class Filter[-A](conditional: A => Option[Boolean], default: Boolean) extends (A
 
 object Filter {
 
-  val tautology = Filter[Any](_ => None, true)
+  val tautology: Filter[Any] = Filter(conditional = {_ => None}, default = true)
 
   def apply[A](conditional: A => Option[Boolean], default: Boolean) =
     new Filter(conditional, default)

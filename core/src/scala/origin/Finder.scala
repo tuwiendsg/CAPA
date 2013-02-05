@@ -37,33 +37,26 @@ object FinderComponent {
 
   trait Default extends FinderComponent with origin.BuilderComponent {
 
-    abstract override protected def builder: OriginBuilder =
-      new Wrapper(super.builder)
-    override protected def origins: OriginFinder = Finder
+    abstract override protected def builder: OriginBuilder = new Wrapper(super.builder)
+    override protected def origins: OriginFinder = _origins
 
     protected trait OriginFinder extends super.OriginFinder {
-
       private val trie = MultiTrie[Property.Name, Origin[_ <: AnyRef]]()
-
       override def all() = trie(None)
-
       override def find(name: Property.Name) = trie(Some(name))
-
-      def add(origin: Origin[_ <: AnyRef]) {
-        trie += (Some(origin.name), origin)
-      }
+      def add(origin: Origin[_ <: AnyRef]) {trie += (Some(origin.name), origin)}
     }
 
-    private object Finder extends OriginFinder
-
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
+      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
           (name: Property.Name, family: Family, read: B) = {
         val result = underlying.build(name, family, read)
         origins.add(result)
         result
       }
     }
+
+    private object _origins extends OriginFinder
   }
 
   trait Delegator extends FinderComponent {
@@ -71,13 +64,13 @@ object FinderComponent {
     protected val delegatee: FinderComponent
 
     override protected type Origin[+A <: AnyRef] = delegatee.Origin[A]
-    override protected def origins: super.OriginFinder = Finder
+    override protected def origins: super.OriginFinder = _origins
 
     protected trait OriginFinder extends super.OriginFinder {
       override def all() = delegatee.origins.all()
       override def find(name: Property.Name) = delegatee.origins.find(name)
     }
 
-    private object Finder extends OriginFinder
+    private object _origins extends OriginFinder
   }
 }

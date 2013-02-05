@@ -22,11 +22,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
 trait Mocking {
-  implicit def functionToAnswer[A](f: Array[AnyRef] => A): Answer[A] =
-    new Answer[A] {
-      override def answer(invocation: InvocationOnMock) =
-        f(invocation.getArguments())
-    }
+  implicit def functionToAnswer[A](f: Array[AnyRef] => A): Answer[A] = new Answer[A] {
+    override def answer(invocation: InvocationOnMock) = f(invocation.getArguments)
+  }
 }
 
 object Mocking extends Mocking

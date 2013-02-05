@@ -24,15 +24,15 @@ import org.mockito.Mockito.{never, verify, when}
 trait EventsBehaviors {
   this: Spec =>
 
-  protected type Events[A] <: amber.util.Events[A]
+  type Events[A] <: amber.util.Events[A]
   def fixture: Fixture
 
   trait Fixture {
-    def create[A : NotNothing : Manifest](): Events[A]
+    def create[A: NotNothing : Manifest](): Events[A]
     def emit[A](events: Events[A])(event: A)
   }
 
-  def anEvents {
+  def anEvents() {
     class A
 
     "invoke a subscribed observer" in {

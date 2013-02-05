@@ -41,11 +41,11 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
   override protected type Origin[+A <: AnyRef] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
+    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
         (name: Property.Name, family: Family, read: B): Origin[A] = {
       val origin = amber.mock.Origin(name, family, read)
-      built = built :+ origin
 
+      built = built :+ origin
       BuilderComponent.this.build(name, family, read)
 
       origin

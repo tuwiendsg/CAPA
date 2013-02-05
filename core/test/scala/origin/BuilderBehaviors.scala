@@ -27,12 +27,12 @@ trait BuilderBehaviors extends OriginBehaviors {
 
     protected type Origin[+A <: AnyRef] = BuilderBehaviors.this.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-      (name: Property.Name, family: Family, read: B) =
-    builder.build(name, family, read)
+    override def create[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
+        (name: Property.Name, family: Family, read: B) =
+      builder.build(name, family, read)
   }
 
-  def anOrigin {
+  def anOrigin() {
     behave like (AnOrigin withName fixture)
     behave like (AnOrigin withFamily fixture)
     behave like (AnOrigin withMetaInfo fixture)
@@ -41,7 +41,7 @@ trait BuilderBehaviors extends OriginBehaviors {
   }
 
   object aBuilder {
-    def onBuild {
+    def onBuild() {
       "return the origin" which {
         behave like anOrigin
       }

@@ -20,16 +20,16 @@ package simple
 
 import scalaz.syntax.equal._
 
-import amber.Origin.Meta
 import amber.util.{Filter, Logger, NotNothing}
 
-private[simple] abstract class Origin[+A <: AnyRef : Manifest]
-    (override val name: Property.Name, override val family: Family)
-    (log: Logger) extends amber.Origin[A] {
+private[simple] abstract class Origin[+A <: AnyRef : Manifest](override val name: Property.Name,
+                                                               override val family: Family)
+                                                              (log: Logger)
+    extends amber.Origin[A] {
 
-  protected def read(filter: Filter[Meta.Readable]): Option[A]
+  protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
 
-  override def apply(filter: Filter[Meta.Readable]) =
+  override def apply(filter: Filter[Origin.Meta.Readable]) =
     for (value <- read(filter)) yield {
       log.debug("Read " + value + " for property " + name)
       Property(name, value)

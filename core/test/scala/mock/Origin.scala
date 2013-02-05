@@ -23,15 +23,14 @@ import org.mockito.Mockito.when
 
 import org.scalatest.mock.MockitoSugar.mock
 
-import amber.Origin.Meta
 import amber.util.{Filter, Mocking, NotNothing, Randoms}
 
 object Origin extends Mocking with Randoms {
 
-  def apply[A <: AnyRef : NotNothing : Manifest, B : amber.Origin.Read[A]#apply]
+  def apply[A <: AnyRef : NotNothing : Manifest, B: amber.Origin.Read[A]#apply]
       (name: Property.Name, family: Family, read: B): amber.Origin[A] = {
     val origin = mock[amber.Origin[A]]("mock.Origin[" + manifest[A] + "]")
-    val meta = Meta.Writable()
+    val meta = amber.Origin.Meta.Writable()
 
     when(origin.name) thenReturn name
     when(origin.family) thenReturn family
@@ -41,12 +40,11 @@ object Origin extends Mocking with Randoms {
     }
     when(origin.apply(anything())) thenAnswer {
       args: Array[AnyRef] =>
-        val filter = args(0).asInstanceOf[Filter[Meta.Readable]]
+        val filter = args(0).asInstanceOf[Filter[amber.Origin.Meta.Readable]]
         (read match {
-          case f: amber.Origin.Read.Unfiltered[A] =>
-            if (filter(meta)) f() else None
+          case f: amber.Origin.Read.Unfiltered[A] => if (filter(meta)) f() else None
           case f: amber.Origin.Read.Filtered[A] =>
-            f(args(0).asInstanceOf[Filter[Meta.Readable]])
+            f(args(0).asInstanceOf[Filter[amber.Origin.Meta.Readable]])
         }) map {Property(name, _)}
     }
 
@@ -58,10 +56,12 @@ object Origin extends Mocking with Randoms {
     apply[AnyRef, amber.Origin.Read.Unfiltered[AnyRef]](name, family, () => None)
 
   def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name, read: amber.Origin.Read.Unfiltered[A]): amber.Origin[A] =
+      (name: Property.Name)
+      (read: amber.Origin.Read.Unfiltered[A]): amber.Origin[A] =
     apply(name, random[Family], read)
 
   def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name, family: Family, read: amber.Origin.Read.Filtered[A]): amber.Origin[A] =
+      (name: Property.Name, family: Family)
+      (read: amber.Origin.Read.Filtered[A]): amber.Origin[A] =
     apply(name, family, read)
 }

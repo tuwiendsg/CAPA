@@ -57,18 +57,16 @@ object MemberFactoryComponent {
 
     protected trait MemberFactory extends super.MemberFactory {
 
-      protected val family: Family
+      protected def family: Family
 
-      override def create[A <: AnyRef : NotNothing : Manifest]
-          (name: Property.Name)(read: Origin.Read.Filtered[A]) =
+      override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
+                                                              (read: Origin.Read.Filtered[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
             origin => (name === origin.name) && origin.returns[A]
           }
           if (exists) None
-          else Some(
-            builder.build(name, family, read)
-          )
+          else Some(builder.build(name, family, read))
         }
     }
   }

@@ -40,9 +40,7 @@ trait FinderComponent extends amber.family.FinderComponent
 
     var added: Set[Origin[_ <: AnyRef]] = _
 
-    def add(origin: Origin[_ <: AnyRef]) {
-      added = added + origin
-    }
+    def add(origin: Origin[_ <: AnyRef]) {added = added + origin}
 
     def reset() {
       added = Set.empty
@@ -54,9 +52,7 @@ trait FinderComponent extends amber.family.FinderComponent
           added filter {family === _.family}
       }
 
-      when(families.all()) thenAnswer {
-        _: Array[AnyRef] => added
-      }
+      when(families.all()) thenAnswer {_: Array[AnyRef] => added}
     }
   }
 }

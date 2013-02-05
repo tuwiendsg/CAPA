@@ -26,7 +26,7 @@ trait BuilderComponent {
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
+    def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
       (name: Property.Name, family: Family, read: B): Origin[A]
   }
 }

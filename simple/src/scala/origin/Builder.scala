@@ -25,10 +25,10 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
 
   override protected type Origin[+A <: AnyRef] = simple.Origin[A]
-  override protected def builder: super.OriginBuilder = Builder
+  override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B : amber.Origin.Read[A]#apply]
+    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
         (name: Property.Name, family: Family, read: B) = {
       val log = logger.create("amber.simple.Origin(" + name + ")")
       read match {
@@ -45,5 +45,5 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
     }
   }
 
-  private object Builder extends OriginBuilder
+  private object _builder extends OriginBuilder
 }

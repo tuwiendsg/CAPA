@@ -24,7 +24,7 @@ import _root_.akka.actor.Actor.actorOf
 
 import amber.util.{Events, NotNothing}
 
-private[akka] class EventSource[A : NotNothing : Manifest] extends amber.util.EventSource[A] {
+private[akka] class EventSource[A: NotNothing : Manifest] extends amber.util.EventSource[A] {
 
   override def subscribe(f: Events.Observe[A]) = {
     val observer = new Observer(actorOf(ObserverActor[A](f)).start())
@@ -45,5 +45,5 @@ private[akka] class EventSource[A : NotNothing : Manifest] extends amber.util.Ev
 }
 
 private[akka] object EventSource {
-  def apply[A : NotNothing : Manifest]() = new EventSource[A]
+  def apply[A: NotNothing : Manifest]() = new EventSource[A]
 }

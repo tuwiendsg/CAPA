@@ -32,13 +32,12 @@ trait System extends simple.origin.BuilderComponent
 
   override val stopped = EventSource[Unit]()
   override val client: super.Client = new Client {}
-  override def origin: super.OriginFactory = Factory
-  override protected def in(f: Family) =
-    new MemberFactory with MemberFactory.Logging {
-      override protected val family = f
-      @transient override protected val log =
-        logger.create("amber.simple.family.MemberFactory(" + family + ")")
-    }
+  override def origin: super.OriginFactory = _origin
+  override protected def in(f: Family) = new MemberFactory with MemberFactory.Logging {
+    override protected val family = f
+    @transient override protected val log =
+      logger.create("amber.simple.family.MemberFactory(" + family + ")")
+  }
 
   override def shutdown() {
     log.info("Shutting down")
@@ -47,15 +46,13 @@ trait System extends simple.origin.BuilderComponent
     log.info("Shutdown successful")
   }
 
-  trait Client extends super.Client
-               with amber.origin.FinderComponent.Delegator {
+  trait Client extends super.Client with amber.origin.FinderComponent.Delegator {
     override protected val delegatee = System.this
   }
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
-    @transient override protected val log =
-      logger.create("amber.simple.origin.Factory")
+    @transient override protected val log = logger.create("amber.simple.origin.Factory")
   }
 
-  private object Factory extends OriginFactory
+  private object _origin extends OriginFactory
 }

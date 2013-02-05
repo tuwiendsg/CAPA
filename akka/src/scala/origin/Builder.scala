@@ -27,21 +27,21 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
 
   override protected type Origin[+A <: AnyRef] = OriginRef[A]
-  override protected def builder: super.OriginBuilder = Builder
+  override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B : amber.Origin.Read[A]#apply]
+    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
         (name: Property.Name, family: Family, read: B) = {
       val log = logger.create("amber.akka.Origin(" + name + ")")
       val origin = actorOf(
         read match {
           case f: Origin.Read.Unfiltered[A] =>
-            new OriginActor(name, log) {
+            new OriginActor(name)(log) {
               override protected def read(filter: Filter[Origin.Meta.Readable]) =
                 if (filter(meta)) f() else None
             }
           case f: Origin.Read.Filtered[A] =>
-            new OriginActor(name, log) {
+            new OriginActor(name)(log) {
               override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
             }
         }
@@ -50,5 +50,5 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
     }
   }
 
-  private object Builder extends OriginBuilder
+  private object _builder extends OriginBuilder
 }

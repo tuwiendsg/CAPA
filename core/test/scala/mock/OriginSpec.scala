@@ -20,7 +20,6 @@ package mock
 
 import org.mockito.Mockito.verify
 
-import amber.Origin.Meta
 import amber.util.{Filter, NotNothing}
 
 class OriginSpec extends Spec with OriginBehaviors {
@@ -29,7 +28,7 @@ class OriginSpec extends Spec with OriginBehaviors {
 
     override protected type Origin[+A <: AnyRef] = amber.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest, B : amber.Origin.Read[A]#apply]
+    override def create[A <: AnyRef : NotNothing : Manifest, B: amber.Origin.Read[A]#apply]
         (name: Property.Name, family: Family, read: B) =
       Origin(name, family, read)
   }
@@ -43,7 +42,7 @@ class OriginSpec extends Spec with OriginBehaviors {
       behave like (AnOrigin withRead fixture)
 
       "allows verifying invocations of its apply method" in {
-        val filter = mock[Filter[Meta.Readable]]("Filter")
+        val filter = mock[Filter[amber.Origin.Meta.Readable]]("Filter")
         val origin = fixture.create[AnyRef]()
 
         origin(filter)

@@ -24,26 +24,16 @@ import java.lang.Double
 import scalaz.std.string._
 import scalaz.syntax.equal._
 
-import Property.Name.fromString
+import amber.Property.Name.fromString
 
 trait Client extends amber.Client {
 
   protected val temperature =
     entity("Temperature").
-      field[Double](
-        "celsius",
-        "temperature/celsius/min" where {
-          meta =>
-            for {
-              location <- meta[String]("location")
-            } yield location === "A"}).
-      field[Double](
-        "kelvin",
-        "temperature/kelvin/max" where {
-          meta =>
-            for {
-              location <- meta[String]("location")
-            } yield location === "B"}).
+      field[Double]("celsius", "temperature/celsius/min" where {
+        meta => for {location <- meta[String]("location")} yield location === "A"}).
+      field[Double]("kelvin", "temperature/kelvin/max" where {
+        meta => for {location <- meta[String]("location")} yield location === "B"}).
       where {
         entity =>
           for {

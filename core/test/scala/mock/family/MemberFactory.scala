@@ -52,7 +52,7 @@ trait MemberFactoryComponent extends amber.family.MemberFactoryComponent
             }
             if (exists) None
             else {
-              val origin = amber.mock.Origin.create(name, family, read)(notNothing, manifest)
+              val origin = amber.mock.Origin.create(name, family)(read)(notNothing, manifest)
               FamilyFinder.add(origin)
               Some(origin)
             }

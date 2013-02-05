@@ -28,6 +28,7 @@ trait Processing {
   this: origin.FactoryComponent with family.MemberFactoryComponent =>
 
   protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+
   val process = ProcessorFactory
   val map = MapperFactory
   val operation = OperationFactory
@@ -63,16 +64,17 @@ trait Processing {
   }
 
   object MapperFactory {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
-        (input: Property.Name, output: Property.Name)(f: A => B): Observer =
+    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](input: Property.Name,
+                                                              output: Property.Name)
+                                                             (f: A => B): Observer =
       process {
         case name if input === name => output -> f
       }
   }
 
   object OperationFactory {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
-        (operation: Operation.Name)(f: A => B): Observer =
+    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](operation: Operation.Name)
+                                                             (f: A => B): Observer =
       process {
         case name => (name / operation) -> f
       }

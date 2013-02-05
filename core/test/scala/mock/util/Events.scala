@@ -36,7 +36,7 @@ trait Events[A] extends amber.util.Events[A] {
 
 object Events extends Mocking {
 
-  def apply[A : NotNothing : Manifest](): Events[A] = {
+  def apply[A: NotNothing : Manifest](): Events[A] = {
     val observers = new CopyOnWriteArrayList[Observe[A]]
     val events = mock[Events[A]]("mock.Events")
 
@@ -57,7 +57,7 @@ object Events extends Mocking {
   }
 
   object Observe {
-    def apply[A : Manifest]() =
+    def apply[A: Manifest]() =
       mock[Observe[A]]("mock.Events.Observe")
   }
 }

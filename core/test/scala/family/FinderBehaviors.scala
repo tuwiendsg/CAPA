@@ -28,7 +28,7 @@ trait FinderBehaviors {
   }
 
   object aFinder {
-    def forFamilies {
+    def forFamilies() {
       "find an origin" when {
         "using the origin's family" in {
           val family = random[Family]

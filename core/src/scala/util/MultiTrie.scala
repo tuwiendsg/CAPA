@@ -25,7 +25,7 @@ import scala.collection.JavaConversions._
 
 import scalaz.syntax.std.option._
 
-class MultiTrie[A : MultiTrie.Key, B] {
+class MultiTrie[A: MultiTrie.Key, B] {
 
   private val subtries = new ConcurrentHashMap[String, MultiTrie[A, B]]
   private val values = new CopyOnWriteArraySet[B]
@@ -33,8 +33,7 @@ class MultiTrie[A : MultiTrie.Key, B] {
   def +=(key: Option[A], value: B) {
     key match {
       case MultiTrie.Key(x, xs) =>
-        if (subtries get x eq null)
-          subtries.putIfAbsent(x, new MultiTrie[A, B])
+        if (subtries get x eq null) subtries.putIfAbsent(x, new MultiTrie[A, B])
         subtries get x += (xs, value)
       case _ => values.add(value)
     }
@@ -63,7 +62,7 @@ object MultiTrie {
       override def parts(name: Property.Name) = (name.property, name.child)
     }
 
-    def unapply[A : Key](key: Option[A]): Option[(String, Option[A])] =
+    def unapply[A: Key](key: Option[A]): Option[(String, Option[A])] =
       key map {implicitly[Key[A]].parts(_)}
   }
 

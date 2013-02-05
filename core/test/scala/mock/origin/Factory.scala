@@ -43,7 +43,7 @@ trait FactoryComponent extends amber.origin.FactoryComponent
         val read = args(1).asInstanceOf[Origin.Read.Unfiltered[AnyRef]]
         val manifest = args(3).asInstanceOf[Manifest[AnyRef]]
 
-        val origin = amber.mock.Origin.create(name, read)(notNothing, manifest)
+        val origin = amber.mock.Origin.create(name)(read)(notNothing, manifest)
         created.emit((origin, manifest))
 
         origin

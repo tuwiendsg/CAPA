@@ -20,9 +20,9 @@ package util
 
 class EventSourceSpec extends Spec with EventsBehaviors {
 
-  override protected type Events[A]  = EventSource[A]
+  override type Events[A]  = EventSource[A]
   override val fixture = new Fixture {
-    override def create[A : NotNothing : Manifest]() = EventSource[A]()
+    override def create[A: NotNothing : Manifest]() = EventSource[A]()
     override def emit[A](events: EventSource[A])(event: A) {events.emit(event)}
   }
 

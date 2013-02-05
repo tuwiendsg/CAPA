@@ -23,14 +23,15 @@ import scalaz.syntax.equal._
 import scalaz.syntax.std.option._
 
 import util.{Filter, NotNothing, Observer}
-import NotNothing.notNothing
 import util.Events.observe
+import util.NotNothing.notNothing
 
 trait Collecting {
   this: origin.FinderComponent with origin.FactoryComponent
                                with family.MemberFactoryComponent =>
 
   protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+
   val collect = Collect
 
   object Collect {
@@ -55,11 +56,8 @@ trait Collecting {
                 if (family =/= o.family) {
                   in(family).create(o.name) {
                     filter =>
-                      val result: Seq[AnyRef] = for {
-                        property <- apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[AnyRef]])
-                      } yield property.value
-                      if (!result.isEmpty) Some(result)
-                      else None
+                      val result: Seq[Property[AnyRef]] = apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[AnyRef]])
+                      if (result.isEmpty) None else Some(result map {_.value})
                   }(notNothing, Manifest.classType(classOf[Seq[AnyRef]], manifest))
                 }
             }

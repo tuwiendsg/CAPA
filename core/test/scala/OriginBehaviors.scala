@@ -20,7 +20,6 @@ package amber
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
-import Origin.{Meta, MetaInfo}
 import util.{Filter, NotNothing, Randoms}
 
 trait OriginBehaviors {
@@ -51,7 +50,7 @@ trait OriginBehaviors {
         "return None " in {
           val origin = fixture.create[AnyRef]()
 
-          origin.meta[AnyRef](random[MetaInfo.Name]) should not be('defined)
+          origin.meta[AnyRef](random[Origin.MetaInfo.Name]) should not be('defined)
         }
       }
 
@@ -59,7 +58,7 @@ trait OriginBehaviors {
         "return the assigned value" when {
           "requested type is same type as the assigned value" in {
             class A
-            val name = random[MetaInfo.Name]
+            val name = random[Origin.MetaInfo.Name]
             val value = new A
             val origin = fixture.create[AnyRef]()
 
@@ -71,7 +70,7 @@ trait OriginBehaviors {
           "requested type is a super type of the assigned value" in {
             class A
             class B extends A
-            val name = random[MetaInfo.Name]
+            val name = random[Origin.MetaInfo.Name]
             val value = new B
             val origin = fixture.create[AnyRef]()
 
@@ -85,7 +84,7 @@ trait OriginBehaviors {
           "requested type is a different type than the assigned value" in {
             class A
             class B
-            val name = random[MetaInfo.Name]
+            val name = random[Origin.MetaInfo.Name]
             val value = new A
             val origin = fixture.create[AnyRef]()
 
@@ -97,7 +96,7 @@ trait OriginBehaviors {
           "requested type is a sub type of the assigned value" in {
             class A
             class B extends A
-            val name = random[MetaInfo.Name]
+            val name = random[Origin.MetaInfo.Name]
             val value = new A
             val origin = fixture.create[AnyRef]()
 
@@ -249,7 +248,7 @@ trait OriginBehaviors {
 
       "if reading is unsuccessful" should {
         "return None" in {
-          val origin = fixture.create[AnyRef] {(_: Filter[Meta.Readable]) => None}
+          val origin = fixture.create[AnyRef] {(_: Filter[Origin.Meta.Readable]) => None}
 
           origin(filter) should not be('defined)
         }
@@ -276,37 +275,32 @@ object OriginBehaviors {
 
       protected type Origin[+A <: AnyRef] <: amber.Origin[A]
 
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name = random[Property.Name],
-         family: Family = random[Family]): Origin[A]
+      def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name = random[Property.Name],
+                                                      family: Family = random[Family]): Origin[A]
     }
 
     trait WithFilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Unfiltered[A]): Origin[A]
+      def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]): Origin[A]
     }
 
     trait WithUnfilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Filtered[A]): Origin[A]
+      def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Filtered[A]): Origin[A]
     }
   }
 
   trait Fixture extends Fixture.WithFilteredRead with Fixture.WithUnfilteredRead {
 
-    def create[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-      (name: Property.Name, family: Family, read: B): Origin[A]
+    def create[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                             family: Family,
+                                                                             read: B): Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name, family: Family) =
+    override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
       create[A, Origin.Read.Unfiltered[A]](name, family, {() => None})
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Unfiltered[A]) =
+    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]) =
       create(random[Property.Name], random[Family], read)
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Filtered[A]) =
+    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Filtered[A]) =
       create(random[Property.Name], random[Family], read)
   }
 }

@@ -27,8 +27,8 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]
-    def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name)(read: Origin.Read.Unfiltered[A]): Origin[A]
+    def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
+                                                   (read: Origin.Read.Unfiltered[A]): Origin[A]
   }
 
   object OriginFactory {
@@ -51,27 +51,26 @@ object FactoryComponent {
   trait Default extends FactoryComponent with BuilderComponent {
 
     abstract override protected val builder: OriginBuilder = new Wrapper(super.builder)
-    override def origin: OriginFactory = Factory
+    override def origin: OriginFactory = _origin
 
     trait OriginFactory extends super.OriginFactory {
 
-      override val created =
-        EventSource[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]()
+      override val created = EventSource[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]()
 
-      override def create[A <: AnyRef : NotNothing : Manifest]
-          (name: Property.Name)(read: Origin.Read.Unfiltered[A]) =
+      override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
+                                                              (read: Origin.Read.Unfiltered[A]) =
         builder.build(name, Family.random(), read)
     }
 
-    private object Factory extends OriginFactory
-
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
+      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
           (name: Property.Name, family: Family, read: B) = {
         val result = underlying.build(name, family, read)
         origin.created emit (result, manifest[A])
         result
       }
     }
+
+    private object _origin extends OriginFactory
   }
 }

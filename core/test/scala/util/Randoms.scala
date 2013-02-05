@@ -31,11 +31,11 @@ trait Randoms {
 
   def different[A: Equal : Manifest](value: A): A = random[A](value =/= (_: A))
 
-  def random[A : Manifest](p: A => Boolean): A = {
+  def random[A: Manifest](p: A => Boolean): A = {
     Stream.continually(random[A]).dropWhile(!p(_)).head
   }
 
-  def random[A : NotNothing : Manifest]: A = randomFor(manifest[A]).asInstanceOf[A]
+  def random[A: NotNothing : Manifest]: A = randomFor(manifest[A]).asInstanceOf[A]
 
   private def randomFor(m: Manifest[_]): Any = m match {
     case Manifest.Family => Family.random()

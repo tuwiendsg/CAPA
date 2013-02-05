@@ -69,11 +69,10 @@ object Origin {
 
     type Name = String
 
-    private[amber] case class Value[+A <: AnyRef : Manifest]
-        (name: MetaInfo.Name, private val value: A) {
+    private[amber] case class Value[+A <: AnyRef : Manifest](name: MetaInfo.Name,
+                                                             private val value: A) {
       def as[B <: AnyRef : NotNothing : Manifest]: Option[B] =
-        if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B])
-        else None
+        if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
     }
   }
 }

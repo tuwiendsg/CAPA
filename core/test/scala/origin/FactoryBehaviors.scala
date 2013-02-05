@@ -29,24 +29,23 @@ trait FactoryBehaviors extends OriginBehaviors {
 
   val fixture = new OriginBehaviors.Fixture.WithFilteredRead {
 
-    override protected type Origin[+A <: AnyRef] =
-      FactoryBehaviors.this.Origin[A]
+    override protected type Origin[+A <: AnyRef] = FactoryBehaviors.this.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name, family: Family) = origin.create[A](name) {() => None}
+    override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
+      origin.create[A](name) {() => None}
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-      (read: Origin.Read.Unfiltered[A]) = origin.create[A](random[Property.Name])(read)
+    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]) =
+      origin.create[A](random[Property.Name])(read)
   }
 
-  def anOrigin {
+  def anOrigin() {
     behave like (AnOrigin withName fixture)
     behave like (AnOrigin withMetaInfo fixture)
     behave like (AnOrigin withType fixture)
     behave like (AnOrigin withFilteredRead fixture)
   }
 
-  def aFactory {
+  def aFactory() {
     "return the origin" which {
       behave like anOrigin
     }
