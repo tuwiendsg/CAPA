@@ -19,6 +19,8 @@ package amber
 package demo
 package temperature
 
+import _root_.akka.actor.ActorSystem
+
 object Simple extends Demo with App with util.SLF4JLogging {
 
   override val system = new simple.System with super.System
@@ -28,7 +30,17 @@ object Simple extends Demo with App with util.SLF4JLogging {
 
 object Akka extends Demo with App with util.SLF4JLogging {
 
-  override val system = new akka.System with super.System
+  override val system = new akka.System with super.System {
+
+    override object configuration extends akka.System.Configuration {
+      override val system = ActorSystem("TemperatureDemo")
+    }
+
+    override def shutdown() {
+      super.shutdown()
+      configuration.system.shutdown()
+    }
+  }
 
   run()
 }

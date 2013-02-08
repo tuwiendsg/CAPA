@@ -29,9 +29,11 @@ trait System extends akka.origin.BuilderComponent
              with amber.family.MemberFactoryComponent.Default {
   this: Logging =>
 
+  override type Configuration = System.Configuration
+
   @transient private[this] val log = logger.create("amber.akka.System")
 
-  override val stopped = EventSource[Unit]()
+  override val stopped = EventSource[Unit](configuration.system)
   override def origin: super.OriginFactory = _origin
   override protected def origins: OriginFinder = _origins
   override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
@@ -50,7 +52,7 @@ trait System extends akka.origin.BuilderComponent
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
     @transient override protected val log = logger.create("amber.akka.origin.Factory")
-    override val created = EventSource[Origin[_]]()
+    override val created = EventSource[Origin[_]](configuration.system)
   }
 
   protected trait OriginFinder extends super.OriginFinder {
@@ -64,4 +66,8 @@ trait System extends akka.origin.BuilderComponent
 
   private object _origin extends OriginFactory
   private object _origins extends OriginFinder
+}
+
+object System {
+  trait Configuration extends origin.BuilderComponent.Configuration
 }

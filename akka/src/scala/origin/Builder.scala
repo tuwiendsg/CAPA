@@ -19,12 +19,17 @@ package amber
 package akka
 package origin
 
-import _root_.akka.actor.Actor.actorOf
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
-import amber.util.{Filter, Logging}
+import _root_.akka.actor.{ActorSystem, Props}
+import _root_.akka.util.Timeout
 
-trait BuilderComponent extends amber.origin.BuilderComponent {
+import amber.util.{ConfigurableComponent, Filter, Logging}
+
+trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableComponent {
   this: Logging =>
+
+  override type Configuration <: BuilderComponent.Configuration
 
   override protected type Origin[+A] = OriginRef[A]
   override protected def builder: super.OriginBuilder = _builder
@@ -34,22 +39,29 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
                                                              family: Origin.Family,
                                                              read: B) = {
       val log = logger.create("amber.akka.Origin(" + name + ")")
-      val origin = actorOf(
-        read match {
-          case f: Origin.Read.Unfiltered[A] =>
-            new OriginActor(name, family)(log) {
-              override protected def read(filter: Filter[Origin.Meta.Readable]) =
-                if (filter(meta)) f() else None
-            }
-          case f: Origin.Read.Filtered[A] =>
-            new OriginActor(name, family)(log) {
-              override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
-            }
-        }
-      )
-      OriginRef[A](origin.start())
+      OriginRef[A](configuration.system.actorOf(Props(read match {
+        case f: Origin.Read.Unfiltered[A] =>
+          new OriginActor(name, family)(log) {
+            override protected def read(filter: Filter[Origin.Meta.Readable]) =
+              if (filter(meta)) f() else None
+          }
+        case f: Origin.Read.Filtered[A] =>
+          new OriginActor(name, family)(log) {
+            override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
+          }
+        }).withDispatcher("amber.origins.dispatcher")))(configuration.timeout)
     }
   }
 
   private object _builder extends OriginBuilder
+}
+
+object BuilderComponent {
+  trait Configuration {
+    def system: ActorSystem
+    def timeout: Timeout = Timeout(
+      system.settings.config.getMilliseconds("akka.actor.typed.timeout"),
+      MILLISECONDS
+    )
+  }
 }

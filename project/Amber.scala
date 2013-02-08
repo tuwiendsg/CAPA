@@ -73,10 +73,10 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "1.3.1"
+    val version = "2.0.5"
     val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
-    val actor = "se.scalablesolutions.akka" % "akka-actor" % version
-    val testkit = "se.scalablesolutions.akka" % "akka-testkit" % version
+    val actor = "com.typesafe.akka" % "akka-actor" % version
+    val testkit = "com.typesafe.akka" % "akka-testkit" % version
   }
 
   object Logback {
@@ -130,8 +130,8 @@ object Amber extends Build {
   lazy val simple = module("simple") dependsOn(core % "test->test;compile")
   lazy val akka = module(
     name = "akka",
-    dependencies = Seq(Akka.actor, Akka.testkit % "test"),
-    resolvers = Seq(Akka.repo)
+    resolvers = Seq(Akka.repo),
+    dependencies = Seq(Akka.actor, Akka.testkit % "test")
   ) dependsOn(core % "test->test;compile")
   lazy val demo = module(
     name = "demo",

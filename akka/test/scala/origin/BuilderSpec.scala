@@ -20,13 +20,16 @@ package akka
 package origin
 
 import amber.util.NoLogging
-import akka.util.KillActorsAfterTest
 
-class BuilderSpec extends Spec
-                  with KillActorsAfterTest
+class BuilderSpec extends Spec("BuilderSpec")
                   with BuilderComponent
                   with NoLogging
                   with OriginBehaviors {
+
+  override type Configuration = BuilderComponent.Configuration
+  override object configuration extends BuilderComponent.Configuration {
+    override val system = BuilderSpec.this.system
+  }
 
   override val fixture = new Fixture {
 

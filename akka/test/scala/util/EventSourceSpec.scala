@@ -21,13 +21,12 @@ package util
 
 import amber.util.{EventsBehaviors, NotNothing}
 
-class EventSourceSpec extends Spec
-                      with KillActorsAfterTest
+class EventSourceSpec extends Spec("EventSourceSpec")
                       with EventsBehaviors {
 
   override type Events[A]  = EventSource[A]
   override val fixture = new Fixture {
-    override def create[A: NotNothing : Manifest]() = EventSource[A]()
+    override def create[A: NotNothing : Manifest]() = EventSource[A](system)
     override def emit[A](events: EventSource[A])(event: A) {events.emit(event)}
   }
 

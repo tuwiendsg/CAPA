@@ -19,34 +19,37 @@ package amber
 package akka
 
 import _root_.akka.actor.Actor
-import _root_.akka.actor.Actor.spawn
+import _root_.akka.dispatch.Future
+import _root_.akka.dispatch.Future.blocking
+import _root_.akka.pattern.pipe
 
 import amber.util.{Filter, Logger}
-import akka.Message.Request
+import akka.Message.Request.{MetaInfo, Read}
 
 private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name, family: Origin.Family)
                                                       (log: Logger) extends Actor {
 
   protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
 
+  import context.dispatcher
+
   protected val meta = new Origin.Meta.Writable.Default {
     override val name = OriginActor.this.name
     override val family = OriginActor.this.family
   }
 
-  self.id = name.toString
-
   override protected def receive = {
-    case Request.Value(filter) =>
-      val replyTo = self.channel
-      spawn {
-        val value = read(filter)
-        for (v <- value) log.debug("Read " + v + " from " + name)
-        replyTo tryTell (value map {Origin.Value(name, _)})
-      }
-    case Request.MetaInfo.Name => self.channel ! name
-    case Request.MetaInfo.Family => self.channel ! family
-    case get: Request.MetaInfo.Get[_] => self tryReply get(meta)
-    case set: Request.MetaInfo.Set[_] => set(meta)
+    case Read(filter) =>
+      Future {
+        blocking()
+        for (value <- read(filter)) yield {
+          log.debug("Read " + value + " from " + name)
+          Origin.Value(name, value)
+        }
+      } pipeTo sender
+    case MetaInfo.Name => sender ! name
+    case MetaInfo.Family => sender ! family
+    case get: MetaInfo.Get[_] => sender ! get(meta)
+    case set: MetaInfo.Set[_] => set(meta)
   }
 }

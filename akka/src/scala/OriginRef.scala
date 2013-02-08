@@ -18,29 +18,34 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import java.util.concurrent.TimeoutException
+
 import _root_.akka.actor.{ActorRef, PoisonPill}
+import _root_.akka.dispatch.{Await, Future}
+import _root_.akka.pattern.ask
+import _root_.akka.util.Timeout
 
 import scalaz.syntax.equal._
 
 import amber.util.{Filter, NotNothing}
-import akka.Message.Request
+import akka.Message.Request.{MetaInfo, Read}
 
-private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)
+private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)(timeout: Timeout)
     extends amber.Origin[A] {
 
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
 
   override def read(filter: Filter[Origin.Meta.Readable]) =
-    (ref ? Request.Value(filter)).as[Option[Origin.Value[A]]] flatMap {identity}
+    await(request[Option[Origin.Value[A]]](Read(filter)))
 
-  override lazy val name = (ref ? Request.MetaInfo.Name).as[Origin.Name].get
-  override lazy val family = (ref ? Request.MetaInfo.Family).as[Origin.Family].get
+  override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout.duration)
+  override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout.duration)
 
   override def apply[B: NotNothing : Manifest](name: Origin.MetaInfo.Name) =
-    (ref ? Request.MetaInfo.Get[B](name)).as[Option[B]] flatMap {identity}
+    await(request[Option[B]](MetaInfo.Get[B](name)))
 
   override def update[B: Manifest](name: Origin.MetaInfo.Name, value: B) {
-    ref ! Request.MetaInfo.Set(name, value)
+    ref ! MetaInfo.Set(name, value)
   }
 
   private[akka] def kill() {ref ! PoisonPill}
@@ -60,4 +65,10 @@ private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)
   override def canEqual(other: Any) = other.isInstanceOf[Origin[_]]
 
   override lazy val toString = "akka.Origin[" + manifest[A] + "](" + name + ")"
+
+  private def request[B: Manifest](message: Message): Future[B] =
+    ask(ref, message)(timeout).mapTo[B]
+
+  private def await[B](future: Future[Option[B]]): Option[B] =
+    try Await.result(future, timeout.duration) catch {case _: TimeoutException => None}
 }

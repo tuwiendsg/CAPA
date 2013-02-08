@@ -25,9 +25,9 @@ private[akka] sealed trait Message
 private[akka] object Message {
   object Request {
 
-    case class Value(filter: Filter[Origin.Meta.Readable]) extends Message
+    case class Read(filter: Filter[Origin.Meta.Readable]) extends Message
 
-    case object MetaInfo {
+    object MetaInfo {
 
       case object Name extends Message
       case object Family extends Message

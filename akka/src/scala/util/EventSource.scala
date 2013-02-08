@@ -19,15 +19,17 @@ package amber
 package akka
 package util
 
-import _root_.akka.actor.{ActorRef, PoisonPill}
-import _root_.akka.actor.Actor.actorOf
+import _root_.akka.actor.{ActorRef, ActorRefFactory, PoisonPill, Props}
 
 import amber.util.{Events, NotNothing}
 
-private[akka] class EventSource[A: NotNothing : Manifest] extends amber.util.EventSource[A] {
+private[akka] class EventSource[A: NotNothing : Manifest](factory: ActorRefFactory)
+    extends amber.util.EventSource[A] {
 
   override def subscribe(f: Events.Observe[A]) = {
-    val observer = new Observer(actorOf(ObserverActor[A](f)).start())
+    val observer = new Observer(factory.actorOf(
+      Props(ObserverActor[A](f)).withDispatcher("amber.observers.dispatcher")
+    ))
     add(observer)
     observer
   }
@@ -35,15 +37,15 @@ private[akka] class EventSource[A: NotNothing : Manifest] extends amber.util.Eve
   class Observer(ref: ActorRef) extends super.Observer(forwardTo(ref)) {
     override def dispose() {
       super.dispose()
-      ref tryTell PoisonPill
+      ref ! PoisonPill
     }
   }
 
   private def forwardTo(ref: ActorRef): Events.Observe[A] = {
-    case any => ref tryTell any
+    case any => ref ! any
   }
 }
 
 private[akka] object EventSource {
-  def apply[A: NotNothing : Manifest]() = new EventSource[A]
+  def apply[A: NotNothing : Manifest](factory: ActorRefFactory) = new EventSource[A](factory)
 }

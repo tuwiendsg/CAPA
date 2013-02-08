@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Sanjin Sehic
+ * Copyright 2012 Sanjin Sehic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,29 +17,17 @@
 package at.ac.tuwien.infosys
 package amber
 package akka
-package util
 
-import _root_.akka.actor.Actor
-import _root_.akka.dispatch.MessageDispatcher
-import _root_.akka.testkit.CallingThreadDispatcher
+import _root_.akka.actor.ActorSystem
 
-object Configuration {
+import org.scalatest.BeforeAndAfterAll
 
-  object Defaults {
+abstract class Spec(val system: ActorSystem) extends amber.Spec
+                                             with BeforeAndAfterAll {
 
-    val MessageDispatcher = CallingThreadDispatcher.global
+  def this(name: String) = this(ActorSystem(name))
 
-    def actorOf(factory: => Actor) = {
-      val actor = Actor.actorOf(factory)
-
-      actor.dispatcher = MessageDispatcher
-      actor.start()
-
-      actor
-    }
-  }
-
-  class MessageDispatcherConfigurator extends _root_.akka.dispatch.MessageDispatcherConfigurator {
-    def configure(config: _root_.akka.config.Configuration) = Defaults.MessageDispatcher
+  override def afterAll() {
+    system.shutdown()
   }
 }
