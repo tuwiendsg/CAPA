@@ -40,7 +40,7 @@ trait MemberFactoryComponent {
       abstract override def create[A <: AnyRef : NotNothing : Manifest]
           (name: Property.Name)(read: Origin.Read.Filtered[A]) = {
         val result = super.create(name)(read)
-        log.debug("Created " + name + " origin of type " + manifest[A])
+        if (result.isDefined) log.debug("Created " + name + " origin of type " + manifest[A])
         result
       }
     }
