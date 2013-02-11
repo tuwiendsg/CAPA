@@ -43,7 +43,7 @@ private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family:
     case Read(filter) =>
       future {
         for (value <- blocking {read(filter)}) yield {
-          log.debug("Read " + value + " from " + name)
+          log.debug(s"Read $value from $name")
           Origin.Value(name, value)
         }
       } pipeTo sender

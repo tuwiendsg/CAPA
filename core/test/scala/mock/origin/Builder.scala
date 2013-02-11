@@ -44,7 +44,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
     new Mocker[(Origin.Name, Origin.Family, B, TypeTag[A]), amber.Origin[A]] {
       def mock(args: (Origin.Name, Origin.Family, B, TypeTag[A])) =
-        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]]("mock.Origin[" + typeOf[A] + "]")
+        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]](s"mock.Origin[${typeOf[A]}]")
     }
 
   override protected type Origin[+A] = amber.Origin[A]

@@ -59,7 +59,7 @@ trait Client extends origin.FinderComponent {
 
       private[amber] case class Type[+A: NotNothing : TypeTag](name: Field.Name, query: Query) {
         def values(): Stream[Value[A]] = readAll[A](query) map {Value(name, _)}
-        override lazy val toString = name + ": " + typeOf[A]
+        override lazy val toString = s"$name: ${typeOf[A]}"
       }
 
       private[amber] type Value[+A] = util.Value.Named[Field.Name, A]

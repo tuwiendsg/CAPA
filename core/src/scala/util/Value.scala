@@ -27,6 +27,6 @@ class Value[+A: TypeTag](value: A) {
 
 object Value {
   case class Named[A, +B: TypeTag](name: A, value: B) extends Value[B](value) {
-    override lazy val toString = name + " = " + value
+    override lazy val toString = s"$name = $value"
   }
 }

@@ -39,7 +39,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
     override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
                                                                        family: Origin.Family,
                                                                        read: B) = {
-      val log = logger.create("amber.akka.Origin(" + name + ")")
+      val log = logger.create(s"amber.akka.Origin($name)")
       OriginRef[A](configuration.system.actorOf(Props(read match {
         case f: Origin.Read.Unfiltered[A] =>
           new OriginActor(name, family)(log) {

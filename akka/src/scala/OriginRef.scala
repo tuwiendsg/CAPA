@@ -68,7 +68,7 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
 
   override def canEqual(other: Any) = other.isInstanceOf[Origin[_]]
 
-  override lazy val toString = "akka.Origin[" + typeOf[A] + "](" + name + ")"
+  override lazy val toString = s"akka.Origin[${typeOf[A]}]($name)"
 
   private def request[B: ClassTag](message: Message): Future[B] =
     ask(ref, message)(timeout).mapTo[B]

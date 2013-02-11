@@ -44,5 +44,5 @@ private[simple] abstract class Origin[+A : TypeTag](override val name: Origin.Na
 
   override def canEqual(other: Any) = other.isInstanceOf[amber.Origin[_]]
 
-  override lazy val toString = "simple.Origin[" + typeOf[A] + "](" + name + ")"
+  override lazy val toString = s"simple.Origin[${typeOf[A]}]($name)"
 }

@@ -42,9 +42,9 @@ trait FactoryComponent {
 
       abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
                                                          (read: Origin.Read.Unfiltered[A]) = {
-        log.debug("Creating " + name + " origin of type " + typeOf[A])
+        log.debug(s"Creating $name origin of type ${typeOf[A]}")
         val result = super.create(name)(read)
-        log.info("Created " + name + " origin of type " + typeOf[A])
+        log.info(s"Created $name origin of type ${typeOf[A]}")
         result
       }
     }

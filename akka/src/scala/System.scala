@@ -39,7 +39,7 @@ trait System extends akka.origin.BuilderComponent
   override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
     override protected val family = f
     @transient override protected val log =
-      logger.create("amber.simple.family.MemberFactory(" + family + ")")
+      logger.create(s"amber.simple.family.MemberFactory($family)")
   }
 
   override def shutdown() {
@@ -60,7 +60,7 @@ trait System extends akka.origin.BuilderComponent
       log.debug("Killing all origins")
       val origins = find(Selections.all)
       origins foreach {_.kill()}
-      log.debug("Killed " + origins.size + " origins")
+      log.debug(s"Killed ${origins.size} origins")
     }
   }
 

@@ -44,7 +44,7 @@ trait MemberFactoryComponent {
       abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
                                                          (read: Origin.Read.Filtered[A]) = {
         val result = super.create(name)(read)
-        if (result.isDefined) log.debug("Created " + name + " origin of type " + typeOf[A])
+        if (result.isDefined) log.debug(s"Created $name origin of type ${typeOf[A]}")
         result
       }
     }

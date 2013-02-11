@@ -59,7 +59,7 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
       for {location <- locations; _ <- 1 to origins} system.Temperature.createCelsius(location)
       println(delimiter)
       every(configuration.period) {() =>
-        println(client.readTemperature().fold("No " + client.temperature.name) {_.toString})
+        println(client.readTemperature().fold(s"No ${client.temperature.name}") {_.toString})
         println(delimiter)
       }
       readLine()

@@ -34,10 +34,10 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
     override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
                                                                        family: Origin.Family,
                                                                        read: B) = {
-      val log = logger.create("amber.simple.Origin(" + name + ")")
+      val log = logger.create(s"amber.simple.Origin($name)")
       def process(result: Option[A]): Option[Origin.Value[A]] =
         for (value <- result) yield {
-          log.debug("Read " + value + " from " + name)
+          log.debug(s"Read $value from $name")
           Origin.Value(name, value)
         }
 

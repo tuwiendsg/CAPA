@@ -31,7 +31,7 @@ class PathSpec extends Spec {
           new Fixture {
             val suffix = random[String]
 
-            (path / suffix).toString should be(path + "/" + suffix)
+            (path / suffix).toString should be(s"$path/$suffix")
           }
         }
       }
