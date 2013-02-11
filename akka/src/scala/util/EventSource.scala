@@ -19,11 +19,13 @@ package amber
 package akka
 package util
 
+import scala.reflect.ClassTag
+
 import _root_.akka.actor.{ActorRef, ActorRefFactory, PoisonPill, Props}
 
 import amber.util.{Events, NotNothing}
 
-private[akka] class EventSource[A: NotNothing : Manifest](factory: ActorRefFactory)
+private[akka] class EventSource[A: NotNothing : ClassTag](factory: ActorRefFactory)
     extends amber.util.EventSource[A] {
 
   override def subscribe(f: Events.Observe[A]) = {
@@ -47,5 +49,5 @@ private[akka] class EventSource[A: NotNothing : Manifest](factory: ActorRefFacto
 }
 
 private[akka] object EventSource {
-  def apply[A: NotNothing : Manifest](factory: ActorRefFactory) = new EventSource[A](factory)
+  def apply[A: NotNothing : ClassTag](factory: ActorRefFactory) = new EventSource[A](factory)
 }

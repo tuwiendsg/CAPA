@@ -20,8 +20,6 @@ package util
 
 import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
-import scalaz.syntax.std.option._
-
 import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
 
@@ -118,7 +116,7 @@ object MultiTrie {
     private def peek[A](f: Path => Iteratee[(Path, Set[A]), Set[A]]) =
       Iteratee.peekDoneOr[(Path, Set[A]), Id, Set[A]](Set.empty, {case (path, _) => f(path)})
 
-    private def take[A] = head[A] map {x => (x map {_._2}) | Set.empty[A]}
+    private def take[A] = head[A] map {_.fold(Set.empty[A]) {_._2}}
     private def takeAll[A] = consume[A] map {
       sets => (sets map {case (_, set) => set}).flatten
     }

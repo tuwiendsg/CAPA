@@ -20,38 +20,42 @@ package akka
 
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
+import scala.util.Try
+
 import _root_.akka.actor.{ActorRef, PoisonPill}
-import _root_.akka.dispatch.{Await, Future}
 import _root_.akka.pattern.ask
-import _root_.akka.util.Timeout
 
 import scalaz.syntax.equal._
 
 import amber.util.{Filter, NotNothing}
 import akka.Message.Request.{MetaInfo, Read}
 
-private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)(timeout: Timeout)
+private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(timeout: FiniteDuration)
     extends amber.Origin[A] {
 
-  override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
+  override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
 
   override def read(filter: Filter[Origin.Meta.Readable]) =
     await(request[Option[Origin.Value[A]]](Read(filter)))
 
-  override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout.duration)
-  override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout.duration)
+  override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout)
+  override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout)
 
-  override def apply[B: NotNothing : Manifest](name: Origin.MetaInfo.Name) =
+  override def apply[B: NotNothing : TypeTag](name: Origin.MetaInfo.Name) =
     await(request[Option[B]](MetaInfo.Get[B](name)))
 
-  override def update[B: Manifest](name: Origin.MetaInfo.Name, value: B) {
+  override def update[B: TypeTag](name: Origin.MetaInfo.Name, value: B) {
     ref ! MetaInfo.Set(name, value)
   }
 
   private[akka] def kill() {ref ! PoisonPill}
 
   override lazy val hashCode =
-    41 * (41 * (41 + name.hashCode) + family.hashCode) + manifest[A].hashCode
+    41 * (41 * (41 + name.hashCode) + family.hashCode) + typeTag[A].hashCode
 
   override def equals(other: Any) = other match {
     case that: Origin[_] =>
@@ -64,11 +68,11 @@ private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)(tim
 
   override def canEqual(other: Any) = other.isInstanceOf[Origin[_]]
 
-  override lazy val toString = "akka.Origin[" + manifest[A] + "](" + name + ")"
+  override lazy val toString = "akka.Origin[" + typeOf[A] + "](" + name + ")"
 
-  private def request[B: Manifest](message: Message): Future[B] =
+  private def request[B: ClassTag](message: Message): Future[B] =
     ask(ref, message)(timeout).mapTo[B]
 
   private def await[B](future: Future[Option[B]]): Option[B] =
-    try Await.result(future, timeout.duration) catch {case _: TimeoutException => None}
+    Try {Await.result(future, timeout)}.recover {case _: TimeoutException => None}.get
 }

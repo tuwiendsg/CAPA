@@ -18,14 +18,19 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.language.higherKinds
+
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 trait BuilderComponent {
 
   protected type Origin[+A] <: amber.Origin[A]
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                    family: Origin.Family,
-                                                    read: B): Origin[A]
+    def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                              family: Origin.Family,
+                                                              read: B): Origin[A]
   }
 }

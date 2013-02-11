@@ -17,6 +17,8 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.reflect.runtime.universe.TypeTag
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
@@ -25,13 +27,17 @@ import util.{Filter, NotNothing}
 trait OriginBehaviors {
   this: Spec =>
 
+  class A
+  class U extends A
+  class B
+
   def fixture: Fixture
 
   trait Fixture {
 
-    def create[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                     family: Origin.Family,
-                                                     read: B): Origin[A]
+    def create[A: Manifest : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                               family: Origin.Family,
+                                                               read: B): Origin[A]
 
     def create[A: NotNothing : Manifest](): Origin[A] = create(random[Origin.Name])
 
@@ -44,10 +50,10 @@ trait OriginBehaviors {
     def create[A: NotNothing : Manifest](name: Origin.Name, family: Origin.Family): Origin[A] =
       create(name, family, mock[Origin.Read.Unfiltered[A]]("Origin.read"))
 
-    def create[A: Manifest](read: Origin.Read.Unfiltered[A]): Origin[A] =
+    def create[A: Manifest : TypeTag](read: Origin.Read.Unfiltered[A]): Origin[A] =
       create(random[Origin.Name], random[Origin.Family], read)
 
-    def create[A: Manifest](read: Origin.Read.Filtered[A]): Origin[A] =
+    def create[A: Manifest : TypeTag](read: Origin.Read.Filtered[A]): Origin[A] =
       create(random[Origin.Name], random[Origin.Family], read)
   }
 
@@ -78,7 +84,6 @@ trait OriginBehaviors {
     "if a meta value was previously assigned" should {
       "return the assigned value" when {
         "requested type is same type as the assigned value" in {
-          class A
           val name = random[Origin.MetaInfo.Name]
           val value = new A
           val origin = fixture.create[Any]()
@@ -89,10 +94,8 @@ trait OriginBehaviors {
         }
 
         "requested type is a super type of the assigned value" in {
-          class A
-          class B extends A
           val name = random[Origin.MetaInfo.Name]
-          val value = new B
+          val value = new U
           val origin = fixture.create[Any]()
 
           origin(name) = value
@@ -103,8 +106,6 @@ trait OriginBehaviors {
 
       "return None " when {
         "requested type is a different type than the assigned value" in {
-          class A
-          class B
           val name = random[Origin.MetaInfo.Name]
           val value = new A
           val origin = fixture.create[Any]()
@@ -115,48 +116,39 @@ trait OriginBehaviors {
         }
 
         "requested type is a sub type of the assigned value" in {
-          class A
-          class B extends A
           val name = random[Origin.MetaInfo.Name]
           val value = new A
           val origin = fixture.create[Any]()
 
           origin(name) = value
 
-          origin[B](name) should not be('defined)
+          origin[U](name) should not be('defined)
         }
       }
     }
 
     "does return the same type" in {
-      class A
       val origin = fixture.create[A]()
 
       origin.returns[A] should be(true)
     }
 
     "does return a super type" in {
-      class A
-      class B extends A
-      val origin = fixture.create[B]()
+      val origin = fixture.create[U]()
 
       origin.returns[A] should be(true)
     }
 
     "does not return a different type" in {
-      class A
-      class B
       val origin = fixture.create[A]()
 
       origin.returns[B] should be(false)
     }
 
     "does not return a sub type" in {
-      class A
-      class B extends A
       val origin = fixture.create[A]()
 
-      origin.returns[B] should be(false)
+      origin.returns[U] should be(false)
     }
 
     "is created with unfiltered read" should {

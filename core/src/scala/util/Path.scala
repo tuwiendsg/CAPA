@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.language.implicitConversions
+
 import scalaz.Equal.equalA
 
 sealed trait Path {

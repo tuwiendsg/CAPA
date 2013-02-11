@@ -21,7 +21,9 @@ package util
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-trait Scheduling extends Duration.Conversions {
+import scala.concurrent.duration.Duration
+
+trait Scheduling {
 
   private val scheduler = Executors.newScheduledThreadPool(1)
 
@@ -29,11 +31,8 @@ trait Scheduling extends Duration.Conversions {
     scheduler.schedule(toRunnable(f), delay.length, delay.unit)
   }
 
-  def every(period: Duration, delay: Duration = 0 nanoseconds)(f: () => Unit) {
-    scheduler.scheduleAtFixedRate(toRunnable(f),
-                                  delay.inNanoseconds,
-                                  period.inNanoseconds,
-                                  NANOSECONDS)
+  def every(period: Duration, delay: Duration = Duration.Zero)(f: () => Unit) {
+    scheduler.scheduleAtFixedRate(toRunnable(f), delay.toNanos, period.toNanos, NANOSECONDS)
   }
 
   def shutdown() {scheduler.shutdown()}

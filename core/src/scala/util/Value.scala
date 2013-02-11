@@ -18,13 +18,15 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
-class Value[+A: Manifest](value: A) {
-  def as[B: NotNothing : Manifest]: Option[B] =
-    if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
+
+class Value[+A: TypeTag](value: A) {
+  def as[B: NotNothing : TypeTag]: Option[B] =
+    if (typeOf[A] <:< typeOf[B]) Some(value.asInstanceOf[B]) else None
 }
 
 object Value {
-  case class Named[A, +B: Manifest](name: A, value: B) extends Value[B](value) {
+  case class Named[A, +B: TypeTag](name: A, value: B) extends Value[B](value) {
     override lazy val toString = name + " = " + value
   }
 }

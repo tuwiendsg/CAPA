@@ -18,6 +18,9 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 import org.mockito.Mockito.when
 
 class DefaultFinderSpec extends Spec
@@ -25,7 +28,7 @@ class DefaultFinderSpec extends Spec
                         with FinderComponent.Default
                         with FinderBehaviors {
 
-  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
+  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
     super.mocker[A, B] andThen {case ((name, _, _, _), origin) =>
       when(origin.name) thenReturn name
     }
@@ -33,13 +36,13 @@ class DefaultFinderSpec extends Spec
   override val fixture = new Fixture {
     override def create(name: Origin.Name) = {
       val family = random[Origin.Family]
-      val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
+      val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
 
-      builder.build[Any, Origin.Read.Unfiltered[Any]](name, family, read)
+      builder.build(name, family, read)
     }
   }
 
   "Default.OriginFinder" should {
-    behave like (aFinder forOrigins)
+    behave like aFinder.forOrigins
   }
 }

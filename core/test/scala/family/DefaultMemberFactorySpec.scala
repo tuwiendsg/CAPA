@@ -18,6 +18,9 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{times, verify, when}
 
@@ -27,11 +30,11 @@ class DefaultMemberFactorySpec extends Spec
                                with MemberFactoryComponent.Default
                                with MemberFactoryBehaviors {
 
-  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, family, _, manifest), origin) =>
+  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, _, tag), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
-      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+      when(origin.returns(anything(), equalTo(tag))) thenReturn true
     }
 
   "Default.MemberFactory" should {

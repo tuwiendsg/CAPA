@@ -17,12 +17,15 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{never, verify, when}
 
 import util.Filter
 
-class ProcessingSpec extends Spec
+trait ProcessingSpec extends Spec
                      with mock.origin.BuilderComponent
                      with origin.FinderComponent.Default
                      with family.FinderComponent.Default
@@ -30,11 +33,11 @@ class ProcessingSpec extends Spec
                      with family.MemberFactoryComponent.Default
                      with Processing {
 
-  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, family, read, manifest), origin) =>
+  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, read, tag), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
-      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+      when(origin.returns(anything(), equalTo(tag))) thenReturn true
       when(origin.read(anything())) thenAnswer {
         args: Array[AnyRef] =>
           (read match {
@@ -43,24 +46,27 @@ class ProcessingSpec extends Spec
           }) map {Origin.Value(name, _)}
       }
     }
+}
 
-  "Process" when {
+class ProcessSpec extends ProcessingSpec {
 
-    trait Fixture {
+  class A
+  class B
+  class C
 
-      class A
-      class B
+  trait Fixture {
 
-      val input = random[Origin.Name]
-      val output = random[Origin.Name]
-      val processor = mock[A => B]("Processor")
-      val definition = mock[PartialFunction[Origin.Name, (Origin.Name, A => B)]]("Process.Definition")
-      val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+    val input = random[Origin.Name]
+    val output = random[Origin.Name]
+    val processor = mock[A => B]("Processor")
+    val definition = mock[PartialFunction[Origin.Name, (Origin.Name, A => B)]]("Process.Definition")
+    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
 
-      when(definition isDefinedAt input) thenReturn true
-      when(definition apply input) thenReturn (output -> processor)
-    }
+    when(definition isDefinedAt input) thenReturn true
+    when(definition apply input) thenReturn (output -> processor)
+  }
 
+  "Processing.process" when {
     "an origin is created with matching name and type" should {
       "invoke the process definition" in {
         new Fixture {
@@ -178,8 +184,6 @@ class ProcessingSpec extends Spec
     "an origin is created with non-matching type" should {
       "not invoke the process definition" in {
         new Fixture {
-          class C
-
           process(definition)
           origin.create(input)(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
@@ -189,20 +193,22 @@ class ProcessingSpec extends Spec
       }
     }
   }
+}
 
-  "Map" when {
+class MapSpec extends ProcessingSpec {
 
-    trait Fixture {
+  class A
+  class B
+  class C
 
-      class A
-      class B
+  trait Fixture {
+    val input = random[Origin.Name]
+    val output = random[Origin.Name]
+    val mapper = mock[A => B]("Mapper")
+    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+  }
 
-      val input = random[Origin.Name]
-      val output = random[Origin.Name]
-      val mapper = mock[A => B]("Mapper")
-      val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
-    }
-
+  "Processing.map" when {
     "an underlying origin is created with matching name and type" should {
       "create an additional origin" which {
         "has expected name" in {
@@ -307,8 +313,6 @@ class ProcessingSpec extends Spec
     "an origin is created with non-matching type" should {
       "not create an additional origin" in {
         new Fixture {
-          class C
-
           map(input, output)(mapper)
           origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
@@ -317,19 +321,22 @@ class ProcessingSpec extends Spec
       }
     }
   }
+}
 
-  "Operation" when {
-    trait Fixture {
+class OperationSpec extends ProcessingSpec {
 
-      class A
-      class B
+  class A
+  class B
+  class C
 
-      val input = random[Origin.Name]
-      val output = random[Operation.Name]
-      val function = mock[A => B]("Mapper")
-      val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
-    }
+  trait Fixture {
+    val input = random[Origin.Name]
+    val output = random[Operation.Name]
+    val function = mock[A => B]("Mapper")
+    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+  }
 
+  "Processing.operation" when {
     "an underlying origin is created with matching type" should {
       "create an additional origin" which {
         "has expected name" in {
@@ -423,8 +430,6 @@ class ProcessingSpec extends Spec
     "an origin is created with non-matching type" should {
       "not create an additional origin" in {
         new Fixture {
-          class C
-
           operation(output)(function)
           origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 

@@ -18,11 +18,12 @@ package at.ac.tuwien.infosys
 package amber
 
 import scala.collection.immutable.{Seq, Stream}
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.syntax.equal._
 
 import util.{Filter, NotNothing}
-import util.NotNothing.notNothing
 
 trait Collecting extends origin.BuilderComponent {
   this: origin.FinderComponent with family.MemberFactoryComponent =>
@@ -33,19 +34,18 @@ trait Collecting extends origin.BuilderComponent {
 
     private[amber] val family = Origin.Family.random()
 
-    def apply[A: NotNothing : Manifest]
+    def apply[A: NotNothing : TypeTag]
         (name: Origin.Name, filter: Filter[Origin.Meta.Readable]): Stream[Origin.Value[A]] =
       for {
-        origin <- origins.find(Selections.exact(name)).toStream
-        if origin.returns(notNothing, manifest[A])
+        origin <- origins.find(Selections.exact(name)).toStream if origin.returns[A]
         value <- origin.asInstanceOf[Origin[A]].read(filter)
       } yield value
   }
 
   private object _builder extends OriginBuilder {
-    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Origin.Family,
-                                                             read: B) = {
+    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                       family: Origin.Family,
+                                                                       read: B) = {
       val origin = Collecting.super.builder.build(name, family, read)
       if (collect.family =/= family) {
         in(collect.family).create[Seq[A]](name) {

@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.language.implicitConversions
+
 trait Events[+A] {
   def subscribe(f: Events.Observe[A]): Observer
 }

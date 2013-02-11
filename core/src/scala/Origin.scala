@@ -20,13 +20,15 @@ package amber
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID.randomUUID
 
+import scala.reflect.runtime.universe.TypeTag
+
 import scalaz.Equal.equalA
 
 import util.{Filter, NotNothing, Path, Union}
 
 trait Origin[+A] extends Equals with Origin.Meta.Writable {
   def read(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
-  def returns[B: NotNothing : Manifest]: Boolean
+  def returns[B: NotNothing : TypeTag]: Boolean
 }
 
 object Origin {
@@ -54,11 +56,11 @@ object Origin {
     trait Readable {
       def name: Origin.Name
       def family: Origin.Family
-      def apply[A: NotNothing : Manifest](name: MetaInfo.Name): Option[A]
+      def apply[A: NotNothing : TypeTag](name: MetaInfo.Name): Option[A]
     }
 
     trait Writable extends Readable {
-      def update[A: Manifest](name: MetaInfo.Name, value: A)
+      def update[A: TypeTag](name: MetaInfo.Name, value: A)
     }
 
     object Writable {
@@ -66,10 +68,10 @@ object Origin {
 
         private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
 
-        override def apply[A: NotNothing : Manifest](name: MetaInfo.Name) =
+        override def apply[A: NotNothing : TypeTag](name: MetaInfo.Name) =
           Option(values.get(name)) flatMap {_.as[A]}
 
-        override def update[A: Manifest](name: MetaInfo.Name, value: A) {
+        override def update[A: TypeTag](name: MetaInfo.Name, value: A) {
           values.put(name, new MetaInfo.Value(value))
         }
       }

@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.reflect.runtime.universe.typeTag
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
 
@@ -26,10 +28,9 @@ import util.Events
 trait FactoryBehaviors {
   this: Spec with FactoryComponent =>
 
+  class A
+
   trait Fixture {
-
-    class A
-
     val name = random[Origin.Name]
     val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
   }

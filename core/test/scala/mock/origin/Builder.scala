@@ -19,6 +19,8 @@ package amber
 package mock.origin
 
 import scala.collection.immutable.List
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mock.MockitoSugar.mock
@@ -39,19 +41,18 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   var built: List[Origin[_]] = _
   var build: (Origin.Name, Origin.Family, Any) => Unit = _
 
-  def mocker[A: Manifest, B: Origin.Read[A]#apply] =
-    new Mocker[(Origin.Name, Origin.Family, B, Manifest[A]), amber.Origin[A]] {
-      def mock(args: (Origin.Name, Origin.Family, B, Manifest[A])) =
-        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]]("mock.Origin[" + manifest[A] + "]")
+  def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
+    new Mocker[(Origin.Name, Origin.Family, B, TypeTag[A]), amber.Origin[A]] {
+      def mock(args: (Origin.Name, Origin.Family, B, TypeTag[A])) =
+        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]]("mock.Origin[" + typeOf[A] + "]")
     }
 
   override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Origin.Family,
-                                                             read: B) = {
-      val origin = mocker[A, B].mock(name, family, read, manifest[A])
-
+    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                       family: Origin.Family,
+                                                                       read: B) = {
+      val origin = mocker[A, B].mock(name, family, read, typeTag[A])
       built = built :+ origin
       BuilderComponent.this.build(name, family, read)
 

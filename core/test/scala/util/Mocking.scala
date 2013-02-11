@@ -18,6 +18,11 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.language.implicitConversions
+
+import scala.reflect.{classTag, ClassTag}
+import scala.reflect.ManifestFactory.classType
+
 import org.scalatest.mock.MockitoSugar
 
 import org.mockito.invocation.InvocationOnMock
@@ -25,7 +30,8 @@ import org.mockito.stubbing.Answer
 
 trait Mocking {
 
-  def mock[A <: AnyRef : Manifest](name: String): A = MockitoSugar.mock[A](name)
+  def mock[A <: AnyRef](name: String)(implicit ct: ClassTag[A]): A =
+    MockitoSugar.mock[A](name)(classType(ct.runtimeClass))
 
   implicit def functionToAnswer[A](f: Array[AnyRef] => A): Answer[A] = new Answer[A] {
     override def answer(invocation: InvocationOnMock) = f(invocation.getArguments)

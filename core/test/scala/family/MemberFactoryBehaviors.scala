@@ -21,10 +21,9 @@ package family
 trait MemberFactoryBehaviors {
   this: Spec with MemberFactoryComponent =>
 
+  class A
+
   trait Fixture {
-
-    class A
-
     val name = random[Origin.Name]
     val family = random[Origin.Family]
     val read = mock[Origin.Read.Filtered[A]]("Origin.read")

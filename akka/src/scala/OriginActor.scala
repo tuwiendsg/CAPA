@@ -18,16 +18,17 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import scala.concurrent.{blocking, future}
+import scala.reflect.runtime.universe.TypeTag
+
 import _root_.akka.actor.Actor
-import _root_.akka.dispatch.Future
-import _root_.akka.dispatch.Future.blocking
 import _root_.akka.pattern.pipe
 
 import amber.util.{Filter, Logger}
 import akka.Message.Request.{MetaInfo, Read}
 
-private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name, family: Origin.Family)
-                                                      (log: Logger) extends Actor {
+private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family: Origin.Family)
+                                                     (log: Logger) extends Actor {
 
   protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
 
@@ -38,11 +39,10 @@ private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name, family
     override val family = OriginActor.this.family
   }
 
-  override protected def receive = {
+  override def receive = {
     case Read(filter) =>
-      Future {
-        blocking()
-        for (value <- read(filter)) yield {
+      future {
+        for (value <- blocking {read(filter)}) yield {
           log.debug("Read " + value + " from " + name)
           Origin.Value(name, value)
         }

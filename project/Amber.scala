@@ -20,6 +20,7 @@ import sbt.Keys._
 object Info {
 
   val version = "0.2-SNAPSHOT"
+  val scalaVersion = "2.10.0"
 
   val settings: Seq[Setting[_]] = Seq(
     Keys.version := version,
@@ -28,7 +29,7 @@ object Info {
                         "Insitute of Information Systems 184/1, " +
                         "Vienna University of Technology",
     organizationHomepage := Some(url("http://www.infosys.tuwien.ac.at/")),
-    licenses +=("Apache License Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
+    licenses += ("Apache License Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     startYear := Some(2012)
   )
 }
@@ -42,8 +43,9 @@ object Layout {
 
 object Build {
   val settings: Seq[Setting[_]] = Seq(
-    scalaVersion := "2.9.2",
-    scalacOptions ++= Seq("-deprecation", "-unchecked"),
+    scalaVersion := Info.scalaVersion,
+    scalacOptions ++= Seq("-target:jvm-1.6", "-deprecation", "-unchecked", "-feature",
+                          "-Xlog-reflective-calls", "-Ywarn-adapted-args", "-encoding", "utf8"),
     javacOptions ++= Seq("-target", "6", "-source", "6", "-encoding", "utf8")
   )
 }
@@ -73,15 +75,19 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "2.0.5"
+    val version = "2.1.1"
     val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
-    val actor = "com.typesafe.akka" % "akka-actor" % version
-    val testkit = "com.typesafe.akka" % "akka-testkit" % version
+    val actor = "com.typesafe.akka" %% "akka-actor" % version
+    val testkit = "com.typesafe.akka" %% "akka-testkit" % version
   }
 
   object Logback {
     val version = "1.0.9"
     val classic = "ch.qos.logback" % "logback-classic" % version
+  }
+
+  object Scala {
+    val reflect = "org.scala-lang" % "scala-reflect" % Info.scalaVersion
   }
 
   object Scalaz {
@@ -153,7 +159,7 @@ object Amber extends Build {
                Seq(
                  fork in test := true,
                  Keys.resolvers ++= resolvers,
-                 libraryDependencies ++= dependencies
+                 libraryDependencies ++= dependencies :+ Scala.reflect
                )
   )
 }

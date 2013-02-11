@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.language.higherKinds
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 

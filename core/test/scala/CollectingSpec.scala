@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 
 import scala.collection.immutable.Seq
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
@@ -32,11 +34,11 @@ class CollectingSpec extends Spec
                      with origin.FactoryComponent.Default
                      with family.MemberFactoryComponent.Default {
 
-  override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, family, read, manifest), origin) =>
+  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
+    super.mocker[A, B] andThen {case ((name, family, read, tag), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
-      when(origin.returns(anything(), equalTo(manifest))) thenReturn true
+      when(origin.returns(anything(), equalTo(tag))) thenReturn true
       when(origin.read(anything())) thenAnswer {
         args: Array[AnyRef] =>
           (read match {
@@ -46,10 +48,9 @@ class CollectingSpec extends Spec
       }
     }
 
+  class A
+
   trait Fixture {
-
-    class A
-
     val name = random[Origin.Name]
     val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
   }

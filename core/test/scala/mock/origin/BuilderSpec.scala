@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
+import scala.reflect.ClassTag
+
 import org.mockito.Mockito.verify
 
 class BuilderSpec extends Spec
@@ -27,10 +29,10 @@ class BuilderSpec extends Spec
 
     val name = random[Origin.Name]
     val family = random[Origin.Family]
-    val read = mock[Origin.Read.Filtered[_]]("Origin.read")
+    val read = mock[Origin.Read.Filtered[AnyRef]]("Origin.read")
 
     object origin {
-      def build(): Origin[_] = builder.build[Any, Origin.Read.Filtered[Any]](name, family, read)
+      def build(): Origin[_] = builder.build(name, family, read)
     }
   }
 

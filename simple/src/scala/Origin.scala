@@ -18,18 +18,20 @@ package at.ac.tuwien.infosys
 package amber
 package simple
 
+import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
+
 import scalaz.syntax.equal._
 
 import amber.util.{Filter, NotNothing}
 
-private[simple] abstract class Origin[+A : Manifest](override val name: Origin.Name,
-                                                     override val family: Origin.Family)
+private[simple] abstract class Origin[+A : TypeTag](override val name: Origin.Name,
+                                                    override val family: Origin.Family)
     extends amber.Origin[A] with Origin.Meta.Writable.Default {
 
-  override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
+  override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
 
   override lazy val hashCode =
-    41 * (41 * (41 + name.hashCode) + family.hashCode) + manifest[A].hashCode
+    41 * (41 * (41 + name.hashCode) + family.hashCode) + typeTag[A].hashCode
 
   override def equals(other: Any) = other match {
     case that: amber.Origin[_] =>
@@ -42,5 +44,5 @@ private[simple] abstract class Origin[+A : Manifest](override val name: Origin.N
 
   override def canEqual(other: Any) = other.isInstanceOf[amber.Origin[_]]
 
-  override lazy val toString = "simple.Origin[" + manifest[A] + "](" + name + ")"
+  override lazy val toString = "simple.Origin[" + typeOf[A] + "](" + name + ")"
 }

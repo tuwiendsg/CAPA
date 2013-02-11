@@ -20,10 +20,11 @@ package demo
 package temperature
 
 import scala.collection.immutable.Set
+import scala.concurrent.duration._
 
 import scalaz.syntax.std.option._
 
-import util.{ConfigurableComponent, Duration, Logging, Scheduling}
+import util.{ConfigurableComponent, Logging, Scheduling}
 
 trait Demo extends Runnable with Scheduling with ConfigurableComponent {
   this: Logging =>
@@ -34,19 +35,17 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
   trait System extends temperature.System with Logging.Delegator {
 
     override protected lazy val logging = Demo.this
-    override def client: Client = _client
+    override object client extends Client
 
     trait Client extends super.Client with temperature.Client with Logging.Delegator {
       override protected lazy val logging = System.this
     }
-
-    private object _client extends Client
   }
 
   override def configuration: Configuration = _configuration
 
   trait Configuration {
-    val period: Duration = 2 seconds
+    val period: FiniteDuration = 2.seconds
   }
 
   private object _configuration extends Configuration
@@ -60,7 +59,7 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
       for {location <- locations; _ <- 1 to origins} system.Temperature.createCelsius(location)
       println(delimiter)
       every(configuration.period) {() =>
-        println((client.readTemperature() map {_.toString}) | ("No " + client.temperature.name))
+        println(client.readTemperature().fold("No " + client.temperature.name) {_.toString})
         println(delimiter)
       }
       readLine()

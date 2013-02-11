@@ -18,6 +18,11 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.language.higherKinds
+
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
+
 import util.{Events, EventSource, Logger}
 
 trait FactoryComponent {
@@ -27,7 +32,7 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[Origin[_]]
-    def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Unfiltered[A]): Origin[A]
+    def create[A: Manifest : TypeTag](name: Origin.Name)(read: Origin.Read.Unfiltered[A]): Origin[A]
   }
 
   object OriginFactory {
@@ -35,11 +40,11 @@ trait FactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A: Manifest](name: Origin.Name)
-                                               (read: Origin.Read.Unfiltered[A]) = {
-        log.debug("Creating " + name + " origin of type " + manifest[A])
+      abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
+                                                         (read: Origin.Read.Unfiltered[A]) = {
+        log.debug("Creating " + name + " origin of type " + typeOf[A])
         val result = super.create(name)(read)
-        log.info("Created " + name + " origin of type " + manifest[A])
+        log.info("Created " + name + " origin of type " + typeOf[A])
         result
       }
     }
@@ -56,14 +61,15 @@ object FactoryComponent {
 
       override val created = EventSource[Origin[_]]()
 
-      override def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Unfiltered[A]) =
+      override def create[A: Manifest : TypeTag](name: Origin.Name)
+                                                (read: Origin.Read.Unfiltered[A]) =
         builder.build(name, Origin.Family.random(), read)
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Origin.Family,
-                                                               read: B) = {
+      override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                         family: Origin.Family,
+                                                                         read: B) = {
         val result = Default.super.builder.build(name, family, read)
         origin.created.emit(result)
         result

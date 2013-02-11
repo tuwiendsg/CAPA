@@ -19,6 +19,9 @@ package amber
 package simple
 package origin
 
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 import amber.util.{Filter, Logging}
 
 trait BuilderComponent extends amber.origin.BuilderComponent {
@@ -28,9 +31,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Origin.Family,
-                                                             read: B) = {
+    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                       family: Origin.Family,
+                                                                       read: B) = {
       val log = logger.create("amber.simple.Origin(" + name + ")")
       def process(result: Option[A]): Option[Origin.Value[A]] =
         for (value <- result) yield {

@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import scala.reflect.runtime.universe.TypeTag
+
 import amber.util.{Filter, NotNothing}
 
 private[akka] sealed trait Message
@@ -32,11 +34,11 @@ private[akka] object Message {
       case object Name extends Message
       case object Family extends Message
 
-      case class Get[+A: NotNothing : Manifest](name: Origin.MetaInfo.Name) extends Message {
+      case class Get[+A: NotNothing : TypeTag](name: Origin.MetaInfo.Name) extends Message {
         def apply(meta: Origin.Meta.Readable): Option[A] = meta[A](name)
       }
 
-      case class Set[+A: Manifest](name: Origin.MetaInfo.Name, value: A) extends Message {
+      case class Set[+A: TypeTag](name: Origin.MetaInfo.Name, value: A) extends Message {
         def apply(meta: Origin.Meta.Writable) {meta(name) = value}
       }
     }

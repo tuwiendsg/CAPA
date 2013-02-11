@@ -18,7 +18,11 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.language.higherKinds
+
 import scala.collection.immutable.Set
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 import util.MultiTrie
 
@@ -49,9 +53,9 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Origin.Family,
-                                                               read: B) = {
+      override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                         family: Origin.Family,
+                                                                         read: B) = {
         val result = Default.super.builder.build(name, family, read)
         origins.add(result)
         result

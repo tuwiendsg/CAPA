@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.reflect.runtime.universe.typeTag
+
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
@@ -53,9 +55,7 @@ class DefaultFactorySpec extends Spec
           val observer = Events.observe(origin.created)(observe)
 
           try {
-             val result = builder.build[A, Origin.Read.Unfiltered[A]](name,
-                                                                      random[Origin.Family],
-                                                                      read)
+             val result = builder.build(name, random[Origin.Family], read)
             verify(observe).apply(result)
           } finally {
             observer.dispose()

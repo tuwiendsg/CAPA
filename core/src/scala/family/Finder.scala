@@ -18,12 +18,14 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
+import scala.language.higherKinds
+
 import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
 import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
-
-import scalaz.syntax.std.option._
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 trait FinderComponent {
 
@@ -47,7 +49,7 @@ object FinderComponent {
       private val families = new ConcurrentHashMap[Origin.Family, CopyOnWriteArraySet[Origin[_]]]
 
       override def find(family: Origin.Family) =
-        (for {origins <- Option(families.get(family))} yield origins.toSet) | Set.empty
+        Option(families.get(family)).fold(Set.empty[Origin[_]]) {_.toSet}
 
       def add(origin: Origin[_]) {
         val family = origin.family
@@ -58,9 +60,9 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Origin.Family,
-                                                               read: B) = {
+      override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                         family: Origin.Family,
+                                                                         read: B) = {
         val result = Default.super.builder.build(name, family, read)
         families.add(result)
         result

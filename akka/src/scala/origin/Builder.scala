@@ -19,10 +19,11 @@ package amber
 package akka
 package origin
 
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
 
 import _root_.akka.actor.{ActorSystem, Props}
-import _root_.akka.util.Timeout
 
 import amber.util.{ConfigurableComponent, Filter, Logging}
 
@@ -35,9 +36,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Origin.Family,
-                                                             read: B) = {
+    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
+                                                                       family: Origin.Family,
+                                                                       read: B) = {
       val log = logger.create("amber.akka.Origin(" + name + ")")
       OriginRef[A](configuration.system.actorOf(Props(read match {
         case f: Origin.Read.Unfiltered[A] =>
@@ -59,7 +60,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
 object BuilderComponent {
   trait Configuration {
     def system: ActorSystem
-    def timeout: Timeout = Timeout(
+    def timeout: FiniteDuration = FiniteDuration(
       system.settings.config.getMilliseconds("akka.actor.typed.timeout"),
       MILLISECONDS
     )

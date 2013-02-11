@@ -19,18 +19,20 @@ package amber
 package akka
 package util
 
+import scala.reflect.{classTag, ClassTag}
+
 import _root_.akka.actor.Actor
 
 import amber.util.Events
 
-private[akka] class ObserverActor[+A: Manifest](f: Events.Observe[A]) extends Actor {
-  override protected def receive = {
-    case any if manifest[A].erasure.isAssignableFrom(any.getClass) =>
+private[akka] class ObserverActor[+A: ClassTag](f: Events.Observe[A]) extends Actor {
+  override def receive = {
+    case any if classTag[A].runtimeClass.isAssignableFrom(any.getClass) =>
       val a = any.asInstanceOf[A]
       if (f.isDefinedAt(a)) f(a)
   }
 }
 
 private[akka] object ObserverActor {
-  def apply[A: Manifest](f: Events.Observe[A]) = new ObserverActor(f)
+  def apply[A: ClassTag](f: Events.Observe[A]) = new ObserverActor(f)
 }
