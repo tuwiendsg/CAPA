@@ -24,7 +24,7 @@ trait FinderBehaviors {
   val fixture: Fixture
 
   trait Fixture {
-    def create(family: Family): Origin[_ <: AnyRef]
+    def create(family: Family): Origin[_]
   }
 
   object aFinder {

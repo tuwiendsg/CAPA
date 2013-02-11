@@ -33,14 +33,14 @@ trait FactoryComponent extends amber.origin.FactoryComponent
 
   override def beforeEach() {
     origin = mock[OriginFactory]("mock.OriginFactory")
-    val created = amber.mock.util.Events[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]
+    val created = amber.mock.util.Events[(Origin[_], Manifest[_])]
 
     when(origin.created) thenReturn created
     when(origin.create(anything())(anything())(anything())) thenAnswer {
       args: Array[AnyRef] =>
         val name = args(0).asInstanceOf[Property.Name]
-        val read = args(1).asInstanceOf[Origin.Read.Unfiltered[AnyRef]]
-        val manifest = args(2).asInstanceOf[Manifest[AnyRef]]
+        val read = args(1).asInstanceOf[Origin.Read.Unfiltered[_]]
+        val manifest = args(2).asInstanceOf[Manifest[Any]]
 
         val origin = amber.mock.Origin.create(name)(read)(manifest)
         created.emit((origin, manifest))
@@ -51,6 +51,6 @@ trait FactoryComponent extends amber.origin.FactoryComponent
     super.beforeEach()
   }
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
   var origin: OriginFactory = _
 }

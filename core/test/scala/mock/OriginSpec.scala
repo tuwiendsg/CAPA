@@ -26,11 +26,11 @@ class OriginSpec extends Spec with OriginBehaviors {
 
   val fixture = new OriginBehaviors.Fixture {
 
-    override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+    override protected type Origin[+A] = amber.Origin[A]
 
-    override def create[A <: AnyRef : Manifest, B: amber.Origin.Read[A]#apply](name: Property.Name,
-                                                                               family: Family,
-                                                                               read: B) =
+    override def create[A: Manifest, B: amber.Origin.Read[A]#apply](name: Property.Name,
+                                                                    family: Family,
+                                                                    read: B) =
       Origin(name, family, read)
   }
 
@@ -44,7 +44,7 @@ class OriginSpec extends Spec with OriginBehaviors {
 
       "allows verifying invocations of its apply method" in {
         val filter = mock[Filter[amber.Origin.Meta.Readable]]("Filter")
-        val origin = fixture.create[AnyRef]()
+        val origin = fixture.create[Any]()
 
         origin(filter)
 

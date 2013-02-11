@@ -20,12 +20,12 @@ package origin
 
 trait BuilderComponent {
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                               family: Family,
-                                                               read: B): Origin[A]
+    def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                    family: Family,
+                                                    read: B): Origin[A]
   }
 }

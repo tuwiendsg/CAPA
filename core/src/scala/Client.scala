@@ -25,22 +25,20 @@ import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {
 
-  def select[A <: AnyRef : NotNothing : Manifest](query: Query): Stream[Property[A]] =
+  def select[A: NotNothing : Manifest](query: Query): Stream[Property[A]] =
     for {
       origin <- origins.find(query.property).toStream if origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property
 
-  def selectAll[A <: AnyRef : NotNothing : Manifest](query: Query): Stream[A] =
+  def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] =
     for {
       origin <- origins.find(query.property).toStream
       if (query.property === origin.name) && origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property.value
 
-  def selectOne[A <: AnyRef : NotNothing : Manifest](query: Query): Option[A] =
-    selectAll[A](query).headOption
-
+  def selectOne[A: NotNothing : Manifest](query: Query): Option[A] = selectAll[A](query).headOption
   def selectAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
   def selectOne(definition: Entity.Definition): Option[Entity.Instance] =
     selectAll(definition).headOption
@@ -55,13 +53,12 @@ trait Client extends origin.FinderComponent {
 
       type Name = String
 
-      private[amber] case class Type[+A <: AnyRef : NotNothing : Manifest]
-          (name: Field.Name, query: Query) {
+      private[amber] case class Type[+A: NotNothing : Manifest](name: Field.Name, query: Query) {
         def values(): Stream[Value[A]] = selectAll[A](query) map {Value(name, _)}
         override lazy val toString = name + ": " + manifest[A]
       }
 
-      private[amber] case class Value[+A <: AnyRef : Manifest](name: Field.Name, value: A) {
+      private[amber] case class Value[+A: Manifest](name: Field.Name, value: A) {
 
         def as[B : NotNothing : Manifest]: Option[B] =
           if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
@@ -70,24 +67,24 @@ trait Client extends origin.FinderComponent {
       }
 
       private[amber] object Values {
-        def apply(types: Set[Type[_ <: AnyRef]]): Seq[Stream[Value[_ <: AnyRef]]] =
+        def apply(types: Set[Type[_]]): Seq[Stream[Value[_]]] =
           (Vector.empty ++ types) map {_.values()}
       }
     }
 
     case class Definition private[amber](name: Entity.Name,
-                                         fields: HashMap[Field.Name, Field.Type[_ <: AnyRef]],
+                                         fields: HashMap[Field.Name, Field.Type[_]],
                                          filter: Filter[Instance])
         extends Filterable[Instance, Definition] {
 
       override def where(filter: Filter[Instance]) = copy(filter = filter)
 
-      def field[A <: AnyRef : NotNothing : Manifest](name: Field.Name, query: Query): Definition =
+      def field[A: NotNothing : Manifest](name: Field.Name, query: Query): Definition =
         copy(fields = fields.updated(name, Field.Type[A](name, query)))
 
       def instances(): Stream[Instance] = {
-        def cartesianProduct(values: Seq[Stream[Field.Value[_ <: AnyRef]]]) =
-          values.foldRight(Stream(Vector.empty[Field.Value[_ <: AnyRef]])) {
+        def cartesianProduct(values: Seq[Stream[Field.Value[_]]]) =
+          values.foldRight(Stream(Vector.empty[Field.Value[_]])) {
             for {a <- _; bs <- _} yield bs :+ a
           }
 
@@ -97,8 +94,7 @@ trait Client extends origin.FinderComponent {
       override lazy val toString = name + fields.mkString("(", ", " ,")")
     }
 
-    case class Instance private[amber](name: Entity.Name,
-                                       values: Seq[Field.Value[_ <: AnyRef]]) {
+    case class Instance private[amber](name: Entity.Name, values: Seq[Field.Value[_]]) {
 
       private lazy val properties = HashMap.empty ++ (values map {value => (value.name, value)})
       lazy val fields: Set[Field.Name] = Set.empty ++ (values map {_.name})
@@ -110,7 +106,7 @@ trait Client extends origin.FinderComponent {
     }
 
     private[amber] object Instances {
-      def apply(name: Entity.Name, values: Stream[Seq[Field.Value[_ <: AnyRef]]]): Stream[Instance] =
+      def apply(name: Entity.Name, values: Stream[Seq[Field.Value[_]]]): Stream[Instance] =
         values map {Instance(name, _)}
     }
   }

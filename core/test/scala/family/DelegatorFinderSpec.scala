@@ -25,7 +25,7 @@ class DelegatorFinderSpec extends Spec
                           with FinderBehaviors {
 
   override val delegatee = new amber.mock.family.FinderComponent {
-    override type Origin[+A <: AnyRef] = amber.Origin[A]
+    override type Origin[+A] = amber.Origin[A]
   }
 
   override val fixture = new Fixture {

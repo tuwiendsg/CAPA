@@ -34,8 +34,8 @@ class EventsSpec extends Spec with EventsBehaviors {
     behave like anEvents
 
     "allow verifying invocations of its subscribe method" in {
-      val events = fixture.create[AnyRef]()
-      val observe = amber.mock.util.Events.Observe[AnyRef]()
+      val events = fixture.create[Any]()
+      val observe = amber.mock.util.Events.Observe[Any]()
 
       val observer = events.subscribe(observe)
 
@@ -47,8 +47,10 @@ class EventsSpec extends Spec with EventsBehaviors {
     }
 
     "allow verifying invocations of its emit method" in {
-      val event = new AnyRef
-      val events = fixture.create[AnyRef]()
+      class A
+
+      val event = new A
+      val events = fixture.create[A]()
 
       events.emit(event)
 

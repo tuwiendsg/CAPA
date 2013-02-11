@@ -24,7 +24,7 @@ class FinderSpec extends Spec
                  with FinderComponent.WithSuite
                  with amber.family.FinderBehaviors {
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
   override val fixture = new Fixture {
     def create(family: Family) = {
       val origin = amber.mock.Origin(family = family)

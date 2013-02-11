@@ -25,13 +25,13 @@ trait MemberFactoryBehaviors extends OriginBehaviors {
 
   val fixture = new OriginBehaviors.Fixture.WithUnfilteredRead {
 
-    override protected type Origin[+A <: AnyRef] = MemberFactoryBehaviors.this.Origin[A]
+    override protected type Origin[+A] = MemberFactoryBehaviors.this.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
+    override def create[A: NotNothing : Manifest](name: Property.Name, family: Family) =
       (in(family).create[A](name) {_ => None}).value
 
-    override def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]) =
-      in(random[Family]).create[A](random[Property.Name])(read).value
+    override def create[A: Manifest](read: Origin.Read.Filtered[A]) =
+      in(random[Family]).create(random[Property.Name])(read).value
   }
 
   def anOrigin() {

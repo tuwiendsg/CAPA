@@ -25,21 +25,22 @@ import scalaz.syntax.equal._
 import amber.util.{Filter, NotNothing}
 import akka.Message.Request
 
-private[akka] case class OriginRef[+A <: AnyRef : NotNothing : Manifest]
-    (override val name: Property.Name, override val family: Family)
-    (ref: ActorRef) extends amber.Origin[A] {
+private[akka] case class OriginRef[+A: NotNothing : Manifest](override val name: Property.Name,
+                                                              override val family: Family)
+                                                             (ref: ActorRef)
+    extends amber.Origin[A] {
 
   override def apply(filter: Filter[Origin.Meta.Readable]) =
     (ref ? Request.Value(filter)).as[Option[Property[A]]] flatMap {identity}
 
-  override def returns[B <: AnyRef : NotNothing : Manifest] = manifest[A] <:< manifest[B]
+  override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
 
   override val meta = new Origin.Meta.Writable {
 
-    override def apply[B <: AnyRef : NotNothing : Manifest](name: Origin.MetaInfo.Name) =
+    override def apply[B: NotNothing : Manifest](name: Origin.MetaInfo.Name) =
       (ref ? Request.MetaInfo.Get[B](name)).as[Option[B]] flatMap {identity}
 
-    override def update[B <: AnyRef : Manifest](name: Origin.MetaInfo.Name, value: B) {
+    override def update[B: Manifest](name: Origin.MetaInfo.Name, value: B) {
       ref ! Request.MetaInfo.Set(name, value)
     }
   }

@@ -26,7 +26,7 @@ import scalaz.syntax.std.option._
 
 import util.{Filter, Filterable, NotNothing}
 
-case class Property[+A <: AnyRef : Manifest](name: Property.Name, value: A) {
+case class Property[+A: Manifest](name: Property.Name, value: A) {
 
   def as[B: NotNothing : Manifest]: Option[B] =
     if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None

@@ -28,7 +28,7 @@ class ProcessingSpec extends Spec
                      with mock.family.MemberFactoryComponent
                      with Processing {
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
 
   override def beforeEach() {
     super.beforeEach()

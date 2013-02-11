@@ -21,8 +21,6 @@ package origin
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
-import scalaz.std.option._
-
 import util.Events.observe
 
 class DefaultFactorySpec extends Spec
@@ -35,7 +33,7 @@ class DefaultFactorySpec extends Spec
 
     "invoke the builder" in {
       val name = random[Property.Name]
-      val read = () => none[AnyRef]
+      val read = () => None
 
       origin.create(name)(read)
 
@@ -43,7 +41,7 @@ class DefaultFactorySpec extends Spec
     }
 
     "return the result of the builder" in {
-      val result = origin.create(random[Property.Name]) {() => none[AnyRef]}
+      val result = origin.create(random[Property.Name]) {() => None}
 
       result should be(built.last)
     }

@@ -23,11 +23,11 @@ trait BuilderBehaviors extends OriginBehaviors {
 
   val fixture = new OriginBehaviors.Fixture {
 
-    protected type Origin[+A <: AnyRef] = BuilderBehaviors.this.Origin[A]
+    protected type Origin[+A] = BuilderBehaviors.this.Origin[A]
 
-    override def create[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                         family: Family,
-                                                                         read: B) =
+    override def create[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                              family: Family,
+                                                              read: B) =
       builder.build(name, family, read)
   }
 

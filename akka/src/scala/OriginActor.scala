@@ -24,7 +24,7 @@ import _root_.akka.actor.Actor.spawn
 import amber.util.{Filter, Logger}
 import akka.Message.Request
 
-private[akka] abstract class OriginActor[+A <: AnyRef : Manifest](name: Property.Name)(log: Logger)
+private[akka] abstract class OriginActor[+A: Manifest](name: Property.Name)(log: Logger)
     extends Actor {
 
   protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]

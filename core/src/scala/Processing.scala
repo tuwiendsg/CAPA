@@ -31,7 +31,7 @@ trait Processing {
 
     private var observers = Vector.empty[Observer]
 
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
+    def apply[A: Manifest, B: Manifest]
         (f: PartialFunction[Property.Name, (Property.Name, A => B)]): Observer = {
       val observer = observe(origin.created) {
         case (o, _) if o.returns[A] =>
@@ -58,17 +58,15 @@ trait Processing {
   }
 
   object map {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](input: Property.Name,
-                                                              output: Property.Name)
-                                                             (f: A => B): Observer =
+    def apply[A: Manifest, B: Manifest](input: Property.Name, output: Property.Name)
+                                       (f: A => B): Observer =
       process {
         case name if input === name => output -> f
       }
   }
 
   object operation {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](operation: Operation.Name)
-                                                             (f: A => B): Observer =
+    def apply[A: Manifest, B: Manifest](operation: Operation.Name)(f: A => B): Observer =
       process {
         case name => (name / operation) -> f
       }
@@ -80,28 +78,25 @@ object Processing {
     trait Conversions {
       this: Processing =>
 
-      import java.lang.{Double, Integer, Long}
-
-      process[Integer, Long] {case name => name -> {x => x.toLong}}
-      process[Integer, Double] {case name => name -> {x => x.toDouble}}
+      process[Int, Long] {case name => name -> {x => x.toLong}}
+      process[Int, Double] {case name => name -> {x => x.toDouble}}
       process[Long, Double] {case name => name -> {x => x.toDouble}}
     }
 
     trait Operations {
       this: Processing =>
 
-      import java.lang.{Double, Integer, Long}
       import scala.math.sqrt
 
-      operation[Seq[Integer], Integer]("min") {xs => xs.min}
-      operation[Seq[Integer], Integer]("max") {xs => xs.max}
-      operation[Seq[Integer], Long]("sum") {
+      operation[Seq[Int], Int]("min") {xs => xs.min}
+      operation[Seq[Int], Int]("max") {xs => xs.max}
+      operation[Seq[Int], Long]("sum") {
         xs => xs map {_.longValue} reduceLeft {_ + _}
       }
-      operation[Seq[Integer], Double]("avg") {
+      operation[Seq[Int], Double]("avg") {
         xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
       }
-      operation[Seq[Integer], Double]("stddev") {
+      operation[Seq[Int], Double]("stddev") {
         xs =>
           val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {

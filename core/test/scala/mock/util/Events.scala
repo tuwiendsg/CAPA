@@ -57,7 +57,6 @@ object Events extends Mocking {
   }
 
   object Observe {
-    def apply[A: Manifest]() =
-      mock[Observe[A]]("mock.Events.Observe")
+    def apply[A: Manifest]() = mock[Observe[A]]("mock.Events.Observe")
   }
 }

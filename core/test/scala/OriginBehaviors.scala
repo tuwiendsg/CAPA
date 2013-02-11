@@ -30,7 +30,7 @@ trait OriginBehaviors {
     def withName(fixture: OriginBehaviors.Fixture.WithNoRead) {
       "has the specified name" in {
         val name = random[Property.Name]
-        val origin = fixture.create[AnyRef](name = name)
+        val origin = fixture.create[Any](name = name)
 
         origin.name should be(name)
       }
@@ -39,7 +39,7 @@ trait OriginBehaviors {
     def withFamily(fixture: OriginBehaviors.Fixture.WithNoRead) {
       "is in the specified family" in {
         val family = random[Family]
-        val origin = fixture.create[AnyRef](family = family)
+        val origin = fixture.create[Any](family = family)
 
         origin.family should be(family)
       }
@@ -48,9 +48,9 @@ trait OriginBehaviors {
     def withMetaInfo(fixture: OriginBehaviors.Fixture.WithNoRead) {
       "if a meta value was never assigned" should {
         "return None " in {
-          val origin = fixture.create[AnyRef]()
+          val origin = fixture.create[Any]()
 
-          origin.meta[AnyRef](random[Origin.MetaInfo.Name]) should not be('defined)
+          origin.meta[Any](random[Origin.MetaInfo.Name]) should not be('defined)
         }
       }
 
@@ -60,7 +60,7 @@ trait OriginBehaviors {
             class A
             val name = random[Origin.MetaInfo.Name]
             val value = new A
-            val origin = fixture.create[AnyRef]()
+            val origin = fixture.create[Any]()
 
             origin.meta(name) = value
 
@@ -72,7 +72,7 @@ trait OriginBehaviors {
             class B extends A
             val name = random[Origin.MetaInfo.Name]
             val value = new B
-            val origin = fixture.create[AnyRef]()
+            val origin = fixture.create[Any]()
 
             origin.meta(name) = value
 
@@ -86,7 +86,7 @@ trait OriginBehaviors {
             class B
             val name = random[Origin.MetaInfo.Name]
             val value = new A
-            val origin = fixture.create[AnyRef]()
+            val origin = fixture.create[Any]()
 
             origin.meta(name) = value
 
@@ -98,7 +98,7 @@ trait OriginBehaviors {
             class B extends A
             val name = random[Origin.MetaInfo.Name]
             val value = new A
-            val origin = fixture.create[AnyRef]()
+            val origin = fixture.create[Any]()
 
             origin.meta(name) = value
 
@@ -144,7 +144,7 @@ trait OriginBehaviors {
     def withFilteredRead(fixture: OriginBehaviors.Fixture.WithFilteredRead) {
       "invokes the specified filter" in {
         val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        val origin = fixture.create[AnyRef] {() => None}
+        val origin = fixture.create {() => None}
 
         origin(filter)
 
@@ -156,7 +156,7 @@ trait OriginBehaviors {
         when(filter.apply(anything())) thenReturn true
 
         "use the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
+          val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
           when(read.apply()) thenReturn None
           val origin = fixture.create(read)
 
@@ -186,7 +186,7 @@ trait OriginBehaviors {
 
         "if reading is unsuccessful" should {
           "return None" in {
-            val origin = fixture.create[AnyRef] {() => None}
+            val origin = fixture.create {() => None}
 
             origin(filter) should not be('defined)
           }
@@ -198,7 +198,7 @@ trait OriginBehaviors {
         when(filter.apply(anything())) thenReturn false
 
         "not invoke the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
+          val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
           val origin = fixture.create(read)
 
           origin(filter)
@@ -207,7 +207,7 @@ trait OriginBehaviors {
         }
 
         "return None" in {
-          val origin = fixture.create[AnyRef]()
+          val origin = fixture.create[Any]()
 
           origin(filter) should not be('defined)
         }
@@ -218,7 +218,7 @@ trait OriginBehaviors {
       val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
 
       "uses the specified read function" in {
-        val read = mock[Origin.Read.Filtered[AnyRef]]("Origin.read")
+        val read = mock[Origin.Read.Filtered[_]]("Origin.read")
         when(read.apply(anything())) thenReturn None
         val origin = fixture.create(read)
 
@@ -248,7 +248,7 @@ trait OriginBehaviors {
 
       "if reading is unsuccessful" should {
         "return None" in {
-          val origin = fixture.create[AnyRef] {(_: Filter[Origin.Meta.Readable]) => None}
+          val origin = fixture.create {(_: Filter[Origin.Meta.Readable]) => None}
 
           origin(filter) should not be('defined)
         }
@@ -273,34 +273,33 @@ object OriginBehaviors {
 
     trait WithNoRead extends Randoms {
 
-      protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+      protected type Origin[+A] <: amber.Origin[A]
 
-      def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name = random[Property.Name],
-                                                      family: Family = random[Family]): Origin[A]
+      def create[A: NotNothing : Manifest](name: Property.Name = random[Property.Name],
+                                           family: Family = random[Family]): Origin[A]
     }
 
     trait WithFilteredRead extends WithNoRead {
-      def create[A <: AnyRef : Manifest](read: Origin.Read.Unfiltered[A]): Origin[A]
+      def create[A: Manifest](read: Origin.Read.Unfiltered[A]): Origin[A]
     }
 
     trait WithUnfilteredRead extends WithNoRead {
-      def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]): Origin[A]
+      def create[A: Manifest](read: Origin.Read.Filtered[A]): Origin[A]
     }
   }
 
   trait Fixture extends Fixture.WithFilteredRead with Fixture.WithUnfilteredRead {
 
-    def create[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                family: Family,
-                                                                read: B): Origin[A]
+    def create[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                     family: Family, read: B): Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
+    override def create[A: NotNothing : Manifest](name: Property.Name, family: Family) =
       create[A, Origin.Read.Unfiltered[A]](name, family, {() => None})
 
-    override def create[A <: AnyRef : Manifest](read: Origin.Read.Unfiltered[A]) =
+    override def create[A: Manifest](read: Origin.Read.Unfiltered[A]) =
       create(random[Property.Name], random[Family], read)
 
-    override def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]) =
+    override def create[A: Manifest](read: Origin.Read.Filtered[A]) =
       create(random[Property.Name], random[Family], read)
   }
 }

@@ -31,7 +31,7 @@ class CollectingSpec extends Spec
                      with mock.family.MemberFactoryComponent
                      with Collecting {
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
 
   trait Fixture {
 

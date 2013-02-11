@@ -19,8 +19,6 @@ package amber
 package demo
 package temperature
 
-import java.lang.{Double, Integer}
-
 import scala.util.Random
 
 trait System extends amber.System {
@@ -33,8 +31,8 @@ trait System extends amber.System {
     map[Double, Double]("temperature/fahrenheit", "temperature/celsius") {x => (x - 32) * 5 / 9}
     map[Double, Double]("temperature/fahrenheit", "temperature/kelvin") {x => (x + 459.67) * 5 / 9}
 
-    def createCelsius(location: String): amber.Origin[Integer] = {
-      val temperature = origin.create[Integer]("temperature/celsius") {
+    def createCelsius(location: String): amber.Origin[Int] = {
+      val temperature = origin.create("temperature/celsius") {
         () => Some(Random.nextInt(55) - 15)
       }
       temperature.meta("location") = location

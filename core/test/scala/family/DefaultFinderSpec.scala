@@ -24,8 +24,7 @@ class DefaultFinderSpec extends Spec
                         with FinderBehaviors {
 
   override val fixture = new Fixture {
-    override def create(family: Family) =
-      builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](random[Property.Name], family, () => None)
+    override def create(family: Family) = builder.build(random[Property.Name], family, () => None)
   }
 
   "Default.FamilyFinder" should {
@@ -33,7 +32,7 @@ class DefaultFinderSpec extends Spec
 
     "add an origin" when {
       "the origin is built" in {
-        val origin = builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](random[Property.Name], random[Family], () => None)
+        val origin = builder.build[Any, Origin.Read.Unfiltered[Any]](random[Property.Name], random[Family], () => None)
 
         families.all() should contain(origin)
       }

@@ -55,7 +55,7 @@ trait System extends akka.origin.BuilderComponent
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
     @transient override protected val log = logger.create("amber.akka.origin.Factory")
-    override val created = EventSource[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]()
+    override val created = EventSource[(Origin[_], Manifest[_])]()
   }
 
   protected trait OriginFinder extends super.OriginFinder {

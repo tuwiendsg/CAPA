@@ -35,8 +35,8 @@ trait Collecting {
     private[amber] val family = Family.random()
     private var observer: Option[Observer] = None
 
-    def apply[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name, filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
+    def apply[A: NotNothing : Manifest](name: Property.Name,
+                                        filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
       for {
         origin <- origins.find(name).toStream
         if (name === origin.name) && origin.returns(notNothing, manifest[A])
@@ -52,9 +52,9 @@ trait Collecting {
                 if (family =/= o.family) {
                   in(family).create(o.name) {
                     filter =>
-                      val result: Seq[Property[AnyRef]] = apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[AnyRef]])
+                      val result: Seq[Property[Any]] = apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[Any]])
                       if (result.isEmpty) None else Some(result map {_.value})
-                  }(Manifest.classType(classOf[Seq[AnyRef]], manifest))
+                  }(Manifest.classType(classOf[Seq[Any]], manifest))
                 }
             }
           }

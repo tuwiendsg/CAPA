@@ -33,13 +33,13 @@ class BuilderSpec extends Spec
         val family = random[Family]
         val read = () => None
 
-        builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](name, family, read)
+        builder.build(name, family, read)
 
         verify(build).apply(name, family, read)
       }
 
       "save the origin that was last built" in {
-        val origin = builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](random[Property.Name], random[Family], () => None)
+        val origin = builder.build(random[Property.Name], random[Family], () => None)
 
         built.last should be(origin)
       }

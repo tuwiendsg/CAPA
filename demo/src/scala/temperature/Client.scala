@@ -19,8 +19,6 @@ package amber
 package demo
 package temperature
 
-import java.lang.Double
-
 import scalaz.std.string._
 import scalaz.syntax.equal._
 

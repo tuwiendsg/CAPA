@@ -27,12 +27,12 @@ import scalaz.syntax.std.option._
 
 trait FinderComponent {
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {
-    def all(): Set[Origin[_ <: AnyRef]]
-    def find(name: Family): Set[Origin[_ <: AnyRef]]
+    def all(): Set[Origin[_]]
+    def find(name: Family): Set[Origin[_]]
   }
 }
 
@@ -45,10 +45,10 @@ object FinderComponent {
 
     protected trait FamilyFinder extends super.FamilyFinder {
 
-      private val families = new ConcurrentHashMap[Family, CopyOnWriteArraySet[Origin[_ <: AnyRef]]]
+      private val families = new ConcurrentHashMap[Family, CopyOnWriteArraySet[Origin[_]]]
 
       override def all() = {
-        val builder = Set.newBuilder[Origin[_ <: AnyRef]]
+        val builder = Set.newBuilder[Origin[_]]
         for ((_, family) <- families) builder ++= family
         builder.result()
       }
@@ -56,18 +56,18 @@ object FinderComponent {
       override def find(family: Family) =
         (for {origins <- Option(families.get(family))} yield origins.toSet) | Set.empty
 
-      def add(origin: Origin[_ <: AnyRef]) {
+      def add(origin: Origin[_]) {
         val family = origin.family
         if (families get family eq null)
-          families.putIfAbsent(family, new CopyOnWriteArraySet[Origin[_ <: AnyRef]]())
+          families.putIfAbsent(family, new CopyOnWriteArraySet[Origin[_]]())
         families.get(family).add(origin)
       }
     }
 
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                          family: Family,
-                                                                          read: B) = {
+      override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                               family: Family,
+                                                               read: B) = {
         val result = underlying.build(name, family, read)
         families.add(result)
         result
@@ -81,7 +81,7 @@ object FinderComponent {
 
     protected val delegatee: FinderComponent
 
-    override protected type Origin[+A <: AnyRef] = delegatee.Origin[A]
+    override protected type Origin[+A] = delegatee.Origin[A]
     override protected object families extends FamilyFinder {
       override def all() = delegatee.families.all()
       override def find(name: Family) = delegatee.families.find(name)

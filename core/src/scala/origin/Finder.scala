@@ -24,12 +24,12 @@ import util.MultiTrie
 
 trait FinderComponent {
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def origins: OriginFinder
 
   protected trait OriginFinder {
-    def all(): Set[Origin[_ <: AnyRef]]
-    def find(name: Property.Name): Set[Origin[_ <: AnyRef]]
+    def all(): Set[Origin[_]]
+    def find(name: Property.Name): Set[Origin[_]]
   }
 }
 
@@ -41,16 +41,16 @@ object FinderComponent {
     override protected def origins: OriginFinder = _origins
 
     protected trait OriginFinder extends super.OriginFinder {
-      private val trie = MultiTrie[Property.Name, Origin[_ <: AnyRef]]()
+      private val trie = MultiTrie[Property.Name, Origin[_]]()
       override def all() = trie(None)
       override def find(name: Property.Name) = trie(Some(name))
-      def add(origin: Origin[_ <: AnyRef]) {trie += (Some(origin.name), origin)}
+      def add(origin: Origin[_]) {trie += (Some(origin.name), origin)}
     }
 
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                          family: Family,
-                                                                          read: B) = {
+      override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                               family: Family,
+                                                               read: B) = {
         val result = underlying.build(name, family, read)
         origins.add(result)
         result
@@ -64,7 +64,7 @@ object FinderComponent {
 
     protected val delegatee: FinderComponent
 
-    override protected type Origin[+A <: AnyRef] = delegatee.Origin[A]
+    override protected type Origin[+A] = delegatee.Origin[A]
     override protected object origins extends OriginFinder {
       override def all() = delegatee.origins.all()
       override def find(name: Property.Name) = delegatee.origins.find(name)

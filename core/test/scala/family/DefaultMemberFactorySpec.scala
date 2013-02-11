@@ -33,7 +33,7 @@ class DefaultMemberFactorySpec extends Spec
     "invoke the builder" in {
       val name = random[Property.Name]
       val family = random[Family]
-      val read: Origin.Read.Filtered[AnyRef] = _ => None
+      val read: Origin.Read.Filtered[_] = _ => None
 
       in(family).create(name)(read)
 
@@ -41,7 +41,7 @@ class DefaultMemberFactorySpec extends Spec
     }
 
     "return the result of the build method" in {
-      val result = in(random[Family]).create[AnyRef](random[Property.Name])(_ => None).value
+      val result = in(random[Family]).create(random[Property.Name])(_ => None).value
 
       result should be(built.last)
     }

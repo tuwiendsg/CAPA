@@ -34,7 +34,7 @@ trait MemberFactoryComponent extends amber.family.MemberFactoryComponent
                              with Mocking {
   this: Suite =>
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
 
   private val factories = new ConcurrentHashMap[Family, MemberFactory]
   override def in(family: Family) = {
@@ -43,8 +43,8 @@ trait MemberFactoryComponent extends amber.family.MemberFactoryComponent
       when(factory.create(anything())(anything())(anything())) thenAnswer {
         args: Array[AnyRef] =>
           val name = args(0).asInstanceOf[Property.Name]
-          val read = args(1).asInstanceOf[Origin.Read.Filtered[AnyRef]]
-          val manifest = args(2).asInstanceOf[Manifest[AnyRef]]
+          val read = args(1).asInstanceOf[Origin.Read.Filtered[_]]
+          val manifest = args(2).asInstanceOf[Manifest[Any]]
 
           family.synchronized {
             val exists = families.find(family) exists {

@@ -21,44 +21,44 @@ import java.util.concurrent.ConcurrentHashMap
 
 import util.{Filter, NotNothing, Union}
 
-trait Origin[+A <: AnyRef] extends Equals {
+trait Origin[+A] extends Equals {
 
   def name: Property.Name
   def family: Family
   def apply(filter: Filter[Origin.Meta.Readable]): Option[Property[A]]
-  def returns[B <: AnyRef : NotNothing : Manifest]: Boolean
+  def returns[B: NotNothing : Manifest]: Boolean
 
   val meta = Origin.Meta.Writable()
 }
 
 object Origin {
 
-  type Read[A <: AnyRef] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
+  type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
 
   object Read {
-    type Unfiltered[+A <: AnyRef] = () => Option[A]
-    type Filtered[+A <: AnyRef] = Filter[Meta.Readable] => Option[A]
+    type Unfiltered[+A] = () => Option[A]
+    type Filtered[+A] = Filter[Meta.Readable] => Option[A]
   }
 
   object Meta {
 
     trait Readable {
-      def apply[A <: AnyRef : NotNothing : Manifest](name: MetaInfo.Name): Option[A]
+      def apply[A: NotNothing : Manifest](name: MetaInfo.Name): Option[A]
     }
 
     trait Writable extends Readable {
-      def update[A <: AnyRef : Manifest](name: MetaInfo.Name, value: A)
+      def update[A: Manifest](name: MetaInfo.Name, value: A)
     }
 
     object Writable {
       def apply(): Writable = new Writable {
 
-        private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_ <: AnyRef]]
+        private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
 
-        override def apply[A <: AnyRef : NotNothing : Manifest](name: MetaInfo.Name) =
+        override def apply[A: NotNothing : Manifest](name: MetaInfo.Name) =
           Option(values.get(name)) flatMap {_.as[A]}
 
-        override def update[A <: AnyRef : Manifest](name: MetaInfo.Name, value: A) {
+        override def update[A: Manifest](name: MetaInfo.Name, value: A) {
           values.put(name, MetaInfo.Value(name, value))
         }
       }
@@ -69,9 +69,8 @@ object Origin {
 
     type Name = String
 
-    private[amber] case class Value[+A <: AnyRef : Manifest](name: MetaInfo.Name,
-                                                             private val value: A) {
-      def as[B <: AnyRef : NotNothing : Manifest]: Option[B] =
+    private[amber] case class Value[+A: Manifest](name: MetaInfo.Name, private val value: A) {
+      def as[B: NotNothing : Manifest]: Option[B] =
         if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
     }
   }

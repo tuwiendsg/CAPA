@@ -38,6 +38,6 @@ trait System extends origin.FinderComponent
   }
 
   trait Client extends amber.Client {
-    protected type Origin[+A <: AnyRef] = System.this.Origin[A]
+    protected type Origin[+A] = System.this.Origin[A]
   }
 }

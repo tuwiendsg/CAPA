@@ -27,9 +27,9 @@ import amber.util.{Filter, Mocking, Randoms}
 
 object Origin extends Mocking with Randoms {
 
-  def apply[A <: AnyRef : Manifest, B: amber.Origin.Read[A]#apply](name: Property.Name,
-                                                                   family: Family,
-                                                                   read: B): amber.Origin[A] = {
+  def apply[A: Manifest, B: amber.Origin.Read[A]#apply](name: Property.Name,
+                                                        family: Family,
+                                                        read: B): amber.Origin[A] = {
     val origin = mock[amber.Origin[A]]("mock.Origin[" + manifest[A] + "]")
     val meta = amber.Origin.Meta.Writable()
 
@@ -37,7 +37,7 @@ object Origin extends Mocking with Randoms {
     when(origin.family) thenReturn family
     when(origin.meta) thenReturn meta
     when(origin.returns(anything(), anything())) thenAnswer {
-      args: Array[AnyRef] => manifest[A] <:< args(1).asInstanceOf[Manifest[_ <: AnyRef]]
+      args: Array[AnyRef] => manifest[A] <:< args(1).asInstanceOf[Manifest[_]]
     }
     when(origin.apply(anything())) thenAnswer {
       args: Array[AnyRef] =>
@@ -53,14 +53,13 @@ object Origin extends Mocking with Randoms {
   }
 
   def apply(name: Property.Name = random[Property.Name],
-            family: Family = random[Family]): amber.Origin[AnyRef] =
-    apply[AnyRef, amber.Origin.Read.Unfiltered[AnyRef]](name, family, () => None)
+            family: Family = random[Family]): amber.Origin[_] = apply(name, family, () => None)
 
-  def create[A <: AnyRef : Manifest](name: Property.Name)
-                                    (read: amber.Origin.Read.Unfiltered[A]): amber.Origin[A] =
+  def create[A: Manifest](name: Property.Name)
+                         (read: amber.Origin.Read.Unfiltered[A]): amber.Origin[A] =
     apply(name, random[Family], read)
 
-  def create[A <: AnyRef : Manifest](name: Property.Name, family: Family)
-                                    (read: amber.Origin.Read.Filtered[A]): amber.Origin[A] =
+  def create[A: Manifest](name: Property.Name, family: Family)
+                         (read: amber.Origin.Read.Filtered[A]): amber.Origin[A] =
     apply(name, family, read)
 }

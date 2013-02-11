@@ -26,13 +26,13 @@ import amber.util.{Filter, Logging}
 trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
 
-  override protected type Origin[+A <: AnyRef] = OriginRef[A]
+  override protected type Origin[+A] = OriginRef[A]
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                        family: Family,
-                                                                        read: B) = {
+    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                             family: Family,
+                                                             read: B) = {
       val log = logger.create("amber.akka.Origin(" + name + ")")
       val origin = actorOf(
         read match {

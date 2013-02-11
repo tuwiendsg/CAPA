@@ -34,14 +34,14 @@ trait BuilderComponent extends amber.origin.BuilderComponent
     super.beforeEach()
   }
 
-  var built: List[Origin[AnyRef]] = _
+  var built: List[Origin[_]] = _
   var build: (Property.Name, Family, Any) => Unit = _
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                        family: Family,
-                                                                        read: B): Origin[A] = {
+    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                             family: Family,
+                                                             read: B) = {
       val origin = amber.mock.Origin(name, family, read)
 
       built = built :+ origin
