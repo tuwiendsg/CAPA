@@ -21,7 +21,7 @@ package akka
 import _root_.akka.actor.Actor
 import _root_.akka.actor.Actor.spawn
 
-import amber.util.{Filter, Logger, NotNothing}
+import amber.util.{Filter, Logger}
 import akka.Message.Request
 
 private[akka] abstract class OriginActor[+A <: AnyRef : Manifest](name: Property.Name)(log: Logger)

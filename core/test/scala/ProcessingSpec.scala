@@ -289,7 +289,7 @@ class ProcessingSpec extends Spec
           map(input, output)(mapper)
           val underlying = origin.create(different(input))(read)
 
-          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything(), anything())
+          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything())
         }
       }
     }
@@ -302,7 +302,7 @@ class ProcessingSpec extends Spec
           map(input, output)(mapper)
           val underlying = origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
-          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything(), anything())
+          verify(in(underlying.family), never()).create(equalTo(output))(anything())(anything())
         }
       }
     }
@@ -417,7 +417,7 @@ class ProcessingSpec extends Spec
           operation(output)(function)
           val underlying = origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
 
-          verify(in(underlying.family), never()).create(equalTo(input / output))(anything())(anything(), anything())
+          verify(in(underlying.family), never()).create(equalTo(input / output))(anything())(anything())
         }
       }
     }

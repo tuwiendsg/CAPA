@@ -25,8 +25,6 @@ import scala.collection.JavaConversions._
 
 import scalaz.syntax.std.option._
 
-import util.NotNothing
-
 trait FinderComponent {
 
   protected type Origin[+A <: AnyRef] <: amber.Origin[A]
@@ -67,8 +65,9 @@ object FinderComponent {
     }
 
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-          (name: Property.Name, family: Family, read: B) = {
+      override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                          family: Family,
+                                                                          read: B) = {
         val result = underlying.build(name, family, read)
         families.add(result)
         result

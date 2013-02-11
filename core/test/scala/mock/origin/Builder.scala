@@ -23,8 +23,6 @@ import scala.collection.immutable.List
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatest.mock.MockitoSugar.mock
 
-import util.NotNothing
-
 trait BuilderComponent extends amber.origin.BuilderComponent
                        with BeforeAndAfterEach {
   this: Suite =>
@@ -41,8 +39,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
   override protected type Origin[+A <: AnyRef] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B): Origin[A] = {
+    override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                        family: Family,
+                                                                        read: B): Origin[A] = {
       val origin = amber.mock.Origin(name, family, read)
 
       built = built :+ origin

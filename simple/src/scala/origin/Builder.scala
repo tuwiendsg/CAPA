@@ -19,7 +19,7 @@ package amber
 package simple
 package origin
 
-import amber.util.{Filter, Logging, NotNothing}
+import amber.util.{Filter, Logging}
 
 trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
@@ -28,8 +28,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B) = {
+    override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                        family: Family,
+                                                                        read: B) = {
       val log = logger.create("amber.simple.Origin(" + name + ")")
       read match {
         case f: Origin.Read.Unfiltered[A] =>

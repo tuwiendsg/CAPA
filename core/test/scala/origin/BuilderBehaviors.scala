@@ -18,8 +18,6 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import util.NotNothing
-
 trait BuilderBehaviors extends OriginBehaviors {
   this: Spec with BuilderComponent =>
 
@@ -27,8 +25,9 @@ trait BuilderBehaviors extends OriginBehaviors {
 
     protected type Origin[+A <: AnyRef] = BuilderBehaviors.this.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B) =
+    override def create[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                         family: Family,
+                                                                         read: B) =
       builder.build(name, family, read)
   }
 

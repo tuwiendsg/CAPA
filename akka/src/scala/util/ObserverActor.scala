@@ -21,9 +21,9 @@ package util
 
 import _root_.akka.actor.Actor
 
-import amber.util.{Events, NotNothing}
+import amber.util.Events
 
-private[akka] class ObserverActor[+A: NotNothing : Manifest](f: Events.Observe[A]) extends Actor {
+private[akka] class ObserverActor[+A: Manifest](f: Events.Observe[A]) extends Actor {
   override protected def receive = {
     case any if manifest[A].erasure.isAssignableFrom(any.getClass) =>
       val a = any.asInstanceOf[A]
@@ -32,5 +32,5 @@ private[akka] class ObserverActor[+A: NotNothing : Manifest](f: Events.Observe[A
 }
 
 private[akka] object ObserverActor {
-  def apply[A: NotNothing : Manifest](f: Events.Observe[A]) = new ObserverActor(f)
+  def apply[A: Manifest](f: Events.Observe[A]) = new ObserverActor(f)
 }

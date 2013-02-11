@@ -55,7 +55,8 @@ trait Client extends origin.FinderComponent {
 
       type Name = String
 
-      private[amber] case class Type[+A <: AnyRef : Manifest](name: Field.Name, query: Query) {
+      private[amber] case class Type[+A <: AnyRef : NotNothing : Manifest]
+          (name: Field.Name, query: Query) {
         def values(): Stream[Value[A]] = selectAll[A](query) map {Value(name, _)}
         override lazy val toString = name + ": " + manifest[A]
       }

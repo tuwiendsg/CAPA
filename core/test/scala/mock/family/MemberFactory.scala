@@ -40,11 +40,11 @@ trait MemberFactoryComponent extends amber.family.MemberFactoryComponent
   override def in(family: Family) = {
     if (!factories.containsKey(family)) {
       val factory = mock[MemberFactory]("mock.MemberFactory(" + family + ")")
-      when(factory.create(anything())(anything())(anything(), anything())) thenAnswer {
+      when(factory.create(anything())(anything())(anything())) thenAnswer {
         args: Array[AnyRef] =>
           val name = args(0).asInstanceOf[Property.Name]
           val read = args(1).asInstanceOf[Origin.Read.Filtered[AnyRef]]
-          val manifest = args(3).asInstanceOf[Manifest[AnyRef]]
+          val manifest = args(2).asInstanceOf[Manifest[AnyRef]]
 
           family.synchronized {
             val exists = families.find(family) exists {
@@ -52,7 +52,7 @@ trait MemberFactoryComponent extends amber.family.MemberFactoryComponent
             }
             if (exists) None
             else {
-              val origin = amber.mock.Origin.create(name, family)(read)(notNothing, manifest)
+              val origin = amber.mock.Origin.create(name, family)(read)(manifest)
               FamilyFinder.add(origin)
               Some(origin)
             }

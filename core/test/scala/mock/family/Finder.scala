@@ -29,7 +29,6 @@ import org.mockito.Mockito.when
 import org.scalatest.mock.MockitoSugar.mock
 
 import amber.util.Mocking
-import amber.util.NotNothing.notNothing
 
 trait FinderComponent extends amber.family.FinderComponent
                       with Mocking {

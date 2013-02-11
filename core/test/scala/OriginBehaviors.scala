@@ -280,27 +280,27 @@ object OriginBehaviors {
     }
 
     trait WithFilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]): Origin[A]
+      def create[A <: AnyRef : Manifest](read: Origin.Read.Unfiltered[A]): Origin[A]
     }
 
     trait WithUnfilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Filtered[A]): Origin[A]
+      def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]): Origin[A]
     }
   }
 
   trait Fixture extends Fixture.WithFilteredRead with Fixture.WithUnfilteredRead {
 
-    def create[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
-                                                                             family: Family,
-                                                                             read: B): Origin[A]
+    def create[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                family: Family,
+                                                                read: B): Origin[A]
 
     override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
       create[A, Origin.Read.Unfiltered[A]](name, family, {() => None})
 
-    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]) =
+    override def create[A <: AnyRef : Manifest](read: Origin.Read.Unfiltered[A]) =
       create(random[Property.Name], random[Family], read)
 
-    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Filtered[A]) =
+    override def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]) =
       create(random[Property.Name], random[Family], read)
   }
 }

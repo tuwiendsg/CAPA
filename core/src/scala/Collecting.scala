@@ -54,7 +54,7 @@ trait Collecting {
                     filter =>
                       val result: Seq[Property[AnyRef]] = apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[AnyRef]])
                       if (result.isEmpty) None else Some(result map {_.value})
-                  }(notNothing, Manifest.classType(classOf[Seq[AnyRef]], manifest))
+                  }(Manifest.classType(classOf[Seq[AnyRef]], manifest))
                 }
             }
           }

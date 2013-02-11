@@ -20,7 +20,7 @@ package family
 
 import scalaz.syntax.equal._
 
-import util.{Logger, NotNothing}
+import util.Logger
 
 trait MemberFactoryComponent {
 
@@ -28,8 +28,8 @@ trait MemberFactoryComponent {
   protected def in(family: Family): MemberFactory
 
   protected trait MemberFactory {
-    def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name)(read: Origin.Read.Filtered[A]): Option[Origin[A]]
+    def create[A <: AnyRef : Manifest](name: Property.Name)
+                                      (read: Origin.Read.Filtered[A]): Option[Origin[A]]
   }
 
   protected object MemberFactory {
@@ -37,8 +37,8 @@ trait MemberFactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A <: AnyRef : NotNothing : Manifest]
-          (name: Property.Name)(read: Origin.Read.Filtered[A]) = {
+      abstract override def create[A <: AnyRef : Manifest](name: Property.Name)
+                                                          (read: Origin.Read.Filtered[A]) = {
         val result = super.create(name)(read)
         if (result.isDefined) log.debug("Created " + name + " origin of type " + manifest[A])
         result
@@ -59,8 +59,8 @@ object MemberFactoryComponent {
 
       protected def family: Family
 
-      override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
-                                                              (read: Origin.Read.Filtered[A]) =
+      override def create[A <: AnyRef : Manifest](name: Property.Name)
+                                                 (read: Origin.Read.Filtered[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
             origin => (name === origin.name) && origin.returns[A]

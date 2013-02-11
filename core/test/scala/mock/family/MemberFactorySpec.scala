@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package mock.family
 
-import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
+import org.mockito.Matchers.{eq => equalTo}
 import org.mockito.Mockito.verify
 
 class MemberFactorySpec extends Spec
@@ -36,7 +36,7 @@ class MemberFactorySpec extends Spec
 
       in(family).create(name)(read)
 
-      verify(in(family)).create(equalTo(name))(equalTo(read))(anything(), equalTo(manifest[A]))
+      verify(in(family)).create(equalTo(name))(equalTo(read))(equalTo(manifest[A]))
     }
   }
 }

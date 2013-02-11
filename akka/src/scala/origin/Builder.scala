@@ -21,7 +21,7 @@ package origin
 
 import _root_.akka.actor.Actor.actorOf
 
-import amber.util.{Filter, Logging, NotNothing}
+import amber.util.{Filter, Logging}
 
 trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
@@ -30,8 +30,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B) = {
+    override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                        family: Family,
+                                                                        read: B) = {
       val log = logger.create("amber.akka.Origin(" + name + ")")
       val origin = actorOf(
         read match {
@@ -46,7 +47,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
             }
         }
       )
-      OriginRef(name, family)(origin.start())
+      OriginRef[A](name, family)(origin.start())
     }
   }
 

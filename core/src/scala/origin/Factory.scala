@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import util.{Events, EventSource, Logger, NotNothing}
+import util.{Events, EventSource, Logger}
 
 trait FactoryComponent {
 
@@ -27,8 +27,8 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]
-    def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
-                                                   (read: Origin.Read.Unfiltered[A]): Origin[A]
+    def create[A <: AnyRef : Manifest](name: Property.Name)
+                                      (read: Origin.Read.Unfiltered[A]): Origin[A]
   }
 
   object OriginFactory {
@@ -36,8 +36,8 @@ trait FactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A <: AnyRef : NotNothing : Manifest]
-          (name: Property.Name)(read: Origin.Read.Unfiltered[A]) = {
+      abstract override def create[A <: AnyRef : Manifest](name: Property.Name)
+                                                          (read: Origin.Read.Unfiltered[A]) = {
         log.debug("Creating " + name + " origin of type " + manifest[A])
         val result = super.create(name)(read)
         log.info("Created " + name + " origin of type " + manifest[A])
@@ -57,14 +57,15 @@ object FactoryComponent {
 
       override val created = EventSource[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]()
 
-      override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name)
-                                                              (read: Origin.Read.Unfiltered[A]) =
+      override def create[A <: AnyRef : Manifest](name: Property.Name)
+                                                 (read: Origin.Read.Unfiltered[A]) =
         builder.build(name, Family.random(), read)
     }
 
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-          (name: Property.Name, family: Family, read: B) = {
+      override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                          family: Family,
+                                                                          read: B) = {
         val result = underlying.build(name, family, read)
         origin.created emit (result, manifest[A])
         result

@@ -34,7 +34,7 @@ trait FactoryBehaviors extends OriginBehaviors {
     override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
       origin.create[A](name) {() => None}
 
-    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Unfiltered[A]) =
+    override def create[A <: AnyRef : Manifest](read: Origin.Read.Unfiltered[A]) =
       origin.create[A](random[Property.Name])(read)
   }
 

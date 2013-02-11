@@ -23,7 +23,6 @@ import org.mockito.Mockito.{verify, when}
 
 import scalaz.std.option._
 
-import util.NotNothing
 import util.Events.observe
 
 class DefaultFactorySpec extends Spec

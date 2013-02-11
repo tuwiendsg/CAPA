@@ -25,9 +25,9 @@ import scalaz.syntax.equal._
 import amber.util.{Filter, NotNothing}
 import akka.Message.Request
 
-private[akka] case class OriginRef[+A <: AnyRef : Manifest](override val name: Property.Name,
-                                                            override val family: Family)
-                                                           (ref: ActorRef) extends amber.Origin[A] {
+private[akka] case class OriginRef[+A <: AnyRef : NotNothing : Manifest]
+    (override val name: Property.Name, override val family: Family)
+    (ref: ActorRef) extends amber.Origin[A] {
 
   override def apply(filter: Filter[Origin.Meta.Readable]) =
     (ref ? Request.Value(filter)).as[Option[Property[A]]] flatMap {identity}

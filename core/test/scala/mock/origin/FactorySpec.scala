@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
+import org.mockito.Matchers.{eq => equalTo}
 import org.mockito.Mockito.verify
 
 class FactorySpec extends Spec
@@ -35,7 +35,7 @@ class FactorySpec extends Spec
 
       origin.create(name)(read)
 
-      verify(origin).create(equalTo(name))(equalTo(read))(anything(), equalTo(manifest[A]))
+      verify(origin).create(equalTo(name))(equalTo(read))(equalTo(manifest[A]))
     }
 
     "allow verifying invocations of its created method" in {

@@ -20,7 +20,7 @@ package origin
 
 import scala.collection.immutable.Set
 
-import util.{MultiTrie, NotNothing}
+import util.MultiTrie
 
 trait FinderComponent {
 
@@ -48,8 +48,9 @@ object FinderComponent {
     }
 
     private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-          (name: Property.Name, family: Family, read: B) = {
+      override def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                                          family: Family,
+                                                                          read: B) = {
         val result = underlying.build(name, family, read)
         origins.add(result)
         result

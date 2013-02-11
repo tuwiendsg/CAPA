@@ -18,15 +18,14 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import util.NotNothing
-
 trait BuilderComponent {
 
   protected type Origin[+A <: AnyRef] <: amber.Origin[A]
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A <: AnyRef : NotNothing : Manifest, B: Origin.Read[A]#apply]
-      (name: Property.Name, family: Family, read: B): Origin[A]
+    def build[A <: AnyRef : Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                               family: Family,
+                                                               read: B): Origin[A]
   }
 }

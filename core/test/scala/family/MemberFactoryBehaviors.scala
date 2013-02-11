@@ -30,7 +30,7 @@ trait MemberFactoryBehaviors extends OriginBehaviors {
     override def create[A <: AnyRef : NotNothing : Manifest](name: Property.Name, family: Family) =
       (in(family).create[A](name) {_ => None}).value
 
-    override def create[A <: AnyRef : NotNothing : Manifest](read: Origin.Read.Filtered[A]) =
+    override def create[A <: AnyRef : Manifest](read: Origin.Read.Filtered[A]) =
       in(random[Family]).create[A](random[Property.Name])(read).value
   }
 

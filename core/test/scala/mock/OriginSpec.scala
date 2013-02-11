@@ -20,7 +20,7 @@ package mock
 
 import org.mockito.Mockito.verify
 
-import amber.util.{Filter, NotNothing}
+import amber.util.Filter
 
 class OriginSpec extends Spec with OriginBehaviors {
 
@@ -28,8 +28,9 @@ class OriginSpec extends Spec with OriginBehaviors {
 
     override protected type Origin[+A <: AnyRef] = amber.Origin[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest, B: amber.Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B) =
+    override def create[A <: AnyRef : Manifest, B: amber.Origin.Read[A]#apply](name: Property.Name,
+                                                                               family: Family,
+                                                                               read: B) =
       Origin(name, family, read)
   }
 

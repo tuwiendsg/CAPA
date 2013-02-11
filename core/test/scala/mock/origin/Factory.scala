@@ -25,7 +25,6 @@ import org.scalatest.{BeforeAndAfterEach, Suite}
 import org.scalatest.mock.MockitoSugar.mock
 
 import util.Mocking
-import util.NotNothing.notNothing
 
 trait FactoryComponent extends amber.origin.FactoryComponent
                        with BeforeAndAfterEach
@@ -37,13 +36,13 @@ trait FactoryComponent extends amber.origin.FactoryComponent
     val created = amber.mock.util.Events[(Origin[_ <: AnyRef], Manifest[_ <: AnyRef])]
 
     when(origin.created) thenReturn created
-    when(origin.create(anything())(anything())(anything(), anything())) thenAnswer {
+    when(origin.create(anything())(anything())(anything())) thenAnswer {
       args: Array[AnyRef] =>
         val name = args(0).asInstanceOf[Property.Name]
         val read = args(1).asInstanceOf[Origin.Read.Unfiltered[AnyRef]]
-        val manifest = args(3).asInstanceOf[Manifest[AnyRef]]
+        val manifest = args(2).asInstanceOf[Manifest[AnyRef]]
 
-        val origin = amber.mock.Origin.create(name)(read)(notNothing, manifest)
+        val origin = amber.mock.Origin.create(name)(read)(manifest)
         created.emit((origin, manifest))
 
         origin
