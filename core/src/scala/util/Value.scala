@@ -16,17 +16,15 @@
 
 package at.ac.tuwien.infosys
 package amber
+package util
 
-import util.{Filter, Filterable, NotNothing, Path}
-
-case class Property[+A: Manifest](name: Property.Name, value: A) {
-
+class Value[+A: Manifest](value: A) {
   def as[B: NotNothing : Manifest]: Option[B] =
     if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
-
-  override lazy val toString = name + " = " + value
 }
 
-object Property {
-  type Name = Path
+object Value {
+  case class Named[A, +B: Manifest](name: A, value: B) extends Value[B](value) {
+    override lazy val toString = name + " = " + value
+  }
 }

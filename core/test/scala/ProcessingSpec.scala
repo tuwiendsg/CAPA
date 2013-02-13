@@ -40,7 +40,7 @@ class ProcessingSpec extends Spec
           (read match {
             case f: Origin.Read.Unfiltered[_] => f()
             case f: Origin.Read.Filtered[_] => f(args(0).asInstanceOf[Filter[Origin.Meta.Readable]])
-          }) map {Property(name, _)}
+          }) map {Origin.Value(name, _)}
       }
     }
 
@@ -139,7 +139,7 @@ class ProcessingSpec extends Spec
               process(definition)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -271,7 +271,7 @@ class ProcessingSpec extends Spec
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -398,7 +398,7 @@ class ProcessingSpec extends Spec
               operation(output)(function)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Property[B]]
+              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(input / output)
               result.value should be(value)

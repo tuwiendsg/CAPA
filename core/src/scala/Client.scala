@@ -32,11 +32,11 @@ trait Client extends origin.FinderComponent {
 
   implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)
 
-  def select[A: NotNothing : Manifest](query: Query): Stream[Property[A]] =
+  def select[A: NotNothing : Manifest](query: Query): Stream[Origin.Value[A]] =
     for {
       origin <- origins.find(query.selection).toStream if origin.returns[A]
-      property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
-    } yield property
+      value <- origin.asInstanceOf[Origin[A]].apply(query.filter)
+    } yield value
 
   def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] = select[A](query) map {_.value}
   def selectOne[A: NotNothing : Manifest](query: Query): Option[A] = selectAll[A](query).headOption
@@ -59,13 +59,8 @@ trait Client extends origin.FinderComponent {
         override lazy val toString = name + ": " + manifest[A]
       }
 
-      private[amber] case class Value[+A: Manifest](name: Field.Name, value: A) {
-
-        def as[B : NotNothing : Manifest]: Option[B] =
-          if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
-
-        override lazy val toString = name + " = " + value
-      }
+      private[amber] type Value[+A] = util.Value.Named[Field.Name, A]
+      private[amber] val Value = util.Value.Named
 
       private[amber] object Values {
         def apply(types: Set[Type[_]]): Seq[Stream[Value[_]]] =

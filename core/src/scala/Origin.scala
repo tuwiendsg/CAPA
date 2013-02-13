@@ -28,7 +28,7 @@ trait Origin[+A] extends Equals {
 
   def name: Origin.Name
   def family: Origin.Family
-  def apply(filter: Filter[Origin.Meta.Readable]): Option[Property[A]]
+  def apply(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
   def returns[B: NotNothing : Manifest]: Boolean
 
   val meta = Origin.Meta.Writable()
@@ -37,7 +37,10 @@ trait Origin[+A] extends Equals {
 object Origin {
 
   type Name = Path
+  type Value[+A] = util.Value.Named[Name, A]
   type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
+
+  val Value = util.Value.Named
 
   case class Family private(private val id: String)
 
@@ -70,19 +73,14 @@ object Origin {
           Option(values.get(name)) flatMap {_.as[A]}
 
         override def update[A: Manifest](name: MetaInfo.Name, value: A) {
-          values.put(name, MetaInfo.Value(name, value))
+          values.put(name, new MetaInfo.Value(value))
         }
       }
     }
   }
 
   object MetaInfo {
-
     type Name = String
-
-    private[amber] case class Value[+A: Manifest](name: MetaInfo.Name, private val value: A) {
-      def as[B: NotNothing : Manifest]: Option[B] =
-        if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B]) else None
-    }
+    private[amber] type Value[+A] = util.Value[A]
   }
 }

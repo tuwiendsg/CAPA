@@ -42,7 +42,7 @@ class CollectingSpec extends Spec
           (read match {
             case f: Origin.Read.Unfiltered[_] => f()
             case f: Origin.Read.Filtered[_] => f(args(0).asInstanceOf[Filter[Origin.Meta.Readable]])
-          }) map {Property(name, _)}
+          }) map {Origin.Value(name, _)}
       }
     }
 
@@ -102,7 +102,7 @@ class CollectingSpec extends Spec
               when(read()) thenReturn Some(value)
               origin.create(name)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Property[Set[A]]]
+              val result = built.last(filter).value.asInstanceOf[Origin.Value[Set[A]]]
 
               result.name should be(name)
               result.value should contain(value)
@@ -150,8 +150,8 @@ class CollectingSpec extends Spec
           val result = collect[A](name, filter)
 
           result should have size(2)
-          result should contain(Property(name, value1))
-          result should contain(Property(name, value2))
+          result should contain(Origin.Value(name, value1))
+          result should contain(Origin.Value(name, value2))
         }
       }
     }

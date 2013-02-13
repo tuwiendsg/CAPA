@@ -38,8 +38,8 @@ private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name)(log: L
       val replyTo = self.channel
       spawn {
         val value = read(filter)
-        for (v <- value) log.debug("Read " + v + " for property " + name)
-        replyTo tryTell (value map {Property(name, _)})
+        for (v <- value) log.debug("Read " + v + " from " + name)
+        replyTo tryTell (value map {Origin.Value(name, _)})
       }
     case get: Request.MetaInfo.Get[_] => self tryReply get(meta)
     case set: Request.MetaInfo.Set[_] => set(meta)

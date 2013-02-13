@@ -33,13 +33,13 @@ trait Collecting extends origin.BuilderComponent {
 
     private[amber] val family = Origin.Family.random()
 
-    def apply[A: NotNothing : Manifest](name: Origin.Name,
-                                        filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
+    def apply[A: NotNothing : Manifest]
+        (name: Origin.Name, filter: Filter[Origin.Meta.Readable]): Stream[Origin.Value[A]] =
       for {
         origin <- origins.find(Selections.exact(name)).toStream
         if origin.returns(notNothing, manifest[A])
-        property <- origin.asInstanceOf[Origin[A]].apply(filter)
-      } yield property
+        value <- origin.asInstanceOf[Origin[A]].apply(filter)
+      } yield value
   }
 
   private object _builder extends OriginBuilder {

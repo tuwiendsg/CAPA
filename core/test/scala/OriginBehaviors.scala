@@ -184,14 +184,14 @@ trait OriginBehaviors {
         }
 
         "if reading is successful" should {
-          "return a property" which {
+          "return a value" which {
             "has the same name as the origin" in {
               val read = mock[Origin.Read.Unfiltered[String]]("Origin.read")
               when(read()) thenReturn Some(random[String])
               val origin = fixture.create(read)
 
-              val property = origin(filter).value
-              property.name should be(origin.name)
+              val Origin.Value(name, _) = origin(filter).value
+              name should be(origin.name)
             }
 
             "contains the result of the specified read function" in {
@@ -200,8 +200,8 @@ trait OriginBehaviors {
               when(read()) thenReturn Some(result)
               val origin = fixture.create(read)
 
-              val property = origin(filter).value
-              property.value should be(result)
+              val Origin.Value(_, value) = origin(filter).value
+              value should be(result)
             }
           }
         }
@@ -253,14 +253,14 @@ trait OriginBehaviors {
       "if reading is successful" should {
         val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
 
-        "return a property" which {
+        "return a value" which {
           "has the same name as the origin" in {
             val read = mock[Origin.Read.Filtered[String]]("Origin.read")
             when(read.apply(anything())) thenReturn Some(random[String])
             val origin = fixture.create(read)
 
-            val property = origin(filter).value
-            property.name should be(origin.name)
+            val Origin.Value(name, _) = origin(filter).value
+            name should be(origin.name)
           }
 
           "contains the result of the specified read function" in {
@@ -269,8 +269,8 @@ trait OriginBehaviors {
             when(read.apply(anything())) thenReturn Some(result)
             val origin = fixture.create(read)
 
-            val property = origin(filter).value
-            property.value should be(result)
+            val Origin.Value(_, value) = origin(filter).value
+            value should be(result)
           }
         }
       }

@@ -20,6 +20,7 @@ package amber
 import scala.collection.immutable.{Seq, Vector}
 
 import scalaz.syntax.equal._
+import scalaz.syntax.id._
 
 import util.Observer
 import util.Events.observe
@@ -39,7 +40,7 @@ trait Processing {
           if (f isDefinedAt source.name) {
             val (name, g) = f(source.name)
             in(source.family).create(name) {
-              filter => source(filter) map {property => g(property.value)}
+              filter => source(filter) map {_.value |> g}
             }
           }
       }

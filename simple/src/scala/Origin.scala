@@ -30,8 +30,8 @@ private[simple] abstract class Origin[+A : Manifest](override val name: Origin.N
 
   override def apply(filter: Filter[Origin.Meta.Readable]) =
     for (value <- read(filter)) yield {
-      log.debug("Read " + value + " for property " + name)
-      Property(name, value)
+      log.debug("Read " + value + " from " + name)
+      Origin.Value(name, value)
     }
 
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
