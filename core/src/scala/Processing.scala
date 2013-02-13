@@ -40,7 +40,7 @@ trait Processing {
           if (f isDefinedAt source.name) {
             val (name, g) = f(source.name)
             in(source.family).create(name) {
-              filter => source(filter) map {_.value |> g}
+              filter => source.read(filter) map {_.value |> g}
             }
           }
       }

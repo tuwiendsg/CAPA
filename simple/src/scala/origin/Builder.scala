@@ -32,15 +32,21 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
                                                              family: Origin.Family,
                                                              read: B) = {
       val log = logger.create("amber.simple.Origin(" + name + ")")
+      def process(result: Option[A]): Option[Origin.Value[A]] =
+        for (value <- result) yield {
+          log.debug("Read " + value + " from " + name)
+          Origin.Value(name, value)
+        }
+
       read match {
         case f: Origin.Read.Unfiltered[A] =>
-          new Origin(name, family)(log) {
-            override protected def read(filter: Filter[Origin.Meta.Readable]) =
-              if (filter(meta)) f() else None
+          new Origin(name, family) {
+            override def read(filter: Filter[Origin.Meta.Readable]) =
+              if (filter(meta)) process(f()) else None
           }
         case f: Origin.Read.Filtered[A] =>
-          new Origin(name, family)(log) {
-            override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
+          new Origin(name, family) {
+            override def read(filter: Filter[Origin.Meta.Readable]) = process(f(filter))
           }
       }
     }

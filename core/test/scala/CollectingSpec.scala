@@ -37,7 +37,7 @@ class CollectingSpec extends Spec
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
       when(origin.returns(anything(), equalTo(manifest))) thenReturn true
-      when(origin(anything())) thenAnswer {
+      when(origin.read(anything())) thenAnswer {
         args: Array[AnyRef] =>
           (read match {
             case f: Origin.Read.Unfiltered[_] => f()
@@ -81,18 +81,18 @@ class CollectingSpec extends Spec
           }
         }
 
-        "when invoked" should {
+        "when read" should {
           val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
           when(filter.apply(anything())) thenReturn true
 
-          "invoke the underlying origin" in {
+          "read the underlying origin" in {
             new Fixture {
               when(read()) thenReturn None
               val underlying = origin.create(name)(read)
 
-              built.last(filter)
+              built.last.read(filter)
 
-              verify(underlying).apply(filter)
+              verify(underlying).read(filter)
             }
           }
 
@@ -102,7 +102,7 @@ class CollectingSpec extends Spec
               when(read()) thenReturn Some(value)
               origin.create(name)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Origin.Value[Set[A]]]
+              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[Set[A]]]
 
               result.name should be(name)
               result.value should contain(value)
@@ -114,7 +114,7 @@ class CollectingSpec extends Spec
               when(read()) thenReturn None
               origin.create(name)(read)
 
-              built.last(filter) should not be('defined)
+              built.last.read(filter) should not be('defined)
             }
           }
         }
@@ -125,7 +125,7 @@ class CollectingSpec extends Spec
       val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
       when(filter.apply(anything())) thenReturn true
 
-      "invoke all origins that have specified name and type" in {
+      "read all origins that have specified name and type" in {
         new Fixture {
           when(read()) thenReturn None
           val originA = origin.create(name)(read)
@@ -133,12 +133,12 @@ class CollectingSpec extends Spec
 
           collect[A](name, filter)
 
-          verify(originA).apply(filter)
-          verify(originB).apply(filter)
+          verify(originA).read(filter)
+          verify(originB).read(filter)
         }
       }
 
-      "return a sequence of results from the invoked origins" in {
+      "return a sequence of results from the underlying origins" in {
         new Fixture {
           val value1 = new A
           val value2 = new A

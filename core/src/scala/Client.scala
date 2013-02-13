@@ -32,17 +32,17 @@ trait Client extends origin.FinderComponent {
 
   implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)
 
-  def select[A: NotNothing : Manifest](query: Query): Stream[Origin.Value[A]] =
+  def read[A: NotNothing : Manifest](query: Query): Stream[Origin.Value[A]] =
     for {
       origin <- origins.find(query.selection).toStream if origin.returns[A]
-      value <- origin.asInstanceOf[Origin[A]].apply(query.filter)
+      value <- origin.asInstanceOf[Origin[A]].read(query.filter)
     } yield value
 
-  def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] = select[A](query) map {_.value}
-  def selectOne[A: NotNothing : Manifest](query: Query): Option[A] = selectAll[A](query).headOption
-  def selectAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
-  def selectOne(definition: Entity.Definition): Option[Entity.Instance] =
-    selectAll(definition).headOption
+  def readAll[A: NotNothing : Manifest](query: Query): Stream[A] = read[A](query) map {_.value}
+  def readOne[A: NotNothing : Manifest](query: Query): Option[A] = readAll[A](query).headOption
+  def readAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
+  def readOne(definition: Entity.Definition): Option[Entity.Instance] =
+    readAll(definition).headOption
 
   def entity(name: Entity.Name) = Entity.Definition(name, HashMap.empty, Filter.tautology)
 
@@ -55,7 +55,7 @@ trait Client extends origin.FinderComponent {
       type Name = String
 
       private[amber] case class Type[+A: NotNothing : Manifest](name: Field.Name, query: Query) {
-        def values(): Stream[Value[A]] = selectAll[A](query) map {Value(name, _)}
+        def values(): Stream[Value[A]] = readAll[A](query) map {Value(name, _)}
         override lazy val toString = name + ": " + manifest[A]
       }
 

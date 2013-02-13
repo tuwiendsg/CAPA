@@ -30,10 +30,10 @@ private[akka] case class OriginRef[+A: NotNothing : Manifest](override val name:
                                                              (ref: ActorRef)
     extends amber.Origin[A] {
 
-  override def apply(filter: Filter[Origin.Meta.Readable]) =
-    (ref ? Request.Value(filter)).as[Option[Origin.Value[A]]] flatMap {identity}
-
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
+
+  override def read(filter: Filter[Origin.Meta.Readable]) =
+    (ref ? Request.Value(filter)).as[Option[Origin.Value[A]]] flatMap {identity}
 
   override val meta = new Origin.Meta.Writable {
 

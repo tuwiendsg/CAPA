@@ -40,5 +40,5 @@ trait Client extends amber.Client {
           } yield celsius < kelvin
       }
 
-  def readTemperature(): Option[Entity.Instance] = selectOne(temperature)
+  def readTemperature(): Option[Entity.Instance] = readOne(temperature)
 }

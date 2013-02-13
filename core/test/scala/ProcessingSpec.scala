@@ -35,7 +35,7 @@ class ProcessingSpec extends Spec
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
       when(origin.returns(anything(), equalTo(manifest))) thenReturn true
-      when(origin(anything())) thenAnswer {
+      when(origin.read(anything())) thenAnswer {
         args: Array[AnyRef] =>
           (read match {
             case f: Origin.Read.Unfiltered[_] => f()
@@ -100,19 +100,19 @@ class ProcessingSpec extends Spec
           }
         }
 
-        "when invoked" should {
+        "when read" should {
           val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
           when(filter.apply(anything())) thenReturn true
 
-          "invoke the underlying origin" in {
+          "read the underlying origin" in {
             new Fixture {
               process(definition)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last(filter)
+              built.last.read(filter)
 
-              verify(underlying).apply(filter)
+              verify(underlying).read(filter)
             }
           }
 
@@ -124,7 +124,7 @@ class ProcessingSpec extends Spec
               process(definition)
               origin.create(input)(read)
 
-              built.last(filter)
+              built.last.read(filter)
 
               verify(processor).apply(value)
             }
@@ -139,7 +139,7 @@ class ProcessingSpec extends Spec
               process(definition)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
+              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -153,7 +153,7 @@ class ProcessingSpec extends Spec
               process(definition)
               origin.create(input)(read)
 
-              built.last(filter) should not be('defined)
+              built.last.read(filter) should not be('defined)
               verify(processor, never()).apply(anything())
             }
           }
@@ -232,19 +232,19 @@ class ProcessingSpec extends Spec
           }
         }
 
-        "when invoked" should {
+        "when read" should {
           val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
           when(filter.apply(anything())) thenReturn true
 
-          "invoke the underlying origin" in {
+          "read the underlying origin" in {
             new Fixture {
               map(input, output)(mapper)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last(filter)
+              built.last.read(filter)
 
-              verify(underlying).apply(filter)
+              verify(underlying).read(filter)
             }
           }
 
@@ -256,7 +256,7 @@ class ProcessingSpec extends Spec
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              built.last(filter)
+              built.last.read(filter)
 
               verify(mapper).apply(value)
             }
@@ -271,7 +271,7 @@ class ProcessingSpec extends Spec
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
+              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(output)
               result.value should be(value)
@@ -285,7 +285,7 @@ class ProcessingSpec extends Spec
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              built.last(filter) should not be('defined)
+              built.last.read(filter) should not be('defined)
               verify(mapper, never()).apply(anything())
             }
           }
@@ -359,19 +359,19 @@ class ProcessingSpec extends Spec
           }
         }
 
-        "when invoked" should {
+        "when read" should {
           val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
           when(filter.apply(anything())) thenReturn true
 
-          "invoke the underlying origin" in {
+          "read the underlying origin" in {
             new Fixture {
               operation(output)(function)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last(filter)
+              built.last.read(filter)
 
-              verify(underlying).apply(filter)
+              verify(underlying).read(filter)
             }
           }
 
@@ -383,7 +383,7 @@ class ProcessingSpec extends Spec
               operation(output)(function)
               origin.create(input)(read)
 
-              built.last(filter)
+              built.last.read(filter)
 
               verify(function).apply(value)
             }
@@ -398,7 +398,7 @@ class ProcessingSpec extends Spec
               operation(output)(function)
               origin.create(input)(read)
 
-              val result = built.last(filter).value.asInstanceOf[Origin.Value[B]]
+              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
 
               result.name should be(input / output)
               result.value should be(value)
@@ -412,7 +412,7 @@ class ProcessingSpec extends Spec
               operation(output)(function)
               origin.create(input)(read)
 
-              built.last(filter) should not be('defined)
+              built.last.read(filter) should not be('defined)
               verify(function, never()).apply(anything())
             }
           }

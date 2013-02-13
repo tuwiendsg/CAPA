@@ -20,19 +20,11 @@ package simple
 
 import scalaz.syntax.equal._
 
-import amber.util.{Filter, Logger, NotNothing}
+import amber.util.{Filter, NotNothing}
 
 private[simple] abstract class Origin[+A : Manifest](override val name: Origin.Name,
                                                      override val family: Origin.Family)
-                                                    (log: Logger) extends amber.Origin[A] {
-
-  protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
-
-  override def apply(filter: Filter[Origin.Meta.Readable]) =
-    for (value <- read(filter)) yield {
-      log.debug("Read " + value + " from " + name)
-      Origin.Value(name, value)
-    }
+    extends amber.Origin[A] {
 
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
 

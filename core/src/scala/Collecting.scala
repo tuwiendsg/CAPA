@@ -38,7 +38,7 @@ trait Collecting extends origin.BuilderComponent {
       for {
         origin <- origins.find(Selections.exact(name)).toStream
         if origin.returns(notNothing, manifest[A])
-        value <- origin.asInstanceOf[Origin[A]].apply(filter)
+        value <- origin.asInstanceOf[Origin[A]].read(filter)
       } yield value
   }
 

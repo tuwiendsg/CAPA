@@ -164,7 +164,7 @@ trait OriginBehaviors {
         val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
         val origin = fixture.create(mock[Origin.Read.Unfiltered[_]]("Origin.read"))
 
-        origin(filter)
+        origin.read(filter)
 
         verify(filter).apply(anything())
       }
@@ -178,7 +178,7 @@ trait OriginBehaviors {
           when(read.apply()) thenReturn None
           val origin = fixture.create(read)
 
-          origin(filter)
+          origin.read(filter)
 
           verify(read).apply()
         }
@@ -190,7 +190,7 @@ trait OriginBehaviors {
               when(read()) thenReturn Some(random[String])
               val origin = fixture.create(read)
 
-              val Origin.Value(name, _) = origin(filter).value
+              val Origin.Value(name, _) = origin.read(filter).value
               name should be(origin.name)
             }
 
@@ -200,7 +200,7 @@ trait OriginBehaviors {
               when(read()) thenReturn Some(result)
               val origin = fixture.create(read)
 
-              val Origin.Value(_, value) = origin(filter).value
+              val Origin.Value(_, value) = origin.read(filter).value
               value should be(result)
             }
           }
@@ -212,7 +212,7 @@ trait OriginBehaviors {
             when(read()) thenReturn None
             val origin = fixture.create(read)
 
-            origin(filter) should not be('defined)
+            origin.read(filter) should not be('defined)
           }
         }
       }
@@ -225,7 +225,7 @@ trait OriginBehaviors {
           val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
           val origin = fixture.create(read)
 
-          origin(filter)
+          origin.read(filter)
 
           verify(read, never()).apply()
         }
@@ -233,7 +233,7 @@ trait OriginBehaviors {
         "return None" in {
           val origin = fixture.create[Any]()
 
-          origin(filter) should not be('defined)
+          origin.read(filter) should not be('defined)
         }
       }
     }
@@ -245,7 +245,7 @@ trait OriginBehaviors {
         when(read.apply(anything())) thenReturn None
         val origin = fixture.create(read)
 
-        origin(filter)
+        origin.read(filter)
 
         verify(read).apply(filter)
       }
@@ -259,7 +259,7 @@ trait OriginBehaviors {
             when(read.apply(anything())) thenReturn Some(random[String])
             val origin = fixture.create(read)
 
-            val Origin.Value(name, _) = origin(filter).value
+            val Origin.Value(name, _) = origin.read(filter).value
             name should be(origin.name)
           }
 
@@ -269,7 +269,7 @@ trait OriginBehaviors {
             when(read.apply(anything())) thenReturn Some(result)
             val origin = fixture.create(read)
 
-            val Origin.Value(_, value) = origin(filter).value
+            val Origin.Value(_, value) = origin.read(filter).value
             value should be(result)
           }
         }
@@ -283,7 +283,7 @@ trait OriginBehaviors {
           when(read.apply(anything())) thenReturn None
           val origin = fixture.create(read)
 
-          origin(filter) should not be('defined)
+          origin.read(filter) should not be('defined)
         }
       }
     }

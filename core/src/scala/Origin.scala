@@ -28,7 +28,7 @@ trait Origin[+A] extends Equals {
 
   def name: Origin.Name
   def family: Origin.Family
-  def apply(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
+  def read(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
   def returns[B: NotNothing : Manifest]: Boolean
 
   val meta = Origin.Meta.Writable()
