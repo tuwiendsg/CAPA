@@ -71,7 +71,7 @@ trait OriginBehaviors {
       "return None " in {
         val origin = fixture.create[Any]()
 
-        origin.meta[Any](random[Origin.MetaInfo.Name]) should not be('defined)
+        origin[Any](random[Origin.MetaInfo.Name]) should not be('defined)
       }
     }
 
@@ -83,9 +83,9 @@ trait OriginBehaviors {
           val value = new A
           val origin = fixture.create[Any]()
 
-          origin.meta(name) = value
+          origin(name) = value
 
-          origin.meta[A](name).value should be(value)
+          origin[A](name).value should be(value)
         }
 
         "requested type is a super type of the assigned value" in {
@@ -95,9 +95,9 @@ trait OriginBehaviors {
           val value = new B
           val origin = fixture.create[Any]()
 
-          origin.meta(name) = value
+          origin(name) = value
 
-          origin.meta[A](name).value should be(value)
+          origin[A](name).value should be(value)
         }
       }
 
@@ -109,9 +109,9 @@ trait OriginBehaviors {
           val value = new A
           val origin = fixture.create[Any]()
 
-          origin.meta(name) = value
+          origin(name) = value
 
-          origin.meta[B](name) should not be('defined)
+          origin[B](name) should not be('defined)
         }
 
         "requested type is a sub type of the assigned value" in {
@@ -121,9 +121,9 @@ trait OriginBehaviors {
           val value = new A
           val origin = fixture.create[Any]()
 
-          origin.meta(name) = value
+          origin(name) = value
 
-          origin.meta[B](name) should not be('defined)
+          origin[B](name) should not be('defined)
         }
       }
     }

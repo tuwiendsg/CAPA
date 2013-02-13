@@ -24,7 +24,7 @@ import amber.util.{Filter, NotNothing}
 
 private[simple] abstract class Origin[+A : Manifest](override val name: Origin.Name,
                                                      override val family: Origin.Family)
-    extends amber.Origin[A] {
+    extends amber.Origin[A] with Origin.Meta.Writable.Default {
 
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
 

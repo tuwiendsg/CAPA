@@ -42,7 +42,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
         case f: Origin.Read.Unfiltered[A] =>
           new Origin(name, family) {
             override def read(filter: Filter[Origin.Meta.Readable]) =
-              if (filter(meta)) process(f()) else None
+              if (filter(this)) process(f()) else None
           }
         case f: Origin.Read.Filtered[A] =>
           new Origin(name, family) {

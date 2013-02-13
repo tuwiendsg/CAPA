@@ -24,14 +24,9 @@ import scalaz.Equal.equalA
 
 import util.{Filter, NotNothing, Path, Union}
 
-trait Origin[+A] extends Equals {
-
-  def name: Origin.Name
-  def family: Origin.Family
+trait Origin[+A] extends Equals with Origin.Meta.Writable {
   def read(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
   def returns[B: NotNothing : Manifest]: Boolean
-
-  val meta = Origin.Meta.Writable()
 }
 
 object Origin {
@@ -57,6 +52,8 @@ object Origin {
   object Meta {
 
     trait Readable {
+      def name: Origin.Name
+      def family: Origin.Family
       def apply[A: NotNothing : Manifest](name: MetaInfo.Name): Option[A]
     }
 
@@ -65,7 +62,7 @@ object Origin {
     }
 
     object Writable {
-      def apply(): Writable = new Writable {
+      trait Default extends Writable {
 
         private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
 

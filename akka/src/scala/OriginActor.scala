@@ -24,12 +24,15 @@ import _root_.akka.actor.Actor.spawn
 import amber.util.{Filter, Logger}
 import akka.Message.Request
 
-private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name)(log: Logger)
-    extends Actor {
+private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name, family: Origin.Family)
+                                                      (log: Logger) extends Actor {
 
   protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
 
-  protected val meta = Origin.Meta.Writable()
+  protected val meta = new Origin.Meta.Writable.Default {
+    override val name = OriginActor.this.name
+    override val family = OriginActor.this.family
+  }
 
   self.id = name.toString
 
@@ -41,6 +44,8 @@ private[akka] abstract class OriginActor[+A: Manifest](name: Origin.Name)(log: L
         for (v <- value) log.debug("Read " + v + " from " + name)
         replyTo tryTell (value map {Origin.Value(name, _)})
       }
+    case Request.MetaInfo.Name => self.channel ! name
+    case Request.MetaInfo.Family => self.channel ! family
     case get: Request.MetaInfo.Get[_] => self tryReply get(meta)
     case set: Request.MetaInfo.Set[_] => set(meta)
   }

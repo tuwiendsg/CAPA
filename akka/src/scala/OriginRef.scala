@@ -25,9 +25,7 @@ import scalaz.syntax.equal._
 import amber.util.{Filter, NotNothing}
 import akka.Message.Request
 
-private[akka] case class OriginRef[+A: NotNothing : Manifest](override val name: Origin.Name,
-                                                              override val family: Origin.Family)
-                                                             (ref: ActorRef)
+private[akka] case class OriginRef[+A: NotNothing : Manifest](ref: ActorRef)
     extends amber.Origin[A] {
 
   override def returns[B: NotNothing : Manifest] = manifest[A] <:< manifest[B]
@@ -35,14 +33,14 @@ private[akka] case class OriginRef[+A: NotNothing : Manifest](override val name:
   override def read(filter: Filter[Origin.Meta.Readable]) =
     (ref ? Request.Value(filter)).as[Option[Origin.Value[A]]] flatMap {identity}
 
-  override val meta = new Origin.Meta.Writable {
+  override lazy val name = (ref ? Request.MetaInfo.Name).as[Origin.Name].get
+  override lazy val family = (ref ? Request.MetaInfo.Family).as[Origin.Family].get
 
-    override def apply[B: NotNothing : Manifest](name: Origin.MetaInfo.Name) =
-      (ref ? Request.MetaInfo.Get[B](name)).as[Option[B]] flatMap {identity}
+  override def apply[B: NotNothing : Manifest](name: Origin.MetaInfo.Name) =
+    (ref ? Request.MetaInfo.Get[B](name)).as[Option[B]] flatMap {identity}
 
-    override def update[B: Manifest](name: Origin.MetaInfo.Name, value: B) {
-      ref ! Request.MetaInfo.Set(name, value)
-    }
+  override def update[B: Manifest](name: Origin.MetaInfo.Name, value: B) {
+    ref ! Request.MetaInfo.Set(name, value)
   }
 
   private[akka] def kill() {ref ! PoisonPill}

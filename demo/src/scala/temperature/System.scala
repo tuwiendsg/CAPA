@@ -31,7 +31,7 @@ trait System extends amber.System {
       val temperature = origin.create("temperature/celsius") {
         () => Some(Random.nextInt(55) - 15)
       }
-      temperature.meta("location") = location
+      temperature("location") = location
       temperature
     }
   }

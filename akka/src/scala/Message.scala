@@ -29,6 +29,9 @@ private[akka] object Message {
 
     case object MetaInfo {
 
+      case object Name extends Message
+      case object Family extends Message
+
       case class Get[+A: NotNothing : Manifest](name: Origin.MetaInfo.Name) extends Message {
         def apply(meta: Origin.Meta.Readable): Option[A] = meta[A](name)
       }

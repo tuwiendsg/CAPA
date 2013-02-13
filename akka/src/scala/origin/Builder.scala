@@ -37,17 +37,17 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
       val origin = actorOf(
         read match {
           case f: Origin.Read.Unfiltered[A] =>
-            new OriginActor(name)(log) {
+            new OriginActor(name, family)(log) {
               override protected def read(filter: Filter[Origin.Meta.Readable]) =
                 if (filter(meta)) f() else None
             }
           case f: Origin.Read.Filtered[A] =>
-            new OriginActor(name)(log) {
+            new OriginActor(name, family)(log) {
               override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
             }
         }
       )
-      OriginRef[A](name, family)(origin.start())
+      OriginRef[A](origin.start())
     }
   }
 
