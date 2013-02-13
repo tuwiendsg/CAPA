@@ -35,7 +35,7 @@ class DefaultFactorySpec extends Spec
       new Fixture {
         origin.create(name)(read)
 
-        verify(build).apply(equalTo(name), any(classOf[Family]), equalTo(read))
+        verify(build).apply(equalTo(name), any(classOf[Origin.Family]), equalTo(read))
       }
     }
 
@@ -53,7 +53,9 @@ class DefaultFactorySpec extends Spec
           val observer = Events.observe(origin.created)(observe)
 
           try {
-            val result = builder.build[A, Origin.Read.Unfiltered[A]](name, random[Family], read)
+             val result = builder.build[A, Origin.Read.Unfiltered[A]](name,
+                                                                      random[Origin.Family],
+                                                                      read)
             verify(observe).apply(result)
           } finally {
             observer.dispose()

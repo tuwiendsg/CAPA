@@ -25,7 +25,7 @@ import util.Logger
 trait MemberFactoryComponent {
 
   protected type Origin[+A] <: amber.Origin[A]
-  protected def in(family: Family): MemberFactory
+  protected def in(family: Origin.Family): MemberFactory
 
   protected trait MemberFactory {
     def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Filtered[A]): Option[Origin[A]]
@@ -50,13 +50,13 @@ object MemberFactoryComponent {
   trait Default extends MemberFactoryComponent {
     this: origin.BuilderComponent with FinderComponent =>
 
-    override protected def in(f: Family) = new MemberFactory {
+    override protected def in(f: Origin.Family) = new MemberFactory {
       override protected val family = f
     }
 
     protected trait MemberFactory extends super.MemberFactory {
 
-      protected def family: Family
+      protected def family: Origin.Family
 
       override def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Filtered[A]) =
         family.synchronized {

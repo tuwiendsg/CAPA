@@ -31,7 +31,7 @@ trait FinderComponent {
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {
-    def find(family: Family): Set[Origin[_]]
+    def find(family: Origin.Family): Set[Origin[_]]
   }
 }
 
@@ -44,9 +44,9 @@ object FinderComponent {
 
     protected trait FamilyFinder extends super.FamilyFinder {
 
-      private val families = new ConcurrentHashMap[Family, CopyOnWriteArraySet[Origin[_]]]
+      private val families = new ConcurrentHashMap[Origin.Family, CopyOnWriteArraySet[Origin[_]]]
 
-      override def find(family: Family) =
+      override def find(family: Origin.Family) =
         (for {origins <- Option(families.get(family))} yield origins.toSet) | Set.empty
 
       def add(origin: Origin[_]) {
@@ -59,7 +59,7 @@ object FinderComponent {
 
     private object _builder extends OriginBuilder {
       override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Family,
+                                                               family: Origin.Family,
                                                                read: B) = {
         val result = Default.super.builder.build(name, family, read)
         families.add(result)
@@ -76,7 +76,7 @@ object FinderComponent {
 
     override protected type Origin[+A] = finder.Origin[A]
     override protected object families extends FamilyFinder {
-      override def find(family: Family) = finder.families.find(family)
+      override def find(family: Origin.Family) = finder.families.find(family)
     }
   }
 }

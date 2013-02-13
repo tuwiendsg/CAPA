@@ -18,13 +18,16 @@ package at.ac.tuwien.infosys
 package amber
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.UUID.randomUUID
+
+import scalaz.Equal.equalA
 
 import util.{Filter, NotNothing, Union}
 
 trait Origin[+A] extends Equals {
 
   def name: Origin.Name
-  def family: Family
+  def family: Origin.Family
   def apply(filter: Filter[Origin.Meta.Readable]): Option[Property[A]]
   def returns[B: NotNothing : Manifest]: Boolean
 
@@ -35,6 +38,13 @@ object Origin {
 
   type Name = Property.Name
   type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
+
+  case class Family private(private val id: String)
+
+  object Family {
+    def random() = Family(randomUUID().toString)
+    implicit val hasEqual = equalA[Family]
+  }
 
   object Read {
     type Unfiltered[+A] = () => Option[A]

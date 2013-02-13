@@ -57,12 +57,12 @@ object FactoryComponent {
       override val created = EventSource[Origin[_]]()
 
       override def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Unfiltered[A]) =
-        builder.build(name, Family.random(), read)
+        builder.build(name, Origin.Family.random(), read)
     }
 
     private object _builder extends OriginBuilder {
       override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Family,
+                                                               family: Origin.Family,
                                                                read: B) = {
         val result = Default.super.builder.build(name, family, read)
         origin.created.emit(result)

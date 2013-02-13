@@ -43,7 +43,7 @@ trait Randoms {
     override def instance() = Property.Name(random((_: String) forall {_ =/= '/'}))
   }
 
-  implicit object FamilyHasRandom extends Random[Family] {
-    override def instance() = Family.random()
+  implicit object OriginFamilyHasRandom extends Random[Origin.Family] {
+    override def instance() = Origin.Family.random()
   }
 }

@@ -34,7 +34,7 @@ trait System extends akka.origin.BuilderComponent
   override val stopped = EventSource[Unit]()
   override def origin: super.OriginFactory = _origin
   override protected def origins: OriginFinder = _origins
-  override protected def in(f: Family) = new MemberFactory with MemberFactory.Logging {
+  override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
     override protected val family = f
     @transient override protected val log =
       logger.create("amber.simple.family.MemberFactory(" + family + ")")

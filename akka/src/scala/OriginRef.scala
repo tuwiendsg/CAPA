@@ -26,7 +26,7 @@ import amber.util.{Filter, NotNothing}
 import akka.Message.Request
 
 private[akka] case class OriginRef[+A: NotNothing : Manifest](override val name: Origin.Name,
-                                                              override val family: Family)
+                                                              override val family: Origin.Family)
                                                              (ref: ActorRef)
     extends amber.Origin[A] {
 

@@ -24,14 +24,14 @@ trait FinderBehaviors {
   def fixture: Fixture
 
   trait Fixture {
-    def create(family: Family): Origin[_]
+    def create(family: Origin.Family): Origin[_]
   }
 
   object aFinder {
     def forFamilies() {
       "find an origin" when {
         "using the origin's family" in {
-          val family = random[Family]
+          val family = random[Origin.Family]
           val origin = fixture.create(family)
 
           families.find(family) should contain(origin)
@@ -40,7 +40,7 @@ trait FinderBehaviors {
 
       "not find an origin" when {
         "using a family different from the origin's family" in {
-          val family = random[Family]
+          val family = random[Origin.Family]
           val origin = fixture.create(family)
 
           families.find(different(family)) should not(contain(origin))

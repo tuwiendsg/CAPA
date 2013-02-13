@@ -26,7 +26,7 @@ class BuilderSpec extends Spec
   trait Fixture {
 
     val name = random[Origin.Name]
-    val family = random[Family]
+    val family = random[Origin.Family]
     val read = mock[Origin.Read.Filtered[_]]("Origin.read")
 
     object origin {

@@ -29,7 +29,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
 
   protected trait OriginBuilder extends super.OriginBuilder {
     override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Family,
+                                                             family: Origin.Family,
                                                              read: B) = {
       val log = logger.create("amber.simple.Origin(" + name + ")")
       read match {

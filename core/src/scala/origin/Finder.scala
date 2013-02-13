@@ -49,7 +49,7 @@ object FinderComponent {
 
     private object _builder extends OriginBuilder {
       override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Family,
+                                                               family: Origin.Family,
                                                                read: B) = {
         val result = Default.super.builder.build(name, family, read)
         origins.add(result)

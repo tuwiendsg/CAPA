@@ -31,7 +31,7 @@ trait Collecting extends origin.BuilderComponent {
 
   object collect {
 
-    private[amber] val family = Family.random()
+    private[amber] val family = Origin.Family.random()
 
     def apply[A: NotNothing : Manifest](name: Origin.Name,
                                         filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
@@ -44,7 +44,7 @@ trait Collecting extends origin.BuilderComponent {
 
   private object _builder extends OriginBuilder {
     override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                             family: Family,
+                                                             family: Origin.Family,
                                                              read: B) = {
       val origin = Collecting.super.builder.build(name, family, read)
       if (collect.family =/= family) {

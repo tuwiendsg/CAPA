@@ -25,7 +25,7 @@ trait BuilderComponent {
 
   protected trait OriginBuilder {
     def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                    family: Family,
+                                                    family: Origin.Family,
                                                     read: B): Origin[A]
   }
 }

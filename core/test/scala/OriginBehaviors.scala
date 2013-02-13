@@ -30,25 +30,25 @@ trait OriginBehaviors {
   trait Fixture {
 
     def create[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                     family: Family,
+                                                     family: Origin.Family,
                                                      read: B): Origin[A]
 
     def create[A: NotNothing : Manifest](): Origin[A] = create(random[Origin.Name])
 
     def create[A: NotNothing : Manifest](name: Origin.Name): Origin[A] =
-      create(name, random[Family])
+      create(name, random[Origin.Family])
 
-    def create[A: NotNothing : Manifest](family: Family): Origin[A] =
+    def create[A: NotNothing : Manifest](family: Origin.Family): Origin[A] =
       create(random[Origin.Name], family)
 
-    def create[A: NotNothing : Manifest](name: Origin.Name, family: Family): Origin[A] =
+    def create[A: NotNothing : Manifest](name: Origin.Name, family: Origin.Family): Origin[A] =
       create(name, family, mock[Origin.Read.Unfiltered[A]]("Origin.read"))
 
     def create[A: Manifest](read: Origin.Read.Unfiltered[A]): Origin[A] =
-      create(random[Origin.Name], random[Family], read)
+      create(random[Origin.Name], random[Origin.Family], read)
 
     def create[A: Manifest](read: Origin.Read.Filtered[A]): Origin[A] =
-      create(random[Origin.Name], random[Family], read)
+      create(random[Origin.Name], random[Origin.Family], read)
   }
 
   object anOrigin {
@@ -61,7 +61,7 @@ trait OriginBehaviors {
     }
 
     "is in the specified family" in {
-      val family = random[Family]
+      val family = random[Origin.Family]
       val origin = fixture.create[Any](family)
 
       origin.family should be(family)
