@@ -45,8 +45,8 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
   override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout)
   override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout)
 
-  override def apply[B: NotNothing : TypeTag](name: Origin.MetaInfo.Name) =
-    await(request[Option[B]](MetaInfo.Get[B](name)))
+  override def selectDynamic(name: String) =
+    await(request[Option[Origin.MetaInfo.Value[_]]](MetaInfo.Get(name)))
 
   override def update[B: TypeTag](name: Origin.MetaInfo.Name, value: B) {
     ref ! MetaInfo.Set(name, value)

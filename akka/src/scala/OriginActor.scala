@@ -49,7 +49,7 @@ private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family:
       } pipeTo sender
     case MetaInfo.Name => sender ! name
     case MetaInfo.Family => sender ! family
-    case get: MetaInfo.Get[_] => sender ! get(meta)
+    case get: MetaInfo.Get => sender ! get(meta)
     case set: MetaInfo.Set[_] => set(meta)
   }
 }

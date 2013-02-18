@@ -20,7 +20,7 @@ package akka
 
 import scala.reflect.runtime.universe.TypeTag
 
-import amber.util.{Filter, NotNothing}
+import amber.util.Filter
 
 private[akka] sealed trait Message
 
@@ -34,8 +34,9 @@ private[akka] object Message {
       case object Name extends Message
       case object Family extends Message
 
-      case class Get[+A: NotNothing : TypeTag](name: Origin.MetaInfo.Name) extends Message {
-        def apply(meta: Origin.Meta.Readable): Option[A] = meta[A](name)
+      case class Get(name: Origin.MetaInfo.Name) extends Message {
+        def apply(meta: Origin.Meta.Readable): Option[Origin.MetaInfo.Value[_]] =
+          meta.selectDynamic(name)
       }
 
       case class Set[+A: TypeTag](name: Origin.MetaInfo.Name, value: A) extends Message {

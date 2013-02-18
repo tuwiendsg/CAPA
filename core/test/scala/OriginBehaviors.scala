@@ -77,7 +77,7 @@ trait OriginBehaviors {
       "return None " in {
         val origin = fixture.create[Any]()
 
-        origin[Any](random[Origin.MetaInfo.Name]) should not be('defined)
+        origin.selectDynamic(random[Origin.MetaInfo.Name]).as[Any] should not be('defined)
       }
     }
 
@@ -90,7 +90,7 @@ trait OriginBehaviors {
 
           origin(name) = value
 
-          origin[A](name).value should be(value)
+          origin.selectDynamic(name).as[A].value should be(value)
         }
 
         "requested type is a super type of the assigned value" in {
@@ -100,7 +100,7 @@ trait OriginBehaviors {
 
           origin(name) = value
 
-          origin[A](name).value should be(value)
+          origin.selectDynamic(name).as[A].value should be(value)
         }
       }
 
@@ -112,7 +112,7 @@ trait OriginBehaviors {
 
           origin(name) = value
 
-          origin[B](name) should not be('defined)
+          origin.selectDynamic(name).as[B] should not be('defined)
         }
 
         "requested type is a sub type of the assigned value" in {
@@ -122,7 +122,7 @@ trait OriginBehaviors {
 
           origin(name) = value
 
-          origin[U](name) should not be('defined)
+          origin.selectDynamic(name).as[U] should not be('defined)
         }
       }
     }

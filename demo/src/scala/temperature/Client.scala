@@ -29,9 +29,9 @@ trait Client extends amber.Client {
   val temperature =
     entity("Temperature").
       field[Double]("celsius", exact("temperature/celsius/min") where {
-        meta => for {location <- meta[String]("location")} yield location === "A"}).
+        meta => for {location <- meta.location.as[String]} yield location === "A"}).
       field[Double]("kelvin", exact("temperature/kelvin/max") where {
-        meta => for {location <- meta[String]("location")} yield location === "B"}).
+        meta => for {location <- meta.location.as[String]} yield location === "B"}).
       where {
         entity =>
           for {

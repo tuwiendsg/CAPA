@@ -26,7 +26,12 @@ class Value[+A: TypeTag](value: A) {
 }
 
 object Value {
+
   case class Named[A, +B: TypeTag](name: A, value: B) extends Value[B](value) {
     override lazy val toString = s"$name = $value"
+  }
+
+  implicit class OptionValueOperations(val value: Option[Value[_]]) extends AnyVal {
+    def as[A: NotNothing : TypeTag]: Option[A] = value flatMap {_.as[A]}
   }
 }

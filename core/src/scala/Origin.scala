@@ -17,6 +17,8 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.language.dynamics
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID.randomUUID
 
@@ -53,10 +55,10 @@ object Origin {
 
   object Meta {
 
-    trait Readable {
+    trait Readable extends Dynamic {
       def name: Origin.Name
       def family: Origin.Family
-      def apply[A: NotNothing : TypeTag](name: MetaInfo.Name): Option[A]
+      def selectDynamic(name: String): Option[MetaInfo.Value[_]]
     }
 
     trait Writable extends Readable {
@@ -68,8 +70,7 @@ object Origin {
 
         private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
 
-        override def apply[A: NotNothing : TypeTag](name: MetaInfo.Name) =
-          Option(values.get(name)) flatMap {_.as[A]}
+        override def selectDynamic(name: MetaInfo.Name) = Option(values.get(name))
 
         override def update[A: TypeTag](name: MetaInfo.Name, value: A) {
           values.put(name, new MetaInfo.Value(value))
@@ -80,6 +81,6 @@ object Origin {
 
   object MetaInfo {
     type Name = String
-    private[amber] type Value[+A] = util.Value[A]
+    type Value[+A] = util.Value[A]
   }
 }
