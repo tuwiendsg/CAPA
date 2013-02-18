@@ -51,7 +51,7 @@ trait Client extends origin.FinderComponent {
   def selectOne(definition: Entity.Definition) =
     selectAll(definition).headOption
 
-  def entity(name: Entity.Name) = Entity.Definition(name, Vector.empty, Filter.tautology)
+  def entity(name: Entity.Name) = Entity.Definition(name, HashMap.empty, Filter.tautology)
 
   object Entity {
 
@@ -87,8 +87,9 @@ trait Client extends origin.FinderComponent {
     }
 
     case class Definition private[amber]
-        (name: Entity.Name, fields: Vector[Field.Type[_ <: AnyRef]], filter: Filter[Instance])
-        extends Filterable[Instance, Definition] {
+        (name: Entity.Name,
+         fields: HashMap[Field.Name, Field.Type[_ <: AnyRef]],
+         filter: Filter[Instance]) extends Filterable[Instance, Definition] {
 
       override def where(filter: Filter[Instance]) = copy(filter = filter)
 
@@ -97,7 +98,7 @@ trait Client extends origin.FinderComponent {
 
       def field[A <: AnyRef : NotNothing : Manifest]
           (name: Field.Name, query: Query) =
-        copy(fields = fields :+ Field.Type[A](name, query))
+        copy(fields = fields.updated(name, Field.Type[A](name, query)))
 
       def instances(): Stream[Instance] = {
         def cartesianProduct(values: Seq[Stream[Field.Value[_ <: AnyRef]]]) =
@@ -107,7 +108,7 @@ trait Client extends origin.FinderComponent {
 
         Instances(
           name,
-          cartesianProduct(Field.Values(fields))
+          cartesianProduct(Field.Values(Seq.empty ++ fields.values))
         ) filter {filter(_)}
       }
 
