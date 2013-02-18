@@ -26,19 +26,20 @@ trait Client extends amber.Client {
 
   import Selections.exact
 
-  val temperature =
-    entity("Temperature").
-      field[Double]("celsius", exact("temperature/celsius/min") where {
-        meta => for {location <- meta.location.as[String]} yield location === "A"}).
-      field[Double]("kelvin", exact("temperature/kelvin/max") where {
-        meta => for {location <- meta.location.as[String]} yield location === "B"}).
-      where {
-        entity =>
-          for {
-            celsius <- entity[Double]("celsius")
-            kelvin <- entity[Double]("kelvin")
-          } yield celsius < kelvin
-      }
+  val temperature = entity("Temperature")
+  temperature.has[Double].celsius = exact("temperature/celsius/min") where {
+    meta => for {location <- meta.location.as[String]} yield location === "A"
+  }
+  temperature.has[Double].kelvin = exact("temperature/kelvin/max") where {
+    meta => for {location <- meta.location.as[String]} yield location === "B"
+  }
+  temperature.where {
+    entity =>
+      for {
+        celsius <- entity.celsius.as[Double]
+        kelvin <- entity.kelvin.as[Double]
+      } yield celsius < kelvin
+  }
 
-  def readTemperature(): Option[Entity.Instance] = readOne(temperature)
+  def readTemperature(): Option[Entity.Instance] = readOne(temperature.build())
 }

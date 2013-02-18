@@ -17,11 +17,12 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.language.implicitConversions
+import scala.language.{dynamics, implicitConversions}
 
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
+import scala.collection.JavaConversions._
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 import util.{Filter, Filterable, NotNothing}
@@ -47,7 +48,7 @@ trait Client extends origin.FinderComponent {
   def readOne(definition: Entity.Definition): Option[Entity.Instance] =
     readAll(definition).headOption
 
-  def entity(name: Entity.Name) = Entity.Definition(name, HashMap.empty, Filter.tautology)
+  def entity(name: Entity.Name) = new Entity.Definition.Builder(name)
 
   object Entity {
 
@@ -71,14 +72,8 @@ trait Client extends origin.FinderComponent {
     }
 
     case class Definition private[amber](name: Entity.Name,
-                                         fields: HashMap[Field.Name, Field.Type[_]],
-                                         filter: Filter[Instance])
-        extends Filterable[Instance, Definition] {
-
-      override def where(filter: Filter[Instance]) = copy(filter = filter)
-
-      def field[A: NotNothing : TypeTag](name: Field.Name, query: Query): Definition =
-        copy(fields = fields.updated(name, Field.Type[A](name, query)))
+                                         fields: Set[Field.Type[_]],
+                                         filter: Filter[Instance]) {
 
       def instances(): Stream[Instance] = {
         def cartesianProduct(values: Seq[Stream[Field.Value[_]]]) =
@@ -86,19 +81,39 @@ trait Client extends origin.FinderComponent {
             for {a <- _; bs <- _} yield bs :+ a
           }
 
-        Instances(name, cartesianProduct(Field.Values(fields.values.to[Set]))) filter {filter(_)}
+        Instances(name, cartesianProduct(Field.Values(fields))) filter {filter(_)}
       }
 
       override lazy val toString = name + fields.mkString("(", ", " ,")")
     }
 
-    case class Instance private[amber](name: Entity.Name, values: Seq[Field.Value[_]]) {
+    object Definition {
+      class Builder(val name: Entity.Name) extends Filterable[Instance, Unit] {
+
+        private var filter: Filter[Instance] = Filter.tautology
+        private val fields = new ConcurrentHashMap[Field.Name, Field.Type[_]]
+
+        override def where(filter: Filter[Instance]) {this.filter = filter}
+
+        def has[A: NotNothing : TypeTag] = new Has[A]
+
+        class Has[A: NotNothing : TypeTag] extends Dynamic {
+          def updateDynamic(name: String)(query: Query) {
+            fields put (name, Field.Type[A](name, query))
+          }
+        }
+
+        def build(): Definition = Definition(name, fields.values.to[Set], filter)
+      }
+    }
+
+    case class Instance private[amber](name: Entity.Name,
+                                       values: Seq[Field.Value[_]]) extends Dynamic {
 
       private lazy val properties = HashMap.empty ++ (values map {v => (v.name, v)})
       lazy val fields: Set[Field.Name] = (values map {_.name}).to[Set]
 
-      def apply[A: NotNothing : TypeTag](name: Field.Name): Option[A] =
-        properties.get(name) flatMap {_.as[A]}
+      def selectDynamic(name: String): Option[Field.Value[_]] = properties.get(name)
 
       override lazy val toString = name + values.mkString("(", ", " ,")")
     }
