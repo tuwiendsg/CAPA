@@ -21,11 +21,11 @@ package simple
 import amber.util.{EventSource, Logging}
 
 trait System extends simple.origin.BuilderComponent
+             with amber.System
              with amber.origin.FinderComponent.Default
              with amber.family.FinderComponent.Default
              with amber.origin.FactoryComponent.Default
-             with amber.family.MemberFactoryComponent.Default
-             with amber.System {
+             with amber.family.MemberFactoryComponent.Default {
   this: Logging =>
 
   @transient private[this] val log = logger.create("amber.simple.System")

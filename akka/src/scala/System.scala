@@ -22,11 +22,11 @@ import amber.util.Logging
 import akka.util.EventSource
 
 trait System extends akka.origin.BuilderComponent
+             with amber.System
              with amber.origin.FinderComponent.Default
              with amber.family.FinderComponent.Default
              with amber.origin.FactoryComponent.Default
-             with amber.family.MemberFactoryComponent.Default
-             with amber.System {
+             with amber.family.MemberFactoryComponent.Default {
   this: Logging =>
 
   @transient private[this] val log = logger.create("amber.akka.System")
@@ -50,7 +50,7 @@ trait System extends akka.origin.BuilderComponent
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
     @transient override protected val log = logger.create("amber.akka.origin.Factory")
-    override val created = EventSource[(Origin[_], Manifest[_])]()
+    override val created = EventSource[Origin[_]]()
   }
 
   protected trait OriginFinder extends super.OriginFinder {

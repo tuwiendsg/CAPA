@@ -20,20 +20,18 @@ package amber
 import scala.collection.immutable.{Seq, Stream}
 
 import scalaz.syntax.equal._
-import scalaz.syntax.std.option._
 
-import util.{Filter, NotNothing, Observer}
-import util.Events.observe
+import util.{Filter, NotNothing}
 import util.NotNothing.notNothing
 
-trait Collecting {
-  this: origin.FinderComponent with origin.FactoryComponent
-                               with family.MemberFactoryComponent =>
+trait Collecting extends origin.BuilderComponent {
+  this: origin.FinderComponent with family.MemberFactoryComponent =>
+
+  abstract override protected def builder: OriginBuilder = _builder
 
   object collect {
 
     private[amber] val family = Family.random()
-    private var observer: Option[Observer] = None
 
     def apply[A: NotNothing : Manifest](name: Property.Name,
                                         filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
@@ -42,33 +40,21 @@ trait Collecting {
         if (name === origin.name) && origin.returns(notNothing, manifest[A])
         property <- origin.asInstanceOf[Origin[A]].apply(filter)
       } yield property
+  }
 
-    def start() {
-      if (!observer.isDefined) {
-        synchronized {
-          observer = Some {
-            observer | observe(origin.created) {
-              case (o, manifest) =>
-                if (family =/= o.family) {
-                  in(family).create(o.name) {
-                    filter =>
-                      val result: Seq[Property[Any]] = apply(o.name, filter)(notNothing, manifest.asInstanceOf[Manifest[Any]])
-                      if (result.isEmpty) None else Some(result map {_.value})
-                  }(Manifest.classType(classOf[Seq[Any]], manifest))
-                }
-            }
-          }
+  private object _builder extends OriginBuilder {
+    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+                                                             family: Family,
+                                                             read: B) = {
+      val origin = Collecting.super.builder.build(name, family, read)
+      if (collect.family =/= family) {
+        in(collect.family).create[Seq[A]](name) {
+          filter =>
+            for {values <- Some(collect[A](name, filter)) if !values.isEmpty}
+              yield values map {_.value}
         }
       }
-    }
-
-    def stop() {
-      if (observer.isDefined) {
-        synchronized {
-          observer foreach {_.dispose()}
-          observer = None
-        }
-      }
+      origin
     }
   }
 }

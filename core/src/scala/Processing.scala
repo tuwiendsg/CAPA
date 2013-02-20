@@ -34,7 +34,7 @@ trait Processing {
     def apply[A: Manifest, B: Manifest]
         (f: PartialFunction[Property.Name, (Property.Name, A => B)]): Observer = {
       val observer = observe(origin.created) {
-        case (o, _) if o.returns[A] =>
+        case o if o.returns[A] =>
           val source = o.asInstanceOf[Origin[A]]
           if (f isDefinedAt source.name) {
             val (name, g) = f(source.name)

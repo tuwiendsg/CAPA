@@ -29,11 +29,8 @@ trait System extends origin.FinderComponent
 
   def stopped: Events[Unit]
 
-  collect.start()
-
   def client: amber.Client = _client
   def shutdown() {
-    collect.stop()
     process.shutdown()
   }
 

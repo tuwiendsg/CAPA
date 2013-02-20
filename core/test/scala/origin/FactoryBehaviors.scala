@@ -44,7 +44,7 @@ trait FactoryBehaviors {
 
           try {
             val result = origin.create(name)(read)
-            verify(observe).apply((result, manifest[A]))
+            verify(observe).apply(result)
           } finally {
             observer.dispose()
           }

@@ -54,7 +54,7 @@ class DefaultFactorySpec extends Spec
 
           try {
             val result = builder.build[A, Origin.Read.Unfiltered[A]](name, random[Family], read)
-            verify(observe).apply((result, manifest[A]))
+            verify(observe).apply(result)
           } finally {
             observer.dispose()
           }

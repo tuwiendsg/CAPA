@@ -26,11 +26,11 @@ import util.Filter
 
 class CollectingSpec extends Spec
                      with mock.origin.BuilderComponent
+                     with Collecting
                      with origin.FinderComponent.Default
                      with family.FinderComponent.Default
                      with origin.FactoryComponent.Default
-                     with family.MemberFactoryComponent.Default
-                     with Collecting {
+                     with family.MemberFactoryComponent.Default {
 
   override def mocker[A: Manifest, B: Origin.Read[A]#apply] =
     super.mocker[A, B] andThen {case ((name, family, read, manifest), origin) =>
@@ -52,18 +52,6 @@ class CollectingSpec extends Spec
 
     val name = random[Property.Name]
     val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
-  }
-
-  override def beforeEach() {
-    super.beforeEach()
-
-    collect.start()
-  }
-
-  override def afterEach() {
-    collect.stop()
-
-    super.afterEach()
   }
 
   "Collecting" when {

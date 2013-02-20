@@ -26,7 +26,7 @@ trait FactoryComponent {
   def origin: OriginFactory
 
   trait OriginFactory {
-    def created: Events[(Origin[_], Manifest[_ ])]
+    def created: Events[Origin[_]]
     def create[A: Manifest](name: Property.Name)(read: Origin.Read.Unfiltered[A]): Origin[A]
   }
 
@@ -54,7 +54,7 @@ object FactoryComponent {
 
     trait OriginFactory extends super.OriginFactory {
 
-      override val created = EventSource[(Origin[_], Manifest[_])]()
+      override val created = EventSource[Origin[_]]()
 
       override def create[A: Manifest](name: Property.Name)(read: Origin.Read.Unfiltered[A]) =
         builder.build(name, Family.random(), read)
@@ -65,7 +65,7 @@ object FactoryComponent {
                                                                family: Family,
                                                                read: B) = {
         val result = Default.super.builder.build(name, family, read)
-        origin.created emit (result, manifest[A])
+        origin.created.emit(result)
         result
       }
     }
