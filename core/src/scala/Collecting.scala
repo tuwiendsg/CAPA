@@ -30,8 +30,6 @@ trait Collecting {
   this: origin.FinderComponent with origin.FactoryComponent
                                with family.MemberFactoryComponent =>
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
-
   val collect = Collect
 
   object Collect {

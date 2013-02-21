@@ -27,8 +27,6 @@ import util.Events.observe
 trait Processing {
   this: origin.FactoryComponent with family.MemberFactoryComponent =>
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
-
   val process = ProcessorFactory
   val map = MapperFactory
   val operation = OperationFactory
