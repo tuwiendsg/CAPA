@@ -20,12 +20,9 @@ package util
 
 import scalaz.Equal.equalA
 
-sealed trait Path extends Filterable[Origin.Meta.Readable, Query] {
-
+sealed trait Path {
   def >:>(that: Path): Boolean
   def /(end: String): Path
-
-  override def where(filter: Filter[Origin.Meta.Readable]) = Query(this, filter)
 }
 
 object Path {

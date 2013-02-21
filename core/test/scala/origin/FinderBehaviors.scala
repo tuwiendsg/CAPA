@@ -18,8 +18,6 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import util.Path.Root
-
 trait FinderBehaviors {
   this: Spec with FinderComponent =>
 
@@ -31,42 +29,11 @@ trait FinderBehaviors {
 
   object aFinder {
     def forOrigins() {
-      "find an origin" when {
-        "using the origin's name" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create(name)
+      "find an origin" in {
+        val name = random[Origin.Name]
+        val origin = fixture.create(name)
 
-          origins.find(name) should contain(origin)
-        }
-
-        "using the name of an origin's parent" in {
-          val parent = random[Origin.Name]
-          val origin = fixture.create(parent / random[String])
-
-          origins.find(parent) should contain(origin)
-        }
-      }
-
-      "not find an origin" when {
-        "using a name different from the origin's name" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create(name)
-
-          origins.find(different(name)) should not(contain(origin))
-        }
-
-        "using the name of an origin's child" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create(name)
-
-          origins.find(name / random[String]) should not(contain(origin))
-        }
-      }
-
-      "return all origins" in {
-        val origin = fixture.create(random[Origin.Name])
-
-        origins.find(Root) should contain(origin)
+        origins.find(Selections.exact(name)) should contain(origin)
       }
     }
   }

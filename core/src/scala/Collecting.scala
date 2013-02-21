@@ -36,8 +36,8 @@ trait Collecting extends origin.BuilderComponent {
     def apply[A: NotNothing : Manifest](name: Origin.Name,
                                         filter: Filter[Origin.Meta.Readable]): Stream[Property[A]] =
       for {
-        origin <- origins.find(name).toStream
-        if (name === origin.name) && origin.returns(notNothing, manifest[A])
+        origin <- origins.find(Selections.exact(name)).toStream
+        if origin.returns(notNothing, manifest[A])
         property <- origin.asInstanceOf[Origin[A]].apply(filter)
       } yield property
   }

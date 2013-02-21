@@ -87,6 +87,7 @@ object Dependency {
   object Scalaz {
     val version = "7.0.0-M7"
     val core = "org.scalaz" %% "scalaz-core" % version
+    val iteratee = "org.scalaz" %% "scalaz-iteratee" % version
   }
 
   object SLF4J {
@@ -119,6 +120,7 @@ object Amber extends Build {
     name = "core",
     dependencies = Seq(
                      Scalaz.core,
+                     Scalaz.iteratee,
                      SLF4J.api % "provided",
                      ScalaTest.core % "test",
                      Mockito.all % "test"

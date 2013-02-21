@@ -19,7 +19,6 @@ package amber
 package akka
 
 import amber.util.Logging
-import amber.util.Path.Root
 import akka.util.EventSource
 
 trait System extends akka.origin.BuilderComponent
@@ -57,7 +56,7 @@ trait System extends akka.origin.BuilderComponent
   protected trait OriginFinder extends super.OriginFinder {
     def killAll() {
       log.debug("Killing all origins")
-      val origins = find(Root)
+      val origins = find(Selections.all)
       origins foreach {_.kill()}
       log.debug("Killed " + origins.size + " origins")
     }

@@ -40,11 +40,11 @@ class DelegatorFinderSpec extends Spec
 
   "OriginFinder.Delegator" should {
     "invoke the delegatee's find method" in {
-      val name = random[Origin.Name]
+      val selection = Selections.all
 
-      origins.find(name)
+      origins.find(selection)
 
-      verify(finder.origins).find(name)
+      verify(finder.origins).find(selection)
     }
   }
 }

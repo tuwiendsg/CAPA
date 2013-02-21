@@ -17,27 +17,28 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
+import java.util.concurrent.ConcurrentHashMap
 
-import scalaz.syntax.equal._
+import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 
 import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {
 
+  case class Query(selection: Selection, filter: Filter[Origin.Meta.Readable])
+      extends Filterable[Origin.Meta.Readable, Query] {
+    override def where(filter: Filter[Origin.Meta.Readable]): Query = copy(filter = filter)
+  }
+
+  implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)
+
   def select[A: NotNothing : Manifest](query: Query): Stream[Property[A]] =
     for {
-      origin <- origins.find(query.path).toStream if origin.returns[A]
+      origin <- origins.find(query.selection).toStream if origin.returns[A]
       property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
     } yield property
 
-  def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] =
-    for {
-      origin <- origins.find(query.path).toStream
-      if (query.path === origin.name) && origin.returns[A]
-      property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
-    } yield property.value
-
+  def selectAll[A: NotNothing : Manifest](query: Query): Stream[A] = select[A](query) map {_.value}
   def selectOne[A: NotNothing : Manifest](query: Query): Option[A] = selectAll[A](query).headOption
   def selectAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
   def selectOne(definition: Entity.Definition): Option[Entity.Instance] =

@@ -27,8 +27,11 @@ trait FinderComponent {
   protected type Origin[+A] <: amber.Origin[A]
   protected def origins: OriginFinder
 
+  protected type Selection = MultiTrie.Selection
+  protected val Selections = MultiTrie.Selections
+
   protected trait OriginFinder {
-    def find(name: Origin.Name): Set[Origin[_]]
+    def find(selection: Selection): Set[Origin[_]]
   }
 }
 
@@ -41,7 +44,7 @@ object FinderComponent {
 
     protected trait OriginFinder extends super.OriginFinder {
       private val trie = MultiTrie[Origin[_]]()
-      override def find(name: Origin.Name) = trie.find(name)
+      override def find(selection: Selection) = trie.select(selection)
       def add(origin: Origin[_]) {trie add (origin.name, origin)}
     }
 
@@ -64,7 +67,7 @@ object FinderComponent {
 
     override protected type Origin[+A] = finder.Origin[A]
     override protected object origins extends OriginFinder {
-      override def find(name: Origin.Name) = finder.origins.find(name)
+      override def find(selection: Selection) = finder.origins.find(selection)
     }
   }
 }
