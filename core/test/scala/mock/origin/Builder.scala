@@ -31,23 +31,23 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
   override def beforeEach() {
     built = List.empty
-    build = mock[(Property.Name, Family, Any) => Unit]("mock.OriginBuilder.build")
+    build = mock[(Origin.Name, Family, Any) => Unit]("mock.OriginBuilder.build")
 
     super.beforeEach()
   }
 
   var built: List[Origin[_]] = _
-  var build: (Property.Name, Family, Any) => Unit = _
+  var build: (Origin.Name, Family, Any) => Unit = _
 
   def mocker[A: Manifest, B: Origin.Read[A]#apply] =
-    new Mocker[(Property.Name, Family, B, Manifest[A]), amber.Origin[A]] {
-      def mock(args: (Property.Name, Family, B, Manifest[A])) =
+    new Mocker[(Origin.Name, Family, B, Manifest[A]), amber.Origin[A]] {
+      def mock(args: (Origin.Name, Family, B, Manifest[A])) =
         org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]]("mock.Origin[" + manifest[A] + "]")
     }
 
   override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+    override def build[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
                                                              family: Family,
                                                              read: B) = {
       val origin = mocker[A, B].mock(name, family, read, manifest[A])

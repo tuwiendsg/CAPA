@@ -21,7 +21,7 @@ package util
 class MultiTrieSpec extends Spec {
 
   trait Fixture {
-    val trie = MultiTrie[Property.Name, String]()
+    val trie = MultiTrie[Origin.Name, String]()
     val value = random[String]
   }
 
@@ -30,7 +30,7 @@ class MultiTrieSpec extends Spec {
       "be able to get the value" when {
         "using the same key" in {
           new Fixture {
-            val key = random[Property.Name]
+            val key = random[Origin.Name]
 
             trie += (Some(key), value)
 
@@ -40,7 +40,7 @@ class MultiTrieSpec extends Spec {
 
         "using a parent key" in {
           new Fixture {
-            val superKey = random[Property.Name]
+            val superKey = random[Origin.Name]
             val key = superKey / random[String]
 
             trie += (Some(key), value)
@@ -51,7 +51,7 @@ class MultiTrieSpec extends Spec {
 
         "using no key" in {
           new Fixture {
-            trie += (Some(random[Property.Name]), value)
+            trie += (Some(random[Origin.Name]), value)
 
             trie(None) should contain(value)
           }
@@ -61,7 +61,7 @@ class MultiTrieSpec extends Spec {
       "not be able to get the value" when {
         "using a different key" in {
           new Fixture {
-            val key = random[Property.Name]
+            val key = random[Origin.Name]
 
             trie += (Some(key), value)
 
@@ -71,7 +71,7 @@ class MultiTrieSpec extends Spec {
 
         "using a child key" in {
           new Fixture {
-            val key = random[Property.Name]
+            val key = random[Origin.Name]
             val subKey = key / random[String]
 
             trie += (Some(key), value)

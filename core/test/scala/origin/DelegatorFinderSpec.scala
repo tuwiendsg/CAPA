@@ -31,7 +31,7 @@ class DelegatorFinderSpec extends Spec
   }
 
   override val fixture = new Fixture {
-    def create(name: Property.Name) = {
+    def create(name: Origin.Name) = {
       val origin = mock[Origin[_]]("Origin")
       when(origin.name) thenReturn name
       origin
@@ -40,7 +40,7 @@ class DelegatorFinderSpec extends Spec
 
   "OriginFinder.Delegator" should {
     "invoke the delegatee's find method" in {
-      val name = random[Property.Name]
+      val name = random[Origin.Name]
 
       origins.find(name)
 

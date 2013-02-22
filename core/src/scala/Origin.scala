@@ -23,7 +23,7 @@ import util.{Filter, NotNothing, Union}
 
 trait Origin[+A] extends Equals {
 
-  def name: Property.Name
+  def name: Origin.Name
   def family: Family
   def apply(filter: Filter[Origin.Meta.Readable]): Option[Property[A]]
   def returns[B: NotNothing : Manifest]: Boolean
@@ -33,6 +33,7 @@ trait Origin[+A] extends Equals {
 
 object Origin {
 
+  type Name = Property.Name
   type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
 
   object Read {

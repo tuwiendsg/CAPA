@@ -32,7 +32,7 @@ trait Processing {
     private var observers = Vector.empty[Observer]
 
     def apply[A: Manifest, B: Manifest]
-        (f: PartialFunction[Property.Name, (Property.Name, A => B)]): Observer = {
+        (f: PartialFunction[Origin.Name, (Origin.Name, A => B)]): Observer = {
       val observer = observe(origin.created) {
         case o if o.returns[A] =>
           val source = o.asInstanceOf[Origin[A]]
@@ -58,7 +58,7 @@ trait Processing {
   }
 
   object map {
-    def apply[A: Manifest, B: Manifest](input: Property.Name, output: Property.Name)
+    def apply[A: Manifest, B: Manifest](input: Origin.Name, output: Origin.Name)
                                        (f: A => B): Observer =
       process {
         case name if input === name => output -> f

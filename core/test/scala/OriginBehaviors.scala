@@ -29,32 +29,32 @@ trait OriginBehaviors {
 
   trait Fixture {
 
-    def create[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
+    def create[A: Manifest, B: Origin.Read[A]#apply](name: Origin.Name,
                                                      family: Family,
                                                      read: B): Origin[A]
 
-    def create[A: NotNothing : Manifest](): Origin[A] = create(random[Property.Name])
+    def create[A: NotNothing : Manifest](): Origin[A] = create(random[Origin.Name])
 
-    def create[A: NotNothing : Manifest](name: Property.Name): Origin[A] =
+    def create[A: NotNothing : Manifest](name: Origin.Name): Origin[A] =
       create(name, random[Family])
 
     def create[A: NotNothing : Manifest](family: Family): Origin[A] =
-      create(random[Property.Name], family)
+      create(random[Origin.Name], family)
 
-    def create[A: NotNothing : Manifest](name: Property.Name, family: Family): Origin[A] =
+    def create[A: NotNothing : Manifest](name: Origin.Name, family: Family): Origin[A] =
       create(name, family, mock[Origin.Read.Unfiltered[A]]("Origin.read"))
 
     def create[A: Manifest](read: Origin.Read.Unfiltered[A]): Origin[A] =
-      create(random[Property.Name], random[Family], read)
+      create(random[Origin.Name], random[Family], read)
 
     def create[A: Manifest](read: Origin.Read.Filtered[A]): Origin[A] =
-      create(random[Property.Name], random[Family], read)
+      create(random[Origin.Name], random[Family], read)
   }
 
   object anOrigin {
 
     "has the specified name" in {
-      val name = random[Property.Name]
+      val name = random[Origin.Name]
       val origin = fixture.create[Any](name)
 
       origin.name should be(name)

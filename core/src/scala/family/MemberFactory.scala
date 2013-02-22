@@ -28,7 +28,7 @@ trait MemberFactoryComponent {
   protected def in(family: Family): MemberFactory
 
   protected trait MemberFactory {
-    def create[A: Manifest](name: Property.Name)(read: Origin.Read.Filtered[A]): Option[Origin[A]]
+    def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Filtered[A]): Option[Origin[A]]
   }
 
   protected object MemberFactory {
@@ -36,7 +36,7 @@ trait MemberFactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A: Manifest](name: Property.Name)
+      abstract override def create[A: Manifest](name: Origin.Name)
                                                (read: Origin.Read.Filtered[A]) = {
         val result = super.create(name)(read)
         if (result.isDefined) log.debug("Created " + name + " origin of type " + manifest[A])
@@ -58,7 +58,7 @@ object MemberFactoryComponent {
 
       protected def family: Family
 
-      override def create[A: Manifest](name: Property.Name)(read: Origin.Read.Filtered[A]) =
+      override def create[A: Manifest](name: Origin.Name)(read: Origin.Read.Filtered[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
             origin => (name === origin.name) && origin.returns[A]

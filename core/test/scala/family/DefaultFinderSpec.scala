@@ -32,7 +32,7 @@ class DefaultFinderSpec extends Spec
 
   override val fixture = new Fixture {
     override def create(family: Family) = {
-      val name = random[Property.Name]
+      val name = random[Origin.Name]
       val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
 
       builder.build[Any, Origin.Read.Unfiltered[Any]](name, family, read)

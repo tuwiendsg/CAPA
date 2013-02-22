@@ -25,7 +25,7 @@ trait MemberFactoryBehaviors {
 
     class A
 
-    val name = random[Property.Name]
+    val name = random[Origin.Name]
     val family = random[Family]
     val read = mock[Origin.Read.Filtered[A]]("Origin.read")
   }

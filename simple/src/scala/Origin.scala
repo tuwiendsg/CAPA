@@ -22,7 +22,7 @@ import scalaz.syntax.equal._
 
 import amber.util.{Filter, Logger, NotNothing}
 
-private[simple] abstract class Origin[+A : Manifest](override val name: Property.Name,
+private[simple] abstract class Origin[+A : Manifest](override val name: Origin.Name,
                                                      override val family: Family)
                                                     (log: Logger) extends amber.Origin[A] {
 

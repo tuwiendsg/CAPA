@@ -58,8 +58,8 @@ object MultiTrie {
 
   object Key {
 
-    implicit object fromPropertyName extends MultiTrie.Key[Property.Name] {
-      override def parts(name: Property.Name) = (name.property, name.child)
+    implicit object fromOriginName extends MultiTrie.Key[Origin.Name] {
+      override def parts(name: Origin.Name) = (name.property, name.child)
     }
 
     def unapply[A: Key](key: Option[A]): Option[(String, Option[A])] =

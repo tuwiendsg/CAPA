@@ -51,10 +51,10 @@ class ProcessingSpec extends Spec
       class A
       class B
 
-      val input = random[Property.Name]
-      val output = random[Property.Name]
+      val input = random[Origin.Name]
+      val output = random[Origin.Name]
       val processor = mock[A => B]("Processor")
-      val definition = mock[PartialFunction[Property.Name, (Property.Name, A => B)]]("Process.Definition")
+      val definition = mock[PartialFunction[Origin.Name, (Origin.Name, A => B)]]("Process.Definition")
       val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
 
       when(definition isDefinedAt input) thenReturn true
@@ -197,8 +197,8 @@ class ProcessingSpec extends Spec
       class A
       class B
 
-      val input = random[Property.Name]
-      val output = random[Property.Name]
+      val input = random[Origin.Name]
+      val output = random[Origin.Name]
       val mapper = mock[A => B]("Mapper")
       val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
     }
@@ -324,7 +324,7 @@ class ProcessingSpec extends Spec
       class A
       class B
 
-      val input = random[Property.Name]
+      val input = random[Origin.Name]
       val output = random[Operation.Name]
       val function = mock[A => B]("Mapper")
       val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")

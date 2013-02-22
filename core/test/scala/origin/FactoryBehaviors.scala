@@ -30,7 +30,7 @@ trait FactoryBehaviors {
 
     class A
 
-    val name = random[Property.Name]
+    val name = random[Origin.Name]
     val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
   }
 
