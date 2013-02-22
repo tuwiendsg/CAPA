@@ -47,7 +47,7 @@ trait System extends simple.origin.BuilderComponent
   }
 
   trait Client extends super.Client with amber.origin.FinderComponent.Delegator {
-    override protected val delegatee = System.this
+    override protected val finder = System.this
   }
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {

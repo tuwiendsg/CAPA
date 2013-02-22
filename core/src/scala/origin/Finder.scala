@@ -62,12 +62,12 @@ object FinderComponent {
 
   trait Delegator extends FinderComponent {
 
-    protected val delegatee: FinderComponent
+    protected val finder: FinderComponent
 
-    override protected type Origin[+A] = delegatee.Origin[A]
+    override protected type Origin[+A] = finder.Origin[A]
     override protected object origins extends OriginFinder {
-      override def all() = delegatee.origins.all()
-      override def find(name: Property.Name) = delegatee.origins.find(name)
+      override def all() = finder.origins.all()
+      override def find(name: Property.Name) = finder.origins.find(name)
     }
   }
 }

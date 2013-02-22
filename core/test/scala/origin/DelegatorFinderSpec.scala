@@ -24,7 +24,7 @@ class DelegatorFinderSpec extends Spec
                           with FinderComponent.Delegator
                           with FinderBehaviors {
 
-  override val delegatee = new FinderComponent
+  override val finder = new FinderComponent
   class FinderComponent extends amber.origin.FinderComponent {
     override type Origin[+A] = amber.Origin[A]
     override val origins = mock[OriginFinder]("origin.Finder")
@@ -44,13 +44,13 @@ class DelegatorFinderSpec extends Spec
 
       origins.find(name)
 
-      verify(delegatee.origins).find(name)
+      verify(finder.origins).find(name)
     }
 
     "invoke the delegatee's all method" in {
       origins.all()
 
-      verify(delegatee.origins).all()
+      verify(finder.origins).all()
     }
   }
 }

@@ -24,7 +24,7 @@ class DelegatorFinderSpec extends Spec
                           with FinderComponent.Delegator
                           with FinderBehaviors {
 
-  override val delegatee = new FinderComponent
+  override val finder = new FinderComponent
   class FinderComponent extends amber.family.FinderComponent {
     override type Origin[+A] = amber.Origin[A]
     override val families = mock[FamilyFinder]("family.Finder")
@@ -44,7 +44,7 @@ class DelegatorFinderSpec extends Spec
 
       families.find(family)
 
-      verify(delegatee.families).find(family)
+      verify(finder.families).find(family)
     }
   }
 }
