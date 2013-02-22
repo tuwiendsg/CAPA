@@ -27,11 +27,7 @@ import util.Events.observe
 trait Processing {
   this: origin.FactoryComponent with family.MemberFactoryComponent =>
 
-  val process = ProcessorFactory
-  val map = MapperFactory
-  val operation = OperationFactory
-
-  object ProcessorFactory {
+  object process {
 
     private var observers = Vector.empty[Observer]
 
@@ -61,7 +57,7 @@ trait Processing {
     }
   }
 
-  object MapperFactory {
+  object map {
     def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](input: Property.Name,
                                                               output: Property.Name)
                                                              (f: A => B): Observer =
@@ -70,7 +66,7 @@ trait Processing {
       }
   }
 
-  object OperationFactory {
+  object operation {
     def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest](operation: Operation.Name)
                                                              (f: A => B): Observer =
       process {

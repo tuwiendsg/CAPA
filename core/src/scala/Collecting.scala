@@ -30,9 +30,7 @@ trait Collecting {
   this: origin.FinderComponent with origin.FactoryComponent
                                with family.MemberFactoryComponent =>
 
-  val collect = Collect
-
-  object Collect {
+  object collect {
 
     private[amber] val family = Family.random()
     private var observer: Option[Observer] = None
