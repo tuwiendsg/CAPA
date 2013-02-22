@@ -46,12 +46,6 @@ trait FinderBehaviors {
           families.find(different(family)) should not(contain(origin))
         }
       }
-
-      "return all origins" in {
-        val origin = fixture.create(random[Family])
-
-        families.all() should contain(origin)
-      }
     }
   }
 }

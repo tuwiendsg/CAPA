@@ -46,11 +46,5 @@ class DelegatorFinderSpec extends Spec
 
       verify(delegatee.families).find(family)
     }
-
-    "invoke the delegatee's all method" in {
-      families.all()
-
-      verify(delegatee.families).all()
-    }
   }
 }
