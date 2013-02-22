@@ -65,14 +65,19 @@ trait Client extends origin.FinderComponent {
           (name: Field.Name, query: Query) {
 
         def values(): Stream[Value[A]] =
-          select[A](query) map {Value(name, _)}
+          selectAll[A](query) map {Value(name, _)}
 
         override lazy val toString = name + ": " + manifest[A]
       }
 
-      private[amber] case class Value[+A <: AnyRef]
-          (name: Field.Name, property: Property[A]) {
-        override lazy val toString = name + " = " + property.value
+      private[amber] case class Value[+A <: AnyRef : Manifest]
+          (name: Field.Name, value: A) {
+
+        def as[B : NotNothing : Manifest]: Option[B] =
+          if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B])
+          else None
+
+        override lazy val toString = name + " = " + value
       }
 
       private[amber] object Values {
@@ -113,7 +118,7 @@ trait Client extends origin.FinderComponent {
         (name: Entity.Name, values: Seq[Field.Value[_ <: AnyRef]]) {
 
       private lazy val properties =
-        HashMap.empty ++ (values map {v => (v.name, v.property)})
+        HashMap.empty ++ (values map {value => (value.name, value)})
       lazy val fields: Seq[Field.Name] = Vector(values map {_.name}: _*)
 
       def apply[A : NotNothing : Manifest](name: Field.Name): Option[A] =
