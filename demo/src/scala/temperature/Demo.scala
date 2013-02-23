@@ -21,6 +21,8 @@ package temperature
 
 import scala.collection.immutable.Set
 
+import scalaz.syntax.std.option._
+
 import util.{ConfigurableComponent, Duration, Logging, Scheduling}
 
 trait Demo extends Runnable with Scheduling with ConfigurableComponent {
@@ -57,7 +59,10 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
     try {
       for {location <- locations; _ <- 1 to origins} system.Temperature.createCelsius(location)
       println(delimiter)
-      every(configuration.period) {() => client.printTemperature(); println(delimiter)}
+      every(configuration.period) {() =>
+        println((client.readTemperature() map {_.toString}) | ("No " + client.temperature.name))
+        println(delimiter)
+      }
       readLine()
     } finally {
       shutdown()

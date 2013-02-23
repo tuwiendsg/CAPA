@@ -26,7 +26,7 @@ import amber.Property.Name.fromString
 
 trait Client extends amber.Client {
 
-  protected val temperature =
+  val temperature =
     entity("Temperature").
       field[Double]("celsius", "temperature/celsius/min" where {
         meta => for {location <- meta[String]("location")} yield location === "A"}).
@@ -40,7 +40,5 @@ trait Client extends amber.Client {
           } yield celsius < kelvin
       }
 
-  def printTemperature() {
-    for (t <- selectOne(temperature)) println(t)
-  }
+  def readTemperature(): Option[Entity.Instance] = selectOne(temperature)
 }
