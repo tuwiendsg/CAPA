@@ -21,9 +21,9 @@ package temperature
 
 import scala.collection.immutable.Set
 
-import util.{Logging, Scheduling}
+import util.{ConfigurableComponent, Duration, Logging, Scheduling}
 
-trait Demo extends Runnable with Scheduling {
+trait Demo extends Runnable with Scheduling with ConfigurableComponent {
   this: Logging =>
 
   def system: System
@@ -41,6 +41,14 @@ trait Demo extends Runnable with Scheduling {
     private object _client extends Client
   }
 
+  override def configuration: Configuration = _configuration
+
+  trait Configuration {
+    val period: Duration = 2 seconds
+  }
+
+  private object _configuration extends Configuration
+
   protected val delimiter = "-" * 40
   protected val locations = Set("A", "B")
   protected val origins = 5
@@ -49,7 +57,7 @@ trait Demo extends Runnable with Scheduling {
     try {
       for {location <- locations; _ <- 1 to origins} system.Temperature.createCelsius(location)
       println(delimiter)
-      every(2 seconds) {() => client.printTemperature(); println(delimiter)}
+      every(configuration.period) {() => client.printTemperature(); println(delimiter)}
       readLine()
     } finally {
       shutdown()
