@@ -26,10 +26,6 @@ trait System extends amber.System {
 
     map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
     map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
-    map[Double, Double]("temperature/kelvin", "temperature/celsius") {x => x - 273.15}
-    map[Double, Double]("temperature/kelvin", "temperature/fahrenheit") {x => x * 9 / 5 - 459.6}
-    map[Double, Double]("temperature/fahrenheit", "temperature/celsius") {x => (x - 32) * 5 / 9}
-    map[Double, Double]("temperature/fahrenheit", "temperature/kelvin") {x => (x + 459.67) * 5 / 9}
 
     def createCelsius(location: String): amber.Origin[Int] = {
       val temperature = origin.create("temperature/celsius") {
