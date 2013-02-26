@@ -27,17 +27,19 @@ trait System extends origin.FinderComponent
              with Processing.Default.Conversions
              with Processing.Default.Operations {
 
-  def client: Client
   def stopped: Events[Unit]
 
   collect.start()
 
+  def client: amber.Client = _client
   def shutdown() {
     collect.stop()
     process.shutdown()
   }
 
-  trait Client extends amber.Client {
-    protected type Origin[+A] = System.this.Origin[A]
+  trait Client extends amber.Client with amber.origin.FinderComponent.Delegator {
+    override protected val finder = System.this
   }
+
+  private object _client extends Client
 }

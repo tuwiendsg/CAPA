@@ -31,7 +31,6 @@ trait System extends simple.origin.BuilderComponent
   @transient private[this] val log = logger.create("amber.simple.System")
 
   override val stopped = EventSource[Unit]()
-  override val client: super.Client = new Client {}
   override def origin: super.OriginFactory = _origin
   override protected def in(f: Family) = new MemberFactory with MemberFactory.Logging {
     override protected val family = f
@@ -44,10 +43,6 @@ trait System extends simple.origin.BuilderComponent
     super.shutdown()
     stopped emit ()
     log.info("Shutdown successful")
-  }
-
-  trait Client extends super.Client with amber.origin.FinderComponent.Delegator {
-    override protected val finder = System.this
   }
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {

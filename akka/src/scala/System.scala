@@ -32,7 +32,6 @@ trait System extends akka.origin.BuilderComponent
   @transient private[this] val log = logger.create("amber.akka.System")
 
   override val stopped = EventSource[Unit]()
-  override val client: super.Client = new Client {}
   override def origin: super.OriginFactory = _origin
   override protected def origins: OriginFinder = _origins
   override protected def in(f: Family) = new MemberFactory with MemberFactory.Logging {
@@ -47,10 +46,6 @@ trait System extends akka.origin.BuilderComponent
     origins.killAll()
     stopped emit ()
     log.info("Shutdown successful")
-  }
-
-  trait Client extends super.Client with amber.origin.FinderComponent.Delegator {
-    override protected val finder = System.this
   }
 
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
