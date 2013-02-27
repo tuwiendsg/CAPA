@@ -21,12 +21,25 @@ package temperature
 
 import scala.collection.immutable.Set
 
-import util.Scheduling
+import util.{Logging, Scheduling}
 
 trait Demo extends Runnable with Scheduling {
+  this: Logging =>
 
-  def system: temperature.System
-  def client: temperature.Client
+  def system: System
+  def client: temperature.Client = system.client
+
+  trait System extends temperature.System with Logging.Delegator {
+
+    override protected lazy val logging = Demo.this
+    override def client: Client = _client
+
+    trait Client extends super.Client with temperature.Client with Logging.Delegator {
+      override protected lazy val logging = System.this
+    }
+
+    private object _client extends Client
+  }
 
   protected val delimiter = "-" * 40
   protected val locations = Set("A", "B")

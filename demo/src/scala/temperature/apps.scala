@@ -19,18 +19,16 @@ package amber
 package demo
 package temperature
 
-object Simple extends Demo with App {
+object Simple extends Demo with App with util.SLF4JLogging {
 
-  override val system = new simple.System with temperature.System with util.SLF4JLogging
-  override val client = new system.Client with temperature.Client with util.SLF4JLogging
+  override val system = new simple.System with super.System
 
   run()
 }
 
-object Akka extends Demo with App {
+object Akka extends Demo with App with util.SLF4JLogging {
 
-  override val system = new akka.System with temperature.System with util.SLF4JLogging
-  override val client = new system.Client with temperature.Client with util.SLF4JLogging
+  override val system = new akka.System with super.System
 
   run()
 }
