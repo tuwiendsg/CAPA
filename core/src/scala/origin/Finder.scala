@@ -37,7 +37,7 @@ object FinderComponent {
 
   trait Default extends FinderComponent with origin.BuilderComponent {
 
-    abstract override protected def builder: OriginBuilder = new Wrapper(super.builder)
+    abstract override protected def builder: OriginBuilder = _builder
     override protected def origins: OriginFinder = _origins
 
     protected trait OriginFinder extends super.OriginFinder {
@@ -47,11 +47,11 @@ object FinderComponent {
       def add(origin: Origin[_]) {trie += (Some(origin.name), origin)}
     }
 
-    private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
+    private object _builder extends OriginBuilder {
       override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
                                                                family: Family,
                                                                read: B) = {
-        val result = underlying.build(name, family, read)
+        val result = Default.super.builder.build(name, family, read)
         origins.add(result)
         result
       }

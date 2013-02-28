@@ -49,7 +49,7 @@ trait FactoryComponent {
 object FactoryComponent {
   trait Default extends FactoryComponent with BuilderComponent {
 
-    abstract override protected val builder: OriginBuilder = new Wrapper(super.builder)
+    abstract override protected val builder: OriginBuilder = _builder
     override def origin: OriginFactory = _origin
 
     trait OriginFactory extends super.OriginFactory {
@@ -60,11 +60,11 @@ object FactoryComponent {
         builder.build(name, Family.random(), read)
     }
 
-    private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
+    private object _builder extends OriginBuilder {
       override def build[A: Manifest, B: Origin.Read[A]#apply](name: Property.Name,
                                                                family: Family,
                                                                read: B) = {
-        val result = underlying.build(name, family, read)
+        val result = Default.super.builder.build(name, family, read)
         origin.created emit (result, manifest[A])
         result
       }
