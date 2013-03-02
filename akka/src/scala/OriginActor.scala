@@ -24,13 +24,13 @@ import scala.reflect.runtime.universe.TypeTag
 import _root_.akka.actor.Actor
 import _root_.akka.pattern.pipe
 
-import amber.util.{Filter, Logger}
+import amber.util.Logger
 import akka.Message.Request.{MetaInfo, Read}
 
 private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family: Origin.Family)
-                                                     (log: Logger) extends Actor {
+                                                     (@transient log: Logger) extends Actor {
 
-  protected def read(filter: Filter[Origin.Meta.Readable]): Option[A]
+  protected def read(): Option[(A, Origin.Meta.Readable)]
 
   import context.dispatcher
 
@@ -40,11 +40,11 @@ private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family:
   }
 
   override def receive = {
-    case Read(filter) =>
+    case Read =>
       future {
-        for (value <- blocking {read(filter)}) yield {
+        for ((value, meta) <- blocking {read()}) yield {
           log.debug(s"Read $value from $name")
-          Origin.Value(name, value)
+          (Origin.Value(name, value), meta)
         }
       } pipeTo sender
     case MetaInfo.Name => sender ! name

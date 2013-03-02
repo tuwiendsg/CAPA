@@ -32,7 +32,7 @@ trait FactoryBehaviors {
 
   trait Fixture {
     val name = random[Origin.Name]
-    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+    val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
   def aFactory() {

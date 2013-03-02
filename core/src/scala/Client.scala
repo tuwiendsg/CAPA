@@ -39,7 +39,7 @@ trait Client extends origin.FinderComponent {
   def read[A: NotNothing : TypeTag](query: Query): Stream[Origin.Value[A]] =
     for {
       origin <- origins.find(query.selection).toStream if origin.returns[A]
-      value <- origin.asInstanceOf[Origin[A]].read(query.filter)
+      (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
     } yield value
 
   def readAll[A: NotNothing : TypeTag](query: Query): Stream[A] = read[A](query) map {_.value}
@@ -57,10 +57,17 @@ trait Client extends origin.FinderComponent {
     object Field {
 
       type Name = String
+      sealed trait Read[+A] extends ((Field.Name) => Stream[Value[A]])
 
-      private[amber] case class Type[+A: NotNothing : TypeTag](name: Field.Name, query: Query) {
-        def values(): Stream[Value[A]] = readAll[A](query) map {Value(name, _)}
-        override lazy val toString = s"$name: ${typeOf[A]}"
+      implicit def readFromOption[A: TypeTag](f: () => Option[A]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
+      }
+      implicit def readFromSeq[A: TypeTag](f: () => Seq[A]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
+      }
+
+      private[amber] case class Type[+A](name: Field.Name)(read: Read[A]) {
+        def values(): Stream[Value[A]] = read(name)
       }
 
       private[amber] type Value[+A] = util.Value.Named[Field.Name, A]
@@ -88,19 +95,15 @@ trait Client extends origin.FinderComponent {
     }
 
     object Definition {
-      class Builder(val name: Entity.Name) extends Filterable[Instance, Unit] {
+      class Builder(val name: Entity.Name) extends Filterable[Instance, Unit] with Dynamic {
 
         private var filter: Filter[Instance] = Filter.tautology
         private val fields = new ConcurrentHashMap[Field.Name, Field.Type[_]]
 
         override def where(filter: Filter[Instance]) {this.filter = filter}
 
-        def has[A: NotNothing : TypeTag] = new Has[A]
-
-        class Has[A: NotNothing : TypeTag] extends Dynamic {
-          def updateDynamic(name: String)(query: Query) {
-            fields put (name, Field.Type[A](name, query))
-          }
+        def updateDynamic[A](name: String)(read: Field.Read[A]) {
+          fields put (name, Field.Type[A](name)(read))
         }
 
         def build(): Definition = Definition(name, fields.values.to[Set], filter)

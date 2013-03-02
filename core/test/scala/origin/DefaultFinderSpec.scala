@@ -28,15 +28,15 @@ class DefaultFinderSpec extends Spec
                         with FinderComponent.Default
                         with FinderBehaviors {
 
-  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, _, _, _), origin) =>
+  override def mocker[A: ClassTag : TypeTag] =
+    super.mocker[A] andThen {case ((name, _, _, _), origin) =>
       when(origin.name) thenReturn name
     }
 
   override val fixture = new Fixture {
     override def create(name: Origin.Name) = {
       val family = random[Origin.Family]
-      val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
+      val read = mock[OriginBuilder.Read[AnyRef]]("Origin.read")
 
       builder.build(name, family, read)
     }

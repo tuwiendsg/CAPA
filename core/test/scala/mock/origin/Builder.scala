@@ -33,28 +33,28 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
   override def beforeEach() {
     built = List.empty
-    build = mock[(Origin.Name, Origin.Family, Any) => Unit]("mock.OriginBuilder.build")
+    build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
 
     super.beforeEach()
   }
 
   var built: List[Origin[_]] = _
-  var build: (Origin.Name, Origin.Family, Any) => Unit = _
+  var build: (Origin.Name, Origin.Family) => Unit = _
 
-  def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
-    new Mocker[(Origin.Name, Origin.Family, B, TypeTag[A]), amber.Origin[A]] {
-      def mock(args: (Origin.Name, Origin.Family, B, TypeTag[A])) =
+  def mocker[A: ClassTag : TypeTag] =
+    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A]), amber.Origin[A]] {
+      def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A])) =
         org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]](s"mock.Origin[${typeOf[A]}]")
     }
 
   override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                       family: Origin.Family,
-                                                                       read: B) = {
-      val origin = mocker[A, B].mock(name, family, read, typeTag[A])
+    override def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                              family: Origin.Family,
+                                              read: OriginBuilder.Read[A]) = {
+      val origin = mocker[A].mock(name, family, read, typeTag[A])
       built = built :+ origin
-      BuilderComponent.this.build(name, family, read)
+      BuilderComponent.this.build(name, family)
 
       origin
     }

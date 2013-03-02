@@ -30,8 +30,8 @@ class DefaultMemberFactorySpec extends Spec
                                with MemberFactoryComponent.Default
                                with MemberFactoryBehaviors {
 
-  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, family, _, tag), origin) =>
+  override def mocker[A: ClassTag : TypeTag] =
+    super.mocker[A] andThen {case ((name, family, _, tag), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
       when(origin.returns(anything(), equalTo(tag))) thenReturn true
@@ -44,7 +44,7 @@ class DefaultMemberFactorySpec extends Spec
       new Fixture {
         in(family).create(name)(read)
 
-        verify(build).apply(name, family, read)
+        verify(build).apply(name, family)
       }
     }
 
@@ -60,7 +60,7 @@ class DefaultMemberFactorySpec extends Spec
           in(family).create(name)(read)
           in(family).create(name)(read)
 
-          verify(build, times(1)).apply(equalTo(name), equalTo(family), anything())
+          verify(build, times(1)).apply(name, family)
         }
       }
     }

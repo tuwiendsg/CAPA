@@ -35,9 +35,9 @@ trait OriginBehaviors {
 
   trait Fixture {
 
-    def create[A: Manifest : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                               family: Origin.Family,
-                                                               read: B): Origin[A]
+    def create[A: Manifest : TypeTag](name: Origin.Name,
+                                      family: Origin.Family,
+                                      read: Fixture.Read[A]): Origin[A]
 
     def create[A: NotNothing : Manifest](): Origin[A] = create(random[Origin.Name])
 
@@ -48,13 +48,14 @@ trait OriginBehaviors {
       create(random[Origin.Name], family)
 
     def create[A: NotNothing : Manifest](name: Origin.Name, family: Origin.Family): Origin[A] =
-      create(name, family, mock[Origin.Read.Unfiltered[A]]("Origin.read"))
+      create(name, family, mock[Fixture.Read[A]]("Origin.read"))
 
-    def create[A: Manifest : TypeTag](read: Origin.Read.Unfiltered[A]): Origin[A] =
+    def create[A: Manifest : TypeTag](read: Fixture.Read[A]): Origin[A] =
       create(random[Origin.Name], random[Origin.Family], read)
+  }
 
-    def create[A: Manifest : TypeTag](read: Origin.Read.Filtered[A]): Origin[A] =
-      create(random[Origin.Name], random[Origin.Family], read)
+  object Fixture {
+    type Read[+A] = () => Option[A]
   }
 
   object anOrigin {
@@ -151,132 +152,59 @@ trait OriginBehaviors {
       origin.returns[U] should be(false)
     }
 
-    "is created with unfiltered read" should {
-      "invoke the specified filter" in {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        val origin = fixture.create(mock[Origin.Read.Unfiltered[_]]("Origin.read"))
+    "use the specified read function" in {
+      val read = mock[Fixture.Read[_]]("Origin.read")
+      when(read.apply()) thenReturn None
+      val origin = fixture.create(read)
 
-        origin.read(filter)
+      origin.read()
 
-        verify(filter).apply(anything())
-      }
+      verify(read).apply()
+    }
 
-      "if it passes the specified filter" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        when(filter.apply(anything())) thenReturn true
-
-        "use the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
-          when(read.apply()) thenReturn None
+    "if reading is successful" should {
+      "return a value" which {
+        "has the same name as the origin" in {
+          val read = mock[Fixture.Read[String]]("Origin.read")
+          when(read()) thenReturn Some(random[String])
           val origin = fixture.create(read)
 
-          origin.read(filter)
-
-          verify(read).apply()
+          val (Origin.Value(name, _), _) = origin.read().value
+          name should be(origin.name)
         }
 
-        "if reading is successful" should {
-          "return a value" which {
-            "has the same name as the origin" in {
-              val read = mock[Origin.Read.Unfiltered[String]]("Origin.read")
-              when(read()) thenReturn Some(random[String])
-              val origin = fixture.create(read)
+        "contains the result of the specified read function" in {
+          val result = random[String]
+          val read = mock[Fixture.Read[String]]("Origin.read")
+          when(read()) thenReturn Some(result)
+          val origin = fixture.create(read)
 
-              val Origin.Value(name, _) = origin.read(filter).value
-              name should be(origin.name)
-            }
-
-            "contains the result of the specified read function" in {
-              val result = random[String]
-              val read = mock[Origin.Read.Unfiltered[String]]("Origin.read")
-              when(read()) thenReturn Some(result)
-              val origin = fixture.create(read)
-
-              val Origin.Value(_, value) = origin.read(filter).value
-              value should be(result)
-            }
-          }
-        }
-
-        "if reading is unsuccessful" should {
-          "return None" in {
-            val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
-            when(read()) thenReturn None
-            val origin = fixture.create(read)
-
-            origin.read(filter) should not be('defined)
-          }
+          val (Origin.Value(_, value), _) = origin.read().value
+          value should be(result)
         }
       }
 
-      "if it does not pass the specified filter" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        when(filter.apply(anything())) thenReturn false
+      "return origin's meta" in {
+        val read = mock[Fixture.Read[String]]("Origin.read")
+        when(read()) thenReturn Some(random[String])
+        val origin = fixture.create(read)
 
-        "not invoke the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[_]]("Origin.read")
-          val origin = fixture.create(read)
+        val name = random[String]
+        val value = new A
+        origin(name) = value
 
-          origin.read(filter)
-
-          verify(read, never()).apply()
-        }
-
-        "return None" in {
-          val origin = fixture.create[Any]()
-
-          origin.read(filter) should not be('defined)
-        }
+        val (_, meta) = origin.read().value
+        meta.selectDynamic(name).as[Any].value should be(value)
       }
     }
 
-    "is created with filtered read" should {
-      "use the specified read function" in {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        val read = mock[Origin.Read.Filtered[_]]("Origin.read")
-        when(read.apply(anything())) thenReturn None
+    "if reading is unsuccessful" should {
+      "return None" in {
+        val read = mock[Fixture.Read[_]]("Origin.read")
+        when(read()) thenReturn None
         val origin = fixture.create(read)
 
-        origin.read(filter)
-
-        verify(read).apply(filter)
-      }
-
-      "if reading is successful" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-
-        "return a value" which {
-          "has the same name as the origin" in {
-            val read = mock[Origin.Read.Filtered[String]]("Origin.read")
-            when(read.apply(anything())) thenReturn Some(random[String])
-            val origin = fixture.create(read)
-
-            val Origin.Value(name, _) = origin.read(filter).value
-            name should be(origin.name)
-          }
-
-          "contains the result of the specified read function" in {
-            val result = random[String]
-            val read = mock[Origin.Read.Filtered[String]]("Origin.read")
-            when(read.apply(anything())) thenReturn Some(result)
-            val origin = fixture.create(read)
-
-            val Origin.Value(_, value) = origin.read(filter).value
-            value should be(result)
-          }
-        }
-      }
-
-      "if reading is unsuccessful" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-
-        "return None" in {
-          val read = mock[Origin.Read.Filtered[_]]("Origin.read")
-          when(read.apply(anything())) thenReturn None
-          val origin = fixture.create(read)
-
-          origin.read(filter) should not be('defined)
-        }
+        origin.read() should not be('defined)
       }
     }
   }

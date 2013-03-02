@@ -33,16 +33,19 @@ trait MemberFactoryComponent {
 
   protected trait MemberFactory {
     def create[A: Manifest : TypeTag](name: Origin.Name)
-                                     (read: Origin.Read.Filtered[A]): Option[Origin[A]]
+                                     (read: MemberFactory.Read[A]): Option[Origin[A]]
   }
 
   protected object MemberFactory {
+
+    type Read[+A] = () => Option[(A, Origin.Meta.Readable)]
+
     trait Logging extends MemberFactory {
 
       protected def log: Logger
 
       abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
-                                                         (read: Origin.Read.Filtered[A]) = {
+                                                         (read: MemberFactory.Read[A]) = {
         val result = super.create(name)(read)
         if (result.isDefined) log.debug(s"Created $name origin of type ${typeOf[A]}")
         result
@@ -63,13 +66,13 @@ object MemberFactoryComponent {
 
       protected def family: Origin.Family
 
-      override def create[A: Manifest : TypeTag](name: Origin.Name)(read: Origin.Read.Filtered[A]) =
+      override def create[A: Manifest : TypeTag](name: Origin.Name)(read: MemberFactory.Read[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
             origin => (name === origin.name) && origin.returns[A]
           }
           if (exists) None
-          else Some(builder.build(name, family, read))
+          else Some(builder.build(name, family, {_ => read()}))
         }
     }
   }

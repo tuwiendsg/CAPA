@@ -29,10 +29,10 @@ class BuilderSpec extends Spec
 
     val name = random[Origin.Name]
     val family = random[Origin.Family]
-    val read = mock[Origin.Read.Filtered[AnyRef]]("Origin.read")
 
     object origin {
-      def build(): Origin[_] = builder.build(name, family, read)
+      def build(): Origin[_] =
+        builder.build(name, family, mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
     }
   }
 
@@ -42,7 +42,7 @@ class BuilderSpec extends Spec
         new Fixture{
           origin.build()
 
-          verify(build).apply(name, family, read)
+          verify(build).apply(name, family)
         }
       }
 

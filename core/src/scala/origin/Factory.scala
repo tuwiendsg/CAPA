@@ -32,16 +32,19 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[Origin[_]]
-    def create[A: Manifest : TypeTag](name: Origin.Name)(read: Origin.Read.Unfiltered[A]): Origin[A]
+    def create[A: Manifest : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]): Origin[A]
   }
 
   object OriginFactory {
+
+    type Read[A] = () => Option[A]
+
     trait Logging extends OriginFactory {
 
       protected def log: Logger
 
       abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
-                                                         (read: Origin.Read.Unfiltered[A]) = {
+                                                         (read: OriginFactory.Read[A]) = {
         log.debug(s"Creating $name origin of type ${typeOf[A]}")
         val result = super.create(name)(read)
         log.info(s"Created $name origin of type ${typeOf[A]}")
@@ -61,15 +64,14 @@ object FactoryComponent {
 
       override val created = EventSource[Origin[_]]()
 
-      override def create[A: Manifest : TypeTag](name: Origin.Name)
-                                                (read: Origin.Read.Unfiltered[A]) =
-        builder.build(name, Origin.Family.random(), read)
+      override def create[A: Manifest : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]) =
+        builder.build(name, Origin.Family.random(), {meta => read() map {(_, meta)}})
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                         family: Origin.Family,
-                                                                         read: B) = {
+      override def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                                family: Origin.Family,
+                                                read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family, read)
         origin.created.emit(result)
         result

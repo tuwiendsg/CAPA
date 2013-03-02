@@ -25,7 +25,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import _root_.akka.actor.{ActorSystem, Props}
 
-import amber.util.{ConfigurableComponent, Filter, Logging}
+import amber.util.{ConfigurableComponent, Logging}
 
 trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableComponent {
   this: Logging =>
@@ -36,21 +36,14 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                       family: Origin.Family,
-                                                                       read: B) = {
-      val log = logger.create(s"amber.akka.Origin($name)")
-      OriginRef[A](configuration.system.actorOf(Props(read match {
-        case f: Origin.Read.Unfiltered[A] =>
-          new OriginActor(name, family)(log) {
-            override protected def read(filter: Filter[Origin.Meta.Readable]) =
-              if (filter(meta)) f() else None
-          }
-        case f: Origin.Read.Filtered[A] =>
-          new OriginActor(name, family)(log) {
-            override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
-          }
-        }).withDispatcher("amber.origins.dispatcher")))(configuration.timeout)
+    override def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                              family: Origin.Family,
+                                              _read: OriginBuilder.Read[A]) = {
+      OriginRef[A](configuration.system.actorOf(Props(
+        new OriginActor(name, family)(logger.create(s"amber.akka.Origin($name)")) {
+          override protected def read() = _read(meta)
+        }
+      ).withDispatcher("amber.origins.dispatcher")))(configuration.timeout)
     }
   }
 

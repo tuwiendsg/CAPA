@@ -29,8 +29,12 @@ trait BuilderComponent {
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                              family: Origin.Family,
-                                                              read: B): Origin[A]
+    def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                     family: Origin.Family,
+                                     read: OriginBuilder.Read[A]): Origin[A]
+  }
+
+  protected object OriginBuilder {
+    type Read[+A] = (Origin.Meta.Readable) => Option[(A, Origin.Meta.Readable)]
   }
 }

@@ -22,7 +22,6 @@ import util.Events
 trait System extends origin.FinderComponent
              with origin.FactoryComponent
              with family.MemberFactoryComponent
-             with Collecting
              with Processing
              with Processing.Default.Conversions
              with Processing.Default.Operations {

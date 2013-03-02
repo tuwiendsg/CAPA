@@ -60,9 +60,9 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                         family: Origin.Family,
-                                                                         read: B) = {
+      override def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                                family: Origin.Family,
+                                                read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family, read)
         families.add(result)
         result

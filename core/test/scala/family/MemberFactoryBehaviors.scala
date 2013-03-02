@@ -26,7 +26,7 @@ trait MemberFactoryBehaviors {
   trait Fixture {
     val name = random[Origin.Name]
     val family = random[Origin.Family]
-    val read = mock[Origin.Read.Filtered[A]]("Origin.read")
+    val read = mock[MemberFactory.Read[A]]("Origin.read")
   }
 
   def aFactory() {

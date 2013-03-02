@@ -32,10 +32,10 @@ class BuilderSpec extends Spec
 
     protected type Origin[+A] = BuilderSpec.this.Origin[A]
 
-    override def create[A: Manifest : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                        family: Origin.Family,
-                                                                        read: B) =
-      builder.build(name, family, read)
+    override def create[A: Manifest : TypeTag](name: Origin.Name,
+                                               family: Origin.Family,
+                                               read: Fixture.Read[A]) =
+      builder.build(name, family, {meta => read() map {(_, meta)}})
   }
 
   "simple.OriginBuilder" when {

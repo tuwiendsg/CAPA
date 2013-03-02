@@ -22,7 +22,7 @@ package origin
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-import amber.util.{Filter, Logging}
+import amber.util.Logging
 
 trait BuilderComponent extends amber.origin.BuilderComponent {
   this: Logging =>
@@ -31,28 +31,16 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: ClassTag : TypeTag, B: Origin.Read[A]#apply](name: Origin.Name,
-                                                                       family: Origin.Family,
-                                                                       read: B) = {
-      val log = logger.create(s"amber.simple.Origin($name)")
-      def process(result: Option[A]): Option[Origin.Value[A]] =
-        for (value <- result) yield {
+    override def build[A: ClassTag : TypeTag](name: Origin.Name,
+                                              family: Origin.Family,
+                                              _read: OriginBuilder.Read[A]) =
+      new Origin(name, family) {
+        @transient  private[this] val log = logger.create(s"amber.simple.Origin($name)")
+        override def read() = for ((value, meta) <- _read(this)) yield {
           log.debug(s"Read $value from $name")
-          Origin.Value(name, value)
+          (Origin.Value(name, value), meta)
         }
-
-      read match {
-        case f: Origin.Read.Unfiltered[A] =>
-          new Origin(name, family) {
-            override def read(filter: Filter[Origin.Meta.Readable]) =
-              if (filter(this)) process(f()) else None
-          }
-        case f: Origin.Read.Filtered[A] =>
-          new Origin(name, family) {
-            override def read(filter: Filter[Origin.Meta.Readable]) = process(f(filter))
-          }
       }
-    }
   }
 
   private object _builder extends OriginBuilder

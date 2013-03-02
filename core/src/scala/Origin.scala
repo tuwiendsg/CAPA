@@ -26,10 +26,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Equal.equalA
 
-import util.{Filter, NotNothing, Path, Union}
+import util.{NotNothing, Path}
 
 trait Origin[+A] extends Equals with Origin.Meta.Writable {
-  def read(filter: Filter[Origin.Meta.Readable]): Option[Origin.Value[A]]
+  def read(): Option[(Origin.Value[A], Origin.Meta.Readable)]
   def returns[B: NotNothing : TypeTag]: Boolean
 }
 
@@ -37,7 +37,6 @@ object Origin {
 
   type Name = Path
   type Value[+A] = util.Value.Named[Name, A]
-  type Read[A] = Union.of[Read.Unfiltered[A]]#and[Read.Filtered[A]]
 
   val Value = util.Value.Named
 
@@ -46,11 +45,6 @@ object Origin {
   object Family {
     def random() = Family(randomUUID().toString)
     implicit val hasEqual = equalA[Family]
-  }
-
-  object Read {
-    type Unfiltered[+A] = () => Option[A]
-    type Filtered[+A] = Filter[Meta.Readable] => Option[A]
   }
 
   object Meta {

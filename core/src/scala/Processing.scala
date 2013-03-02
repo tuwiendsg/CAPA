@@ -42,8 +42,9 @@ trait Processing {
           val source = o.asInstanceOf[Origin[A]]
           if (f isDefinedAt source.name) {
             val (name, g) = f(source.name)
-            in(source.family).create(name) {
-              filter => source.read(filter) map {_.value |> g}
+            in(source.family).create[B](name) {
+              () =>
+                for ((Origin.Value(_, value), meta) <- source.read()) yield (g(value), meta)
             }
           }
       }

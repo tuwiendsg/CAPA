@@ -20,14 +20,12 @@ package akka
 
 import scala.reflect.runtime.universe.TypeTag
 
-import amber.util.Filter
-
 private[akka] sealed trait Message extends Serializable
 
 private[akka] object Message {
   object Request {
 
-    case class Read(filter: Filter[Origin.Meta.Readable]) extends Message
+    case object Read extends Message
 
     object MetaInfo {
 

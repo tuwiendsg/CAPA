@@ -33,17 +33,14 @@ trait ProcessingSpec extends Spec
                      with family.MemberFactoryComponent.Default
                      with Processing {
 
-  override def mocker[A: ClassTag : TypeTag, B: Origin.Read[A]#apply] =
-    super.mocker[A, B] andThen {case ((name, family, read, tag), origin) =>
+  override def mocker[A: ClassTag : TypeTag] =
+    super.mocker[A] andThen {case ((name, family, read, tag), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
       when(origin.returns(anything(), equalTo(tag))) thenReturn true
-      when(origin.read(anything())) thenAnswer {
-        args: Array[AnyRef] =>
-          (read match {
-            case f: Origin.Read.Unfiltered[_] => f()
-            case f: Origin.Read.Filtered[_] => f(args(0).asInstanceOf[Filter[Origin.Meta.Readable]])
-          }) map {Origin.Value(name, _)}
+      when(origin.read()) thenAnswer {
+        _: Array[AnyRef] =>
+          read(origin) map {case (value, meta) => (Origin.Value(name, value), meta)}
       }
     }
 }
@@ -60,7 +57,7 @@ class ProcessSpec extends ProcessingSpec {
     val output = random[Origin.Name]
     val processor = mock[A => B]("Processor")
     val definition = mock[PartialFunction[Origin.Name, (Origin.Name, A => B)]]("Process.Definition")
-    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+    val read = mock[OriginFactory.Read[A]]("Origin.read")
 
     when(definition isDefinedAt input) thenReturn true
     when(definition apply input) thenReturn (output -> processor)
@@ -107,22 +104,19 @@ class ProcessSpec extends ProcessingSpec {
         }
 
         "when read" should {
-          val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-          when(filter.apply(anything())) thenReturn true
-
           "read the underlying origin" in {
             new Fixture {
               process(definition)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last.read(filter)
+              built.last.read()
 
-              verify(underlying).read(filter)
+              verify(underlying).read()
             }
           }
 
-          "use the result of the underlying's origin as input for the processor" in {
+          "use the result of the underlying origin as input for the processor" in {
             new Fixture {
               val value = new A
               when(read()) thenReturn Some(value)
@@ -130,7 +124,7 @@ class ProcessSpec extends ProcessingSpec {
               process(definition)
               origin.create(input)(read)
 
-              built.last.read(filter)
+              built.last.read()
 
               verify(processor).apply(value)
             }
@@ -145,10 +139,26 @@ class ProcessSpec extends ProcessingSpec {
               process(definition)
               origin.create(input)(read)
 
-              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
+              val (result, _) = built.last.read().value
 
               result.name should be(output)
               result.value should be(value)
+            }
+          }
+
+          "return the meta of the underlying origin" in {
+            new Fixture {
+              val name = random[String]
+              when(processor(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              process(definition)
+              val underlying = origin.create(input)(read)
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name)
+              verify(underlying).selectDynamic(name)
             }
           }
 
@@ -159,7 +169,7 @@ class ProcessSpec extends ProcessingSpec {
               process(definition)
               origin.create(input)(read)
 
-              built.last.read(filter) should not be('defined)
+              built.last.read() should not be('defined)
               verify(processor, never()).apply(anything())
             }
           }
@@ -185,7 +195,7 @@ class ProcessSpec extends ProcessingSpec {
       "not invoke the process definition" in {
         new Fixture {
           process(definition)
-          origin.create(input)(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
+          origin.create(input)(mock[OriginFactory.Read[C]]("Origin.read"))
 
           verify(definition, never()) isDefinedAt input
           verify(definition, never()) apply input
@@ -205,7 +215,7 @@ class MapSpec extends ProcessingSpec {
     val input = random[Origin.Name]
     val output = random[Origin.Name]
     val mapper = mock[A => B]("Mapper")
-    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+    val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
   "Processing.map" when {
@@ -239,22 +249,19 @@ class MapSpec extends ProcessingSpec {
         }
 
         "when read" should {
-          val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-          when(filter.apply(anything())) thenReturn true
-
           "read the underlying origin" in {
             new Fixture {
               map(input, output)(mapper)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last.read(filter)
+              built.last.read()
 
-              verify(underlying).read(filter)
+              verify(underlying).read()
             }
           }
 
-          "use the result of the underlying's origin as input for the mapper" in {
+          "use the result of the underlying origin as input for the mapper" in {
             new Fixture {
               val value = new A
               when(read()) thenReturn Some(value)
@@ -262,7 +269,7 @@ class MapSpec extends ProcessingSpec {
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              built.last.read(filter)
+              built.last.read()
 
               verify(mapper).apply(value)
             }
@@ -277,10 +284,26 @@ class MapSpec extends ProcessingSpec {
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
+              val (result, _) = built.last.read().value
 
               result.name should be(output)
               result.value should be(value)
+            }
+          }
+
+          "return the meta of the underlying origin" in {
+            new Fixture {
+              val name = random[String]
+              when(mapper(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              map(input, output)(mapper)
+              val underlying = origin.create(input)(read)
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name)
+              verify(underlying).selectDynamic(name)
             }
           }
 
@@ -291,7 +314,7 @@ class MapSpec extends ProcessingSpec {
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              built.last.read(filter) should not be('defined)
+              built.last.read() should not be('defined)
               verify(mapper, never()).apply(anything())
             }
           }
@@ -305,7 +328,7 @@ class MapSpec extends ProcessingSpec {
           map(input, output)(mapper)
           origin.create(different(input))(read)
 
-          verify(build, never()).apply(equalTo(output), anything(), anything())
+          verify(build, never()).apply(equalTo(output), anything())
         }
       }
     }
@@ -314,9 +337,9 @@ class MapSpec extends ProcessingSpec {
       "not create an additional origin" in {
         new Fixture {
           map(input, output)(mapper)
-          origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
+          origin.create(different(input))(mock[OriginFactory.Read[C]]("Origin.read"))
 
-          verify(build, never()).apply(equalTo(output), anything(), anything())
+          verify(build, never()).apply(equalTo(output), anything())
         }
       }
     }
@@ -333,7 +356,7 @@ class OperationSpec extends ProcessingSpec {
     val input = random[Origin.Name]
     val output = random[Operation.Name]
     val function = mock[A => B]("Mapper")
-    val read = mock[Origin.Read.Unfiltered[A]]("Origin.read")
+    val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
   "Processing.operation" when {
@@ -367,22 +390,19 @@ class OperationSpec extends ProcessingSpec {
         }
 
         "when read" should {
-          val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-          when(filter.apply(anything())) thenReturn true
-
           "read the underlying origin" in {
             new Fixture {
               operation(output)(function)
               val underlying = origin.create(input)(read)
               when(read()) thenReturn None
 
-              built.last.read(filter)
+              built.last.read()
 
-              verify(underlying).read(filter)
+              verify(underlying).read()
             }
           }
 
-          "use the result of the underlying's origin as input for the mapper" in {
+          "use the result of the underlying origin as input for the mapper" in {
             new Fixture {
               val value = new A
               when(read()) thenReturn Some(value)
@@ -390,7 +410,7 @@ class OperationSpec extends ProcessingSpec {
               operation(output)(function)
               origin.create(input)(read)
 
-              built.last.read(filter)
+              built.last.read()
 
               verify(function).apply(value)
             }
@@ -405,10 +425,26 @@ class OperationSpec extends ProcessingSpec {
               operation(output)(function)
               origin.create(input)(read)
 
-              val result = built.last.read(filter).value.asInstanceOf[Origin.Value[B]]
+              val (result, _) = built.last.read().value
 
               result.name should be(input / output)
               result.value should be(value)
+            }
+          }
+
+          "return the meta of the underlying origin" in {
+            new Fixture {
+              val name = random[String]
+              when(function(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              operation(output)(function)
+              val underlying = origin.create(input)(read)
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name)
+              verify(underlying).selectDynamic(name)
             }
           }
 
@@ -419,7 +455,7 @@ class OperationSpec extends ProcessingSpec {
               operation(output)(function)
               origin.create(input)(read)
 
-              built.last.read(filter) should not be('defined)
+              built.last.read() should not be('defined)
               verify(function, never()).apply(anything())
             }
           }
@@ -431,9 +467,9 @@ class OperationSpec extends ProcessingSpec {
       "not create an additional origin" in {
         new Fixture {
           operation(output)(function)
-          origin.create(different(input))(mock[Origin.Read.Unfiltered[C]]("Origin.read"))
+          origin.create(different(input))(mock[OriginFactory.Read[C]]("Origin.read"))
 
-          verify(build, never()).apply(equalTo(input / output), anything(), anything())
+          verify(build, never()).apply(equalTo(input / output), anything())
         }
       }
     }

@@ -31,7 +31,7 @@ import _root_.akka.pattern.ask
 
 import scalaz.syntax.equal._
 
-import amber.util.{Filter, NotNothing}
+import amber.util.NotNothing
 import akka.Message.Request.{MetaInfo, Read}
 
 private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(timeout: FiniteDuration)
@@ -39,8 +39,7 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
 
   override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
 
-  override def read(filter: Filter[Origin.Meta.Readable]) =
-    await(request[Option[Origin.Value[A]]](Read(filter)))
+  override def read() = await(request[Option[(Origin.Value[A], Origin.Meta.Readable)]](Read))
 
   override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout)
   override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout)
