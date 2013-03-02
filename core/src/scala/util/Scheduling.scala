@@ -22,8 +22,12 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration.Duration
+import scala.util.Try
 
 trait Scheduling {
+  this: Logging =>
+
+  @transient private[this] val log: Logger = logger.create("amber.Scheduler")
 
   private val scheduler = Executors.newScheduledThreadPool(1)
 
@@ -38,6 +42,10 @@ trait Scheduling {
   def shutdown() {scheduler.shutdown()}
 
   private def toRunnable(f: () => Unit) = new Runnable {
-    override def run() {f()}
+    override def run() {
+      Try {f()}.recover {
+        case ex: Exception => log.error("Scheduled task finished unsuccessfully!", Some(ex))
+      }
+    }
   }
 }
