@@ -19,9 +19,10 @@ package amber
 package demo
 package temperature
 
-import util.Scheduling
+import util.{Logging, Scheduling}
 
 trait Demo extends Runnable with Scheduling {
+  this: Logging =>
 
   def system: temperature.System
   def client: temperature.Client
@@ -38,8 +39,9 @@ trait Demo extends Runnable with Scheduling {
       } system.Temperature.createCelsius(location)
       println(delimiter)
       every(2.seconds) {
-        () => client.printTemperature()
-        println(delimiter)
+        () =>
+          client.printTemperature()
+          println(delimiter)
       }
       readLine()
     } finally {
