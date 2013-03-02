@@ -38,7 +38,7 @@ class DefaultFinderSpec extends Spec
       val family = random[Origin.Family]
       val read = mock[OriginBuilder.Read[AnyRef]]("Origin.read")
 
-      builder.build(name, family, read)
+      builder.build(name, family)(read)
     }
   }
 

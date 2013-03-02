@@ -21,7 +21,7 @@ import scala.language.dynamics
 
 import java.util.UUID.randomUUID
 
-import scala.collection.immutable.Map
+import scala.collection.{immutable, Map}
 import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Equal.equalA
@@ -63,13 +63,14 @@ object Origin {
     type Name = String
     type Value[+A] = util.Value[A]
 
-    def apply(values: Map[Name, Value[_]]): MetaInfo = Default(values)
+    def apply(values: Map[Name, Value[_]]): MetaInfo = Default(immutable.HashMap.empty ++ values)
+    def compose(first: MetaInfo, second: MetaInfo): MetaInfo = Composition(first, second)
 
-    implicit class Operations(val meta: MetaInfo) extends AnyVal {
-      def :+(other: MetaInfo): MetaInfo = Composition(meta, other)
+    implicit class Enriched(val meta: MetaInfo) extends AnyVal {
+      def :+(other: MetaInfo): MetaInfo = compose(meta, other)
     }
 
-    private case class Default(values: Map[Name, Value[_]]) extends MetaInfo {
+    private case class Default(values: immutable.Map[Name, Value[_]]) extends MetaInfo {
       override def selectDynamic(name: Name) = values.get(name)
     }
 

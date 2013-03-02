@@ -56,7 +56,7 @@ class DefaultFactorySpec extends Spec
 
           try {
             val read = mock[OriginBuilder.Read[AnyRef]]("Origin.read")
-            val result = builder.build(name, random[Origin.Family], read)
+            val result = builder.build(name, random[Origin.Family])(read)
             verify(observe).apply(result)
           } finally {
             observer.dispose()

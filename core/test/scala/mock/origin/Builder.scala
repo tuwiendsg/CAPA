@@ -49,9 +49,8 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
   override protected type Origin[+A] = amber.Origin[A]
   override protected def builder = new OriginBuilder {
-    override def build[A: ClassTag : TypeTag](name: Origin.Name,
-                                              family: Origin.Family,
-                                              read: OriginBuilder.Read[A]) = {
+    override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
+                                             (read: OriginBuilder.Read[A]) = {
       val origin = mocker[A].mock(name, family, read, typeTag[A])
       built = built :+ origin
       BuilderComponent.this.build(name, family)

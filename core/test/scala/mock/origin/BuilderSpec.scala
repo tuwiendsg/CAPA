@@ -32,7 +32,7 @@ class BuilderSpec extends Spec
 
     object origin {
       def build(): Origin[_] =
-        builder.build(name, family, mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
+        builder.build(name, family)(mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
     }
   }
 

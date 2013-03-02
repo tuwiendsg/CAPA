@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
-import org.mockito.Mockito.{never, spy, verify, when}
+import org.mockito.Mockito.{never, verify, when}
 
 import util.Filter
 

@@ -40,7 +40,7 @@ class BuilderSpec extends Spec("BuilderSpec")
     override def create[A: Manifest : TypeTag](name: Origin.Name,
                                                family: Origin.Family,
                                                read: Fixture.Read[A]) =
-      builder.build(name, family, {meta => read() map {(_, meta)}})
+      builder.build(name, family) {meta => read() map {(_, meta)}}
   }
 
   "akka.OriginBuilder" when {

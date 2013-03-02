@@ -29,9 +29,8 @@ trait BuilderComponent {
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A: ClassTag : TypeTag](name: Origin.Name,
-                                     family: Origin.Family,
-                                     read: OriginBuilder.Read[A]): Origin[A]
+    def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
+                                    (read: OriginBuilder.Read[A]): Origin[A]
   }
 
   protected object OriginBuilder {

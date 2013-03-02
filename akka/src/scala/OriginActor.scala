@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable.HashMap
 import scala.concurrent.{blocking, future}
 import scala.reflect.runtime.universe.TypeTag
 
@@ -35,11 +35,11 @@ private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family:
 
   import context.dispatcher
 
-  private val meta = mutable.HashMap.empty[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
+  private val meta = HashMap.empty[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
 
   override def receive = {
     case Read =>
-      val snapshot = Origin.MetaInfo(immutable.HashMap.empty ++ meta)
+      val snapshot = Origin.MetaInfo(meta)
       future {
         for ((value, meta) <- blocking {read(snapshot)}) yield {
           log.debug(s"Read $value from $name")

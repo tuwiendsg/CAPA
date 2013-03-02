@@ -37,9 +37,8 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
   override protected def builder: super.OriginBuilder = _builder
 
   protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: ClassTag : TypeTag](name: Origin.Name,
-                                              family: Origin.Family,
-                                              _read: OriginBuilder.Read[A]) = {
+    override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
+                                             (_read: OriginBuilder.Read[A]) = {
       OriginRef[A](configuration.system.actorOf(Props(
         new OriginActor(name, family)(logger.create(s"amber.akka.Origin($name)")) {
           override protected def read(meta: Origin.MetaInfo) = _read(meta)
