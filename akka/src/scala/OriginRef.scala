@@ -39,7 +39,7 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
 
   override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
 
-  override def read() = await(request[Option[(Origin.Value[A], Origin.Meta.Readable)]](Read))
+  override def read() = await(request[Option[(Origin.Value[A], Origin.MetaInfo)]](Read))
 
   override lazy val name = Await.result(request[Origin.Name](MetaInfo.Name), timeout)
   override lazy val family = Await.result(request[Origin.Family](MetaInfo.Family), timeout)
@@ -48,7 +48,7 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
     await(request[Option[Origin.MetaInfo.Value[_]]](MetaInfo.Get(name)))
 
   override def update[B: TypeTag](name: Origin.MetaInfo.Name, value: B) {
-    ref ! MetaInfo.Set(name, value)
+    ref ! MetaInfo.Set(name, new Origin.MetaInfo.Value(value))
   }
 
   private[akka] def kill() {ref ! PoisonPill}

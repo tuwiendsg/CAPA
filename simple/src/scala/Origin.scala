@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package simple
 
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import scalaz.syntax.equal._
@@ -26,7 +28,15 @@ import amber.util.{Filter, NotNothing}
 
 private[simple] abstract class Origin[+A : TypeTag](override val name: Origin.Name,
                                                     override val family: Origin.Family)
-    extends amber.Origin[A] with Origin.Meta.Writable.Default {
+    extends amber.Origin[A] {
+
+  protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
+
+  override def selectDynamic(name: Origin.MetaInfo.Name) = Option(meta.get(name))
+
+  override def update[A: TypeTag](name: Origin.MetaInfo.Name, value: A) {
+    meta.put(name, new Origin.MetaInfo.Value(value))
+  }
 
   override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
 

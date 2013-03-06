@@ -19,6 +19,8 @@ package amber
 package simple
 package origin
 
+import scala.collection.immutable.HashMap
+import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
@@ -36,10 +38,11 @@ trait BuilderComponent extends amber.origin.BuilderComponent {
                                               _read: OriginBuilder.Read[A]) =
       new Origin(name, family) {
         @transient  private[this] val log = logger.create(s"amber.simple.Origin($name)")
-        override def read() = for ((value, meta) <- _read(this)) yield {
-          log.debug(s"Read $value from $name")
-          (Origin.Value(name, value), meta)
-        }
+        override def read() =
+          for ((value, meta) <- _read(Origin.MetaInfo(HashMap.empty ++ meta))) yield {
+            log.debug(s"Read $value from $name")
+            (Origin.Value(name, value), meta)
+          }
       }
   }
 

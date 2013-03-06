@@ -19,17 +19,24 @@ package amber
 
 import scala.language.dynamics
 
-import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID.randomUUID
 
+import scala.collection.immutable.Map
 import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Equal.equalA
 
 import util.{NotNothing, Path}
 
-trait Origin[+A] extends Equals with Origin.Meta.Writable {
-  def read(): Option[(Origin.Value[A], Origin.Meta.Readable)]
+trait Origin[+A] extends Equals with Dynamic {
+
+  def name: Origin.Name
+  def family: Origin.Family
+
+  def selectDynamic(name: Origin.MetaInfo.Name): Option[Origin.MetaInfo.Value[_]]
+  def update[A: TypeTag](name: Origin.MetaInfo.Name, value: A)
+
+  def read(): Option[(Origin.Value[A], Origin.MetaInfo)]
   def returns[B: NotNothing : TypeTag]: Boolean
 }
 
@@ -47,30 +54,8 @@ object Origin {
     implicit val hasEqual = equalA[Family]
   }
 
-  object Meta {
-
-    trait Readable extends Dynamic {
-      def name: Origin.Name
-      def family: Origin.Family
-      def selectDynamic(name: String): Option[MetaInfo.Value[_]]
-    }
-
-    trait Writable extends Readable {
-      def update[A: TypeTag](name: MetaInfo.Name, value: A)
-    }
-
-    object Writable {
-      trait Default extends Writable {
-
-        private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
-
-        override def selectDynamic(name: MetaInfo.Name) = Option(values.get(name))
-
-        override def update[A: TypeTag](name: MetaInfo.Name, value: A) {
-          values.put(name, new MetaInfo.Value(value))
-        }
-      }
-    }
+  case class MetaInfo(private val values: Map[MetaInfo.Name, MetaInfo.Value[_]]) extends Dynamic {
+    def selectDynamic(name: MetaInfo.Name): Option[MetaInfo.Value[_]] = values.get(name)
   }
 
   object MetaInfo {

@@ -29,9 +29,9 @@ import util.{Filter, Filterable, NotNothing}
 
 trait Client extends origin.FinderComponent {
 
-  case class Query(selection: Selection, filter: Filter[Origin.Meta.Readable])
-      extends Filterable[Origin.Meta.Readable, Query] {
-    override def where(filter: Filter[Origin.Meta.Readable]): Query = copy(filter = filter)
+  case class Query(selection: Selection, filter: Filter[Origin.MetaInfo])
+      extends Filterable[Origin.MetaInfo, Query] {
+    override def where(filter: Filter[Origin.MetaInfo]): Query = copy(filter = filter)
   }
 
   implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)

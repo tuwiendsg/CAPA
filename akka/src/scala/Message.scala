@@ -18,8 +18,6 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
-import scala.reflect.runtime.universe.TypeTag
-
 private[akka] sealed trait Message extends Serializable
 
 private[akka] object Message {
@@ -28,18 +26,11 @@ private[akka] object Message {
     case object Read extends Message
 
     object MetaInfo {
-
       case object Name extends Message
       case object Family extends Message
-
-      case class Get(name: Origin.MetaInfo.Name) extends Message {
-        def apply(meta: Origin.Meta.Readable): Option[Origin.MetaInfo.Value[_]] =
-          meta.selectDynamic(name)
-      }
-
-      case class Set[+A: TypeTag](name: Origin.MetaInfo.Name, value: A) extends Message {
-        def apply(meta: Origin.Meta.Writable) {meta(name) = value}
-      }
+      case class Get(name: Origin.MetaInfo.Name) extends Message
+      case class Set[+A](name: Origin.MetaInfo.Name, value: Origin.MetaInfo.Value[A])
+        extends Message
     }
   }
 }

@@ -38,7 +38,7 @@ trait MemberFactoryComponent {
 
   protected object MemberFactory {
 
-    type Read[+A] = () => Option[(A, Origin.Meta.Readable)]
+    type Read[+A] = () => Option[(A, Origin.MetaInfo)]
 
     trait Logging extends MemberFactory {
 

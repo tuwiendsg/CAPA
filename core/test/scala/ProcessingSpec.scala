@@ -38,9 +38,14 @@ trait ProcessingSpec extends Spec
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
       when(origin.returns(anything(), equalTo(tag))) thenReturn true
+
+      val meta = mock[Origin.MetaInfo]("Origin.MetaInfo")
+      when(meta.selectDynamic(anything())) thenAnswer {
+        args: Array[AnyRef] => origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name])
+      }
       when(origin.read()) thenAnswer {
         _: Array[AnyRef] =>
-          read(origin) map {case (value, meta) => (Origin.Value(name, value), meta)}
+          read(meta) map {case (value, meta) => (Origin.Value(name, value), meta)}
       }
     }
 }

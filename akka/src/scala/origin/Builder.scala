@@ -19,6 +19,7 @@ package amber
 package akka
 package origin
 
+import scala.collection.immutable.HashMap
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
@@ -41,7 +42,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableCo
                                               _read: OriginBuilder.Read[A]) = {
       OriginRef[A](configuration.system.actorOf(Props(
         new OriginActor(name, family)(logger.create(s"amber.akka.Origin($name)")) {
-          override protected def read() = _read(meta)
+          override protected def read(meta: Origin.MetaInfo) = _read(meta)
         }
       ).withDispatcher("amber.origins.dispatcher")))(configuration.timeout)
     }

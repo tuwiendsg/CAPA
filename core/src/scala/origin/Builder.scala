@@ -35,6 +35,6 @@ trait BuilderComponent {
   }
 
   protected object OriginBuilder {
-    type Read[+A] = (Origin.Meta.Readable) => Option[(A, Origin.Meta.Readable)]
+    type Read[+A] = (Origin.MetaInfo) => Option[(A, Origin.MetaInfo)]
   }
 }

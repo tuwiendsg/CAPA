@@ -18,6 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import scala.collection.{immutable, mutable}
 import scala.concurrent.{blocking, future}
 import scala.reflect.runtime.universe.TypeTag
 
@@ -30,26 +31,24 @@ import akka.Message.Request.{MetaInfo, Read}
 private[akka] abstract class OriginActor[+A: TypeTag](name: Origin.Name, family: Origin.Family)
                                                      (@transient log: Logger) extends Actor {
 
-  protected def read(): Option[(A, Origin.Meta.Readable)]
+  protected def read(meta: Origin.MetaInfo): Option[(A, Origin.MetaInfo)]
 
   import context.dispatcher
 
-  protected val meta = new Origin.Meta.Writable.Default {
-    override val name = OriginActor.this.name
-    override val family = OriginActor.this.family
-  }
+  private val meta = mutable.HashMap.empty[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
 
   override def receive = {
     case Read =>
+      val snapshot = Origin.MetaInfo(immutable.HashMap.empty ++ meta)
       future {
-        for ((value, meta) <- blocking {read()}) yield {
+        for ((value, meta) <- blocking {read(snapshot)}) yield {
           log.debug(s"Read $value from $name")
           (Origin.Value(name, value), meta)
         }
       } pipeTo sender
     case MetaInfo.Name => sender ! name
     case MetaInfo.Family => sender ! family
-    case get: MetaInfo.Get => sender ! get(meta)
-    case set: MetaInfo.Set[_] => set(meta)
+    case MetaInfo.Get(name) => sender ! meta.get(name)
+    case MetaInfo.Set(name, value) => meta(name) = value
   }
 }
