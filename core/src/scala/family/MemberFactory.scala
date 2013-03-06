@@ -72,7 +72,9 @@ object MemberFactoryComponent {
             origin => (name === origin.name) && origin.returns[A]
           }
           if (exists) None
-          else Some(builder.build(name, family, {_ => read()}))
+          else Some(builder.build(name, family, {
+            meta => read() map {case (value, underlying) => (value, meta :+ underlying)}
+          }))
         }
     }
   }

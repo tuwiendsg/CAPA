@@ -17,11 +17,12 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.collection.immutable.HashMap
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{never, spy, verify, when}
 
 import util.Filter
 
@@ -151,7 +152,7 @@ class ProcessSpec extends ProcessingSpec {
             }
           }
 
-          "return the meta of the underlying origin" in {
+          "if processor doesn't define a meta value, return the underlying origin's meta value" in {
             new Fixture {
               val name = random[String]
               when(processor(anything())) thenReturn new B
@@ -159,11 +160,29 @@ class ProcessSpec extends ProcessingSpec {
 
               process(definition)
               val underlying = origin.create(input)(read)
+              when(built.last.selectDynamic(name)) thenReturn None
 
               val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name)
               verify(underlying).selectDynamic(name)
+            }
+          }
+
+          "if processor does define a meta value, return that meta value" in {
+            new Fixture {
+              process(definition)
+              val underlying = origin.create(input)(read)
+              when(processor(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              val name = random[String]
+              val value = new B
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name).as[Any].value should be(value)
             }
           }
 
@@ -296,7 +315,7 @@ class MapSpec extends ProcessingSpec {
             }
           }
 
-          "return the meta of the underlying origin" in {
+          "if processor doesn't define a meta value, return the underlying origin's meta value" in {
             new Fixture {
               val name = random[String]
               when(mapper(anything())) thenReturn new B
@@ -304,11 +323,29 @@ class MapSpec extends ProcessingSpec {
 
               map(input, output)(mapper)
               val underlying = origin.create(input)(read)
+              when(built.last.selectDynamic(name)) thenReturn None
 
               val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name)
               verify(underlying).selectDynamic(name)
+            }
+          }
+
+          "if processor does define a meta value, return that meta value" in {
+            new Fixture {
+              map(input, output)(mapper)
+              val underlying = origin.create(input)(read)
+              when(mapper(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              val name = random[String]
+              val value = new B
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name).as[Any].value should be(value)
             }
           }
 
@@ -407,7 +444,7 @@ class OperationSpec extends ProcessingSpec {
             }
           }
 
-          "use the result of the underlying origin as input for the mapper" in {
+          "use the result of the underlying origin as input for the operation" in {
             new Fixture {
               val value = new A
               when(read()) thenReturn Some(value)
@@ -421,7 +458,7 @@ class OperationSpec extends ProcessingSpec {
             }
           }
 
-          "return the result of the mapper" in {
+          "return the result of the operation" in {
             new Fixture {
               val value = new B
               when(function(anything())) thenReturn value
@@ -437,7 +474,7 @@ class OperationSpec extends ProcessingSpec {
             }
           }
 
-          "return the meta of the underlying origin" in {
+          "if processor doesn't define a meta value, return the underlying origin's meta value" in {
             new Fixture {
               val name = random[String]
               when(function(anything())) thenReturn new B
@@ -445,11 +482,29 @@ class OperationSpec extends ProcessingSpec {
 
               operation(output)(function)
               val underlying = origin.create(input)(read)
+              when(built.last.selectDynamic(name)) thenReturn None
 
               val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name)
               verify(underlying).selectDynamic(name)
+            }
+          }
+
+          "if processor does define a meta value, return that meta value" in {
+            new Fixture {
+              operation(output)(function)
+              val underlying = origin.create(input)(read)
+              when(function(anything())) thenReturn new B
+              when(read()) thenReturn Some(new A)
+
+              val name = random[String]
+              val value = new B
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
+
+              val (_, meta) = built.last.read().value
+
+              meta.selectDynamic(name).as[Any].value should be(value)
             }
           }
 

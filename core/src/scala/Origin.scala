@@ -54,12 +54,28 @@ object Origin {
     implicit val hasEqual = equalA[Family]
   }
 
-  case class MetaInfo(private val values: Map[MetaInfo.Name, MetaInfo.Value[_]]) extends Dynamic {
-    def selectDynamic(name: MetaInfo.Name): Option[MetaInfo.Value[_]] = values.get(name)
+  sealed trait MetaInfo extends Dynamic with Serializable {
+    def selectDynamic(name: MetaInfo.Name): Option[MetaInfo.Value[_]]
   }
 
   object MetaInfo {
+
     type Name = String
     type Value[+A] = util.Value[A]
+
+    def apply(values: Map[Name, Value[_]]): MetaInfo = Default(values)
+
+    implicit class Operations(val meta: MetaInfo) extends AnyVal {
+      def :+(other: MetaInfo): MetaInfo = Composition(meta, other)
+    }
+
+    private case class Default(values: Map[Name, Value[_]]) extends MetaInfo {
+      override def selectDynamic(name: Name) = values.get(name)
+    }
+
+    private case class Composition(first: MetaInfo, second: MetaInfo) extends MetaInfo {
+      override def selectDynamic(name: Name) =
+        first.selectDynamic(name) orElse second.selectDynamic(name)
+    }
   }
 }
