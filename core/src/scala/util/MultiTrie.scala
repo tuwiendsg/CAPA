@@ -70,7 +70,7 @@ class MultiTrie[A] {
 
 object MultiTrie {
 
-  sealed trait Selection {
+  sealed trait Selection extends Serializable {
     def iteratee[A]: Iteratee[(Path, Set[A]), Set[A]]
   }
 

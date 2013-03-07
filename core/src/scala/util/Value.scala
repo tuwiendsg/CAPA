@@ -20,7 +20,7 @@ package util
 
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
-class Value[+A: TypeTag](value: A) {
+class Value[+A: TypeTag](value: A) extends Serializable {
   def as[B: NotNothing : TypeTag]: Option[B] =
     if (typeOf[A] <:< typeOf[B]) Some(value.asInstanceOf[B]) else None
 }

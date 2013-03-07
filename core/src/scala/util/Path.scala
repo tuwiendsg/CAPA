@@ -22,7 +22,7 @@ import scala.language.implicitConversions
 
 import scalaz.Equal.equalA
 
-sealed trait Path {
+sealed trait Path extends Serializable {
   def >:>(that: Path): Boolean
   def /(end: String): Path
 }

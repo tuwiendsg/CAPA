@@ -22,7 +22,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import amber.util.Filter
 
-private[akka] sealed trait Message
+private[akka] sealed trait Message extends Serializable
 
 private[akka] object Message {
   object Request {
