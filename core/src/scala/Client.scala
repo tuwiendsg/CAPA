@@ -39,7 +39,7 @@ trait Client extends origin.FinderComponent {
   def read[A: NotNothing : TypeTag](query: Query): Stream[Origin.Value[A]] =
     for {
       origin <- origins.find(query.selection).toStream if origin.returns[A]
-      (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
+      (value, meta) <- origin.asInstanceOf[Origin[A]].read().run if query.filter(meta)
     } yield value
 
   def readAll[A: NotNothing : TypeTag](query: Query): Stream[A] = read[A](query) map {_.value}

@@ -17,20 +17,26 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.language.higherKinds
+
+import scala.concurrent.{future, Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
+
+import scalaz.Comonad
+import scalaz.Id.{id, Id}
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
 import util.{Filter, NotNothing}
 
-trait OriginBehaviors {
+sealed trait OriginBehaviors[X[+_]] {
   this: Spec =>
 
-  class A
-  class U extends A
-  class B
+  type Origin[+A] <: amber.Origin[X, A]
+  def X: Comonad[X]
 
   def fixture: Fixture
 
@@ -60,98 +66,44 @@ trait OriginBehaviors {
     type Read[+A] = () => Option[A]
   }
 
-  object anOrigin {
+  def anOrigin: OriginSpec
+
+  trait OriginSpec {
+
+    class A
 
     "has the specified name" in {
       val name = random[Origin.Name]
       val origin = fixture.create[Any](name)
 
-      origin.name should be(name)
+      X.copoint(origin.name) should be(name)
     }
 
     "is in the specified family" in {
       val family = random[Origin.Family]
       val origin = fixture.create[Any](family)
 
-      origin.family should be(family)
+      X.copoint(origin.family) should be(family)
     }
 
     "if a meta value was never assigned" should {
       "return None " in {
         val origin = fixture.create[Any]()
 
-        origin.selectDynamic(random[Origin.MetaInfo.Name]).as[Any] should not be('defined)
+        X.copoint(origin.selectDynamic(random[Origin.MetaInfo.Name]).run).as[Any] should not be('defined)
       }
     }
 
     "if a meta value was previously assigned" should {
-      "return the assigned value" when {
-        "requested type is same type as the assigned value" in {
-          val name = random[Origin.MetaInfo.Name]
-          val value = new A
-          val origin = fixture.create[Any]()
+      "return the assigned value" in {
+        val name = random[Origin.MetaInfo.Name]
+        val value = new A
+        val origin = fixture.create[Any]()
 
-          origin(name) = value
+        origin(name) = value
 
-          origin.selectDynamic(name).as[A].value should be(value)
-        }
-
-        "requested type is a super type of the assigned value" in {
-          val name = random[Origin.MetaInfo.Name]
-          val value = new U
-          val origin = fixture.create[Any]()
-
-          origin(name) = value
-
-          origin.selectDynamic(name).as[A].value should be(value)
-        }
+        X.copoint(origin.selectDynamic(name).run).as[A].value should be(value)
       }
-
-      "return None " when {
-        "requested type is a different type than the assigned value" in {
-          val name = random[Origin.MetaInfo.Name]
-          val value = new A
-          val origin = fixture.create[Any]()
-
-          origin(name) = value
-
-          origin.selectDynamic(name).as[B] should not be('defined)
-        }
-
-        "requested type is a sub type of the assigned value" in {
-          val name = random[Origin.MetaInfo.Name]
-          val value = new A
-          val origin = fixture.create[Any]()
-
-          origin(name) = value
-
-          origin.selectDynamic(name).as[U] should not be('defined)
-        }
-      }
-    }
-
-    "does return the same type" in {
-      val origin = fixture.create[A]()
-
-      origin.returns[A] should be(true)
-    }
-
-    "does return a super type" in {
-      val origin = fixture.create[U]()
-
-      origin.returns[A] should be(true)
-    }
-
-    "does not return a different type" in {
-      val origin = fixture.create[A]()
-
-      origin.returns[B] should be(false)
-    }
-
-    "does not return a sub type" in {
-      val origin = fixture.create[A]()
-
-      origin.returns[U] should be(false)
     }
 
     "use the specified read function" in {
@@ -171,8 +123,8 @@ trait OriginBehaviors {
           when(read()) thenReturn Some(random[String])
           val origin = fixture.create(read)
 
-          val (Origin.Value(name, _), _) = origin.read().value
-          name should be(origin.name)
+          val (Origin.Value(name, _), _) = X.copoint(origin.read().run).value
+          name should be(X.copoint(origin.name))
         }
 
         "contains the result of the specified read function" in {
@@ -181,7 +133,7 @@ trait OriginBehaviors {
           when(read()) thenReturn Some(result)
           val origin = fixture.create(read)
 
-          val (Origin.Value(_, value), _) = origin.read().value
+          val (Origin.Value(_, value), _) = X.copoint(origin.read().run).value
           value should be(result)
         }
       }
@@ -195,7 +147,7 @@ trait OriginBehaviors {
         val value = new A
         origin(name) = value
 
-        val (_, meta) = origin.read().value
+        val (_, meta) = X.copoint(origin.read().run).value
         meta.selectDynamic(name).as[Any].value should be(value)
       }
     }
@@ -206,8 +158,69 @@ trait OriginBehaviors {
         when(read()) thenReturn None
         val origin = fixture.create(read)
 
-        origin.read() should not be('defined)
+        X.copoint(origin.read().run) should not be('defined)
       }
     }
+  }
+}
+
+object OriginBehaviors {
+
+  trait Local extends OriginBehaviors[Id] {
+    this: Spec =>
+
+    override type Origin[+A] <: Origin.Local[A]
+
+    override val X = id
+    override object anOrigin extends OriginSpec with LocalSpec
+
+    trait LocalSpec {
+
+      class A
+      class U extends A
+      class B
+
+      "does return the same type" in {
+        val origin = fixture.create[A]()
+
+        origin.returns[A] should be(true)
+      }
+
+      "does return a super type" in {
+        val origin = fixture.create[U]()
+
+        origin.returns[A] should be(true)
+      }
+
+      "does not return a different type" in {
+        val origin = fixture.create[A]()
+
+        origin.returns[B] should be(false)
+      }
+
+      "does not return a sub type" in {
+        val origin = fixture.create[A]()
+
+        origin.returns[U] should be(false)
+      }
+    }
+  }
+
+  trait Remote extends OriginBehaviors[Future] {
+    this: Spec =>
+
+    override type Origin[+A] <: Origin.Remote[A]
+    implicit def context: ExecutionContext
+
+    override val X = new Comonad[Future] {
+      def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
+
+      def cobind[A, B](fa: Future[A])(f: Future[A] => B): Future[B] = future {f(fa)}
+      def cojoin[A](fa: Future[A]): Future[Future[A]] = future {fa}
+      def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
+    }
+    override object anOrigin extends OriginSpec
+
+    val timeout: FiniteDuration = 1.second
   }
 }

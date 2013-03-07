@@ -29,7 +29,7 @@ import util.{Events, EventSource, Logger}
 
 trait FactoryComponent {
 
-  protected type Origin[+A] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin.Local[A]
   def origin: OriginFactory
 
   trait OriginFactory {

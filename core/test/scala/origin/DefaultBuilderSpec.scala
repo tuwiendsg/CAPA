@@ -16,30 +16,24 @@
 
 package at.ac.tuwien.infosys
 package amber
-package simple
 package origin
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-import amber.util.NoLogging
+class DefaultBuilderSpec extends Spec
+                         with BuilderComponent.Default
+                         with OriginBehaviors.Local {
 
-class BuilderSpec extends Spec
-                  with BuilderComponent
-                  with NoLogging
-                  with OriginBehaviors {
-
+  override type Origin[+A] = Origin.Local.Default[A]
   override val fixture = new Fixture {
-
-    protected type Origin[+A] = BuilderSpec.this.Origin[A]
-
     override def create[A: ClassTag : TypeTag](name: Origin.Name,
                                                family: Origin.Family,
                                                read: Fixture.Read[A]) =
       builder.build(name, family) {meta => read() map {(_, meta)}}
   }
 
-  "simple.OriginBuilder" when {
+  "Default.OriginBuilder" when {
     "an origin is built" should {
       "return the origin" which {
         behave like anOrigin

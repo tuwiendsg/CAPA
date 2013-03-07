@@ -27,7 +27,7 @@ trait System extends amber.System {
     map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
     map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
 
-    def createCelsius(location: String): amber.Origin[Int] = {
+    def createCelsius(location: String): Origin.Local[Int] = {
       val temperature = origin.create("temperature/celsius") {
         () => Random.nextInt(55) - 15
       }

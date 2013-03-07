@@ -41,6 +41,7 @@ class Value[+A](value: A) extends Serializable {
     case tag if tag.runtimeClass.isInstance(value) => Some(value.asInstanceOf[B])
     case _ => None
   }
+  override lazy val toString = s"Value($value)"
 }
 
 object Value {

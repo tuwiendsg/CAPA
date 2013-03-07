@@ -28,7 +28,7 @@ import util.MultiTrie
 
 trait FinderComponent {
 
-  protected type Origin[+A] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin.Local[A]
   protected def origins: OriginFinder
 
   protected type Selection = MultiTrie.Selection

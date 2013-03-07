@@ -25,7 +25,7 @@ class DelegatorFinderSpec extends Spec
 
   override val finder = new FinderComponent
   class FinderComponent extends amber.origin.FinderComponent {
-    override type Origin[+A] = amber.Origin[A]
+    override type Origin[+A] = amber.Origin.Local[A]
     override val origins = mock[OriginFinder]("origin.Finder")
   }
 
