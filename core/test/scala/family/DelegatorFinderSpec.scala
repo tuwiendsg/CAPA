@@ -18,11 +18,10 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.verify
 
 class DelegatorFinderSpec extends Spec
-                          with FinderComponent.Delegator
-                          with FinderBehaviors {
+                          with FinderComponent.Delegator {
 
   override val finder = new FinderComponent
   class FinderComponent extends amber.family.FinderComponent {
@@ -30,15 +29,7 @@ class DelegatorFinderSpec extends Spec
     override val families = mock[FamilyFinder]("family.Finder")
   }
 
-  override val fixture = new Fixture {
-    def create(family: Origin.Family) = {
-      val origin = mock[Origin[_]]("Origin")
-      when(origin.family) thenReturn family
-      origin
-    }
-  }
-
-  "OriginFinder.Delegator" should {
+  "Delegator.FamilyFinder" should {
     "invoke the delegatee's find method" in {
       val family = random[Origin.Family]
 

@@ -18,11 +18,10 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.verify
 
 class DelegatorFinderSpec extends Spec
-                          with FinderComponent.Delegator
-                          with FinderBehaviors {
+                          with FinderComponent.Delegator {
 
   override val finder = new FinderComponent
   class FinderComponent extends amber.origin.FinderComponent {
@@ -30,15 +29,7 @@ class DelegatorFinderSpec extends Spec
     override val origins = mock[OriginFinder]("origin.Finder")
   }
 
-  override val fixture = new Fixture {
-    def create(name: Origin.Name) = {
-      val origin = mock[Origin[_]]("Origin")
-      when(origin.name) thenReturn name
-      origin
-    }
-  }
-
-  "OriginFinder.Delegator" should {
+  "Delegator.OriginFinder" should {
     "invoke the delegatee's find method" in {
       val selection = Selections.all
 
