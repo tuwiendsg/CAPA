@@ -16,26 +16,19 @@
 
 package at.ac.tuwien.infosys
 package amber
+package origin
 
-import util.Events
+class LocalDelegatorFinderSpec extends Spec
+                               with FinderComponent.Delegator.Local
+                               with DelegatorFinderBehaviors.Local {
 
-trait System extends origin.FinderComponent.Local
-             with origin.FactoryComponent
-             with family.MemberFactoryComponent
-             with Processing
-             with Processing.Default.Conversions
-             with Processing.Default.Operations {
-
-  def stopped: Events[Unit]
-
-  def client: amber.Client = _client
-  def shutdown() {
-    process.shutdown()
+  override val finder = new FinderComponent
+  class FinderComponent extends amber.origin.FinderComponent.Local {
+    override type Origin[+A] = amber.Origin.Local[A]
+    override val origins = mock[OriginFinder]("origin.Finder")
   }
 
-  trait Client extends amber.Client with amber.origin.FinderComponent.Delegator.Local {
-    override protected val finder = System.this
+  "Local.Delegator.OriginFinder" should {
+    behave like aDelegator.forOriginFinder
   }
-
-  private object _client extends Client
 }

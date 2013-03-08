@@ -27,7 +27,7 @@ import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 import util.{Filter, Filterable, NotNothing}
 
-trait Client extends origin.FinderComponent {
+trait Client extends origin.FinderComponent.Local {
 
   case class Query(selection: Selection, filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {

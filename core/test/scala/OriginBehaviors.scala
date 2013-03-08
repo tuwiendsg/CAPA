@@ -19,8 +19,7 @@ package amber
 
 import scala.language.higherKinds
 
-import scala.concurrent.{future, Await, ExecutionContext, Future}
-import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
@@ -30,7 +29,7 @@ import scalaz.Id.{id, Id}
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
-import util.{Filter, NotNothing}
+import util.{Filter, FutureComonad, NotNothing}
 
 sealed trait OriginBehaviors[X[+_]] {
   this: Spec =>
@@ -206,21 +205,12 @@ object OriginBehaviors {
     }
   }
 
-  trait Remote extends OriginBehaviors[Future] {
+  trait Remote extends OriginBehaviors[Future] with FutureComonad {
     this: Spec =>
 
     override type Origin[+A] <: Origin.Remote[A]
-    implicit def context: ExecutionContext
 
-    override val X = new Comonad[Future] {
-      def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
-
-      def cobind[A, B](fa: Future[A])(f: Future[A] => B): Future[B] = future {f(fa)}
-      def cojoin[A](fa: Future[A]): Future[Future[A]] = future {fa}
-      def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
-    }
+    override val X = implicitly[Comonad[Future]]
     override object anOrigin extends OriginSpec
-
-    val timeout: FiniteDuration = 1.second
   }
 }

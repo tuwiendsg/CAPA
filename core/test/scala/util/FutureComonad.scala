@@ -16,26 +16,23 @@
 
 package at.ac.tuwien.infosys
 package amber
+package util
 
-import util.Events
+import scala.concurrent.{future, Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 
-trait System extends origin.FinderComponent.Local
-             with origin.FactoryComponent
-             with family.MemberFactoryComponent
-             with Processing
-             with Processing.Default.Conversions
-             with Processing.Default.Operations {
+import scalaz.Comonad
 
-  def stopped: Events[Unit]
+trait FutureComonad {
 
-  def client: amber.Client = _client
-  def shutdown() {
-    process.shutdown()
+  implicit def context: ExecutionContext
+
+  def timeout: FiniteDuration = 1.second
+
+  implicit object FutureIsComonad extends Comonad[Future] {
+    def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
+    def cobind[A, B](fa: Future[A])(f: Future[A] => B): Future[B] = future {f(fa)}
+    def cojoin[A](fa: Future[A]): Future[Future[A]] = future {fa}
+    def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
   }
-
-  trait Client extends amber.Client with amber.origin.FinderComponent.Delegator.Local {
-    override protected val finder = System.this
-  }
-
-  private object _client extends Client
 }

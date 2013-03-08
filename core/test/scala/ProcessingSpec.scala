@@ -33,7 +33,7 @@ import util.Filter
 
 trait ProcessingSpec extends Spec
                      with mock.origin.BuilderComponent
-                     with origin.FinderComponent.Default
+                     with origin.FinderComponent.Local.Default
                      with family.FinderComponent.Default
                      with origin.FactoryComponent.Default
                      with family.MemberFactoryComponent.Default

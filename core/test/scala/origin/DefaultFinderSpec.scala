@@ -25,12 +25,13 @@ import org.mockito.Mockito.when
 
 class DefaultFinderSpec extends Spec
                         with mock.origin.BuilderComponent
-                        with FinderComponent.Default
-                        with FinderBehaviors {
+                        with FinderComponent.Local.Default
+                        with FinderBehaviors.Local {
 
   override def mocker[A: ClassTag : TypeTag] =
-    super.mocker[A] andThen {case ((name, _, _, _), origin) =>
+    super.mocker[A] andThen {case ((name, family, _, _), origin) =>
       when(origin.name) thenReturn name
+      when(origin.family) thenReturn family
     }
 
   override val fixture = new Fixture {

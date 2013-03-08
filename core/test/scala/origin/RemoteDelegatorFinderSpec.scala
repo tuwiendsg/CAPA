@@ -18,24 +18,17 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import org.mockito.Mockito.verify
-
-class DelegatorFinderSpec extends Spec
-                          with FinderComponent.Delegator {
+class RemoteDelegatorFinderSpec extends Spec
+                                with FinderComponent.Delegator.Remote
+                                with DelegatorFinderBehaviors.Remote {
 
   override val finder = new FinderComponent
-  class FinderComponent extends amber.origin.FinderComponent {
-    override type Origin[+A] = amber.Origin.Local[A]
+  class FinderComponent extends amber.origin.FinderComponent.Remote {
+    override type Origin[+A] = amber.Origin.Remote[A]
     override val origins = mock[OriginFinder]("origin.Finder")
   }
 
-  "Delegator.OriginFinder" should {
-    "invoke the delegatee's find method" in {
-      val selection = Selections.all
-
-      origins.find(selection)
-
-      verify(finder.origins).find(selection)
-    }
+  "Remote.Delegator.OriginFinder" should {
+    behave like aDelegator.forOriginFinder
   }
 }
