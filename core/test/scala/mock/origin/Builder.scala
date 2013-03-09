@@ -23,7 +23,6 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mock.MockitoSugar.mock
 
 import util.Mocker
 
@@ -44,7 +43,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   def mocker[A: ClassTag : TypeTag] =
     new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A]), amber.Origin[A]] {
       def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A])) =
-        org.scalatest.mock.MockitoSugar.mock[amber.Origin[A]](s"mock.Origin[${typeOf[A]}]")
+        BuilderComponent.this.mock[Origin[A]](s"mock.Origin[${typeOf[A]}]")
     }
 
   override protected type Origin[+A] = amber.Origin[A]
