@@ -19,6 +19,8 @@ package amber
 package akka
 package util
 
+import scala.reflect.ClassTag
+
 import amber.util.{EventsBehaviors, NotNothing}
 
 class EventSourceSpec extends Spec("EventSourceSpec")
@@ -26,7 +28,7 @@ class EventSourceSpec extends Spec("EventSourceSpec")
 
   override type Events[A]  = EventSource[A]
   override val fixture = new Fixture {
-    override def create[A: NotNothing : Manifest]() = EventSource[A](system)
+    override def create[A: NotNothing : ClassTag]() = EventSource[A](system)
     override def emit[A](events: EventSource[A])(event: A) {events.emit(event)}
   }
 

@@ -32,7 +32,7 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[Origin[_]]
-    def create[A: Manifest : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]): Origin[A]
+    def create[A: ClassTag : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]): Origin[A]
   }
 
   object OriginFactory {
@@ -43,7 +43,7 @@ trait FactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A: Manifest : TypeTag](name: Origin.Name)
+      abstract override def create[A: ClassTag : TypeTag](name: Origin.Name)
                                                          (read: OriginFactory.Read[A]) = {
         log.debug(s"Creating $name origin of type ${typeOf[A]}")
         val result = super.create(name)(read)
@@ -64,7 +64,7 @@ object FactoryComponent {
 
       override val created = EventSource[Origin[_]]()
 
-      override def create[A: Manifest : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]) =
+      override def create[A: ClassTag : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]) =
         builder.build(name, Origin.Family.random()) {meta => read() map {(_, meta)}}
     }
 

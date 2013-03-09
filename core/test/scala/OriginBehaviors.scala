@@ -17,6 +17,7 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import org.mockito.Matchers.{anyObject => anything}
@@ -35,22 +36,23 @@ trait OriginBehaviors {
 
   trait Fixture {
 
-    def create[A: Manifest : TypeTag](name: Origin.Name,
+    def create[A: ClassTag : TypeTag](name: Origin.Name,
                                       family: Origin.Family,
                                       read: Fixture.Read[A]): Origin[A]
 
-    def create[A: NotNothing : Manifest](): Origin[A] = create(random[Origin.Name])
+    def create[A: NotNothing : ClassTag: TypeTag](): Origin[A] = create(random[Origin.Name])
 
-    def create[A: NotNothing : Manifest](name: Origin.Name): Origin[A] =
+    def create[A: NotNothing : ClassTag: TypeTag](name: Origin.Name): Origin[A] =
       create(name, random[Origin.Family])
 
-    def create[A: NotNothing : Manifest](family: Origin.Family): Origin[A] =
+    def create[A: NotNothing : ClassTag: TypeTag](family: Origin.Family): Origin[A] =
       create(random[Origin.Name], family)
 
-    def create[A: NotNothing : Manifest](name: Origin.Name, family: Origin.Family): Origin[A] =
+    def create[A: NotNothing : ClassTag : TypeTag](name: Origin.Name,
+                                                   family: Origin.Family): Origin[A] =
       create(name, family, mock[Fixture.Read[A]]("Origin.read"))
 
-    def create[A: Manifest : TypeTag](read: Fixture.Read[A]): Origin[A] =
+    def create[A: ClassTag : TypeTag](read: Fixture.Read[A]): Origin[A] =
       create(random[Origin.Name], random[Origin.Family], read)
   }
 

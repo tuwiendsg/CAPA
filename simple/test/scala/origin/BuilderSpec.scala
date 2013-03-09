@@ -19,6 +19,7 @@ package amber
 package simple
 package origin
 
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import amber.util.NoLogging
@@ -32,7 +33,7 @@ class BuilderSpec extends Spec
 
     protected type Origin[+A] = BuilderSpec.this.Origin[A]
 
-    override def create[A: Manifest : TypeTag](name: Origin.Name,
+    override def create[A: ClassTag : TypeTag](name: Origin.Name,
                                                family: Origin.Family,
                                                read: Fixture.Read[A]) =
       builder.build(name, family) {meta => read() map {(_, meta)}}

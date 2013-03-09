@@ -20,6 +20,8 @@ package util
 
 import scala.language.higherKinds
 
+import scala.reflect.ClassTag
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
@@ -30,7 +32,7 @@ trait EventsBehaviors {
   def fixture: Fixture
 
   trait Fixture {
-    def create[A: NotNothing : Manifest](): Events[A]
+    def create[A: NotNothing : ClassTag](): Events[A]
     def emit[A](events: Events[A])(event: A)
   }
 
