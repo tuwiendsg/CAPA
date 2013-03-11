@@ -29,7 +29,7 @@ trait System extends akka.origin.BuilderComponent
              with amber.family.MemberFactoryComponent.Default {
   this: Logging =>
 
-  override type Configuration = System.Configuration
+  override protected type Configuration = System.Configuration
 
   @transient private[this] val log = logger.create("amber.akka.System")
 

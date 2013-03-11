@@ -29,8 +29,8 @@ class BuilderSpec extends Spec("BuilderSpec")
                   with NoLogging
                   with OriginBehaviors {
 
-  override type Configuration = BuilderComponent.Configuration
-  override object configuration extends BuilderComponent.Configuration {
+  override protected type Configuration = BuilderComponent.Configuration
+  override protected object configuration extends BuilderComponent.Configuration {
     override val system = BuilderSpec.this.system
   }
 

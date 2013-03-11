@@ -29,6 +29,10 @@ import util.{ConfigurableComponent, Logging, Scheduling}
 trait Demo extends Runnable with Scheduling with ConfigurableComponent {
   this: Logging =>
 
+  override protected type Configuration = Demo.Configuration
+  override protected def configuration: Configuration = _configuration
+  private object _configuration extends Configuration
+
   def system: System
   def client: temperature.Client = system.client
 
@@ -41,14 +45,6 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
       override protected lazy val logging = System.this
     }
   }
-
-  override def configuration: Configuration = _configuration
-
-  trait Configuration {
-    val period: FiniteDuration = 2.seconds
-  }
-
-  private object _configuration extends Configuration
 
   protected val delimiter = "-" * 40
   protected val locations = Set("A", "B")
@@ -67,5 +63,11 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
       shutdown()
       system.shutdown()
     }
+  }
+}
+
+object Demo {
+  trait Configuration {
+    def period: FiniteDuration = 2.seconds
   }
 }

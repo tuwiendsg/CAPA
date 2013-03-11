@@ -31,7 +31,7 @@ import amber.util.{ConfigurableComponent, Logging}
 trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableComponent {
   this: Logging =>
 
-  override type Configuration <: BuilderComponent.Configuration
+  override protected type Configuration <: BuilderComponent.Configuration
 
   override protected type Origin[+A] = OriginRef[A]
   override protected def builder: super.OriginBuilder = _builder

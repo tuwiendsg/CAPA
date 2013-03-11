@@ -19,6 +19,6 @@ package amber
 package util
 
 trait ConfigurableComponent {
-  type Configuration
-  def configuration: Configuration
+  protected type Configuration
+  protected def configuration: Configuration
 }
