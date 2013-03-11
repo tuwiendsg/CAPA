@@ -19,29 +19,36 @@ package amber
 package demo
 package temperature
 
+import scala.language.higherKinds
+
+import scala.concurrent.Future
+
+import scalaz.Functor
+import scalaz.Id.{id, Id}
+import scalaz.std.option._
 import scalaz.std.string._
 import scalaz.syntax.equal._
+import scalaz.syntax.applicative._
 
-trait Client extends amber.Client.Local {
+import util.Value._
+
+sealed trait Client[X[+_]] {
+  this: amber.Client[X] with origin.FinderComponent[X] =>
+
+  implicit def X: Functor[X]
 
   import Selections.exact
 
   val temperature = entity("Temperature")
   temperature.celsius = {() =>
-    for {
-      values <- Some(readAll[Double](exact("temperature/celsius") where {
-                  meta => for {location <- meta.location.as[String]} yield location === "A"
-                }))
-      if !values.isEmpty
-    } yield values.min
+    readAll[Double](exact("temperature/celsius") where {
+      meta => for {location <- meta.location.as[String]} yield location === "A"
+    }) map {Some(_)} map {for {values <- _; if !values.isEmpty} yield values.min}
   }
   temperature.kelvin = {() =>
-    for {
-      values <- Some(readAll[Double](exact("temperature/kelvin") where {
-                  meta => for {location <- meta.location.as[String]} yield location === "B"
-                }))
-      if !values.isEmpty
-    } yield values.max
+    readAll[Double](exact("temperature/kelvin") where {
+      meta => for {location <- meta.location.as[String]} yield location === "B"
+    }) map {Some(_)} map {for {values <- _; if !values.isEmpty} yield values.max}
   }
   temperature.where {
     entity =>
@@ -51,5 +58,18 @@ trait Client extends amber.Client.Local {
       } yield celsius < kelvin
   }
 
-  def readTemperature(): Option[Entity.Instance] = readOne(temperature.build())
+  def readTemperature(): X[Option[Entity.Instance]] = readOne(temperature.build())
+}
+
+object Client {
+
+  trait Local extends Client[Id] with amber.Client.Local
+
+  trait Remote extends Client[Future] with amber.Client.Remote {
+    override protected type Configuration <: Remote.Configuration
+  }
+
+  object Remote {
+    trait Configuration extends amber.Client.Remote.Configuration
+  }
 }

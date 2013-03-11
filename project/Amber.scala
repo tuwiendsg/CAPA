@@ -78,6 +78,7 @@ object Dependency {
     val version = "2.1.1"
     val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
     val actor = "com.typesafe.akka" %% "akka-actor" % version
+    val remote = "com.typesafe.akka" %% "akka-remote" % version
     val testkit = "com.typesafe.akka" %% "akka-testkit" % version
   }
 
@@ -141,7 +142,7 @@ object Amber extends Build {
   ) dependsOn(core % "test->test;compile")
   lazy val demo = module(
     name = "demo",
-    dependencies = Seq(Logback.classic % "runtime")
+    dependencies = Seq(Akka.remote, Logback.classic % "runtime")
   ) dependsOn(core, simple, akka)
 
   val defaultSettings = Defaults.defaultSettings ++

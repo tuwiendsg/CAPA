@@ -19,21 +19,24 @@ package amber
 package demo
 package temperature
 
+import com.typesafe.config.ConfigFactory
+
 import _root_.akka.actor.ActorSystem
 
-object Simple extends Demo with App with util.SLF4JLogging {
+object Simple extends Demo.Local with App with util.SLF4JLogging {
 
-  override val system = new simple.System with super.System
+  override object system extends simple.System with super.System
 
   run()
 }
 
-object Akka extends Demo with App with util.SLF4JLogging {
+object AkkaLocal extends Demo.Local with App with util.SLF4JLogging {
 
-  override val system = new akka.System.Local with super.System {
+  override object system extends akka.System.Local with super.System {
 
     override protected object configuration extends akka.System.Local.Configuration {
-      override val system = ActorSystem("TemperatureDemo")
+      private val name = "temperature-server"
+      override val system = ActorSystem(name, ConfigFactory.load.getConfig(name))
     }
 
     override def shutdown() {
@@ -43,4 +46,30 @@ object Akka extends Demo with App with util.SLF4JLogging {
   }
 
   run()
+}
+
+object AkkaRemote extends Demo.Remote with App with util.SLF4JLogging {
+
+  override object system extends akka.System.Remote with super.System {
+
+    override protected object configuration extends akka.System.Remote.Configuration {
+      private val name = "temperature-client"
+      override val system = ActorSystem(name, ConfigFactory.load.getConfig(name))
+      override val reference =
+        system.actorFor("akka://temperature-server@127.0.0.1:2552/user/origins-finder")
+    }
+
+    override def shutdown() {
+      super.shutdown()
+      configuration.system.shutdown()
+    }
+  }
+
+  try {
+    AkkaLocal.system.start()
+    run()
+  } finally {
+    shutdown()
+    AkkaLocal.system.shutdown()
+  }
 }
