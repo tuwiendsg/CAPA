@@ -59,10 +59,10 @@ trait Client extends origin.FinderComponent {
       type Name = String
       sealed trait Read[+A] extends ((Field.Name) => Stream[Value[A]])
 
-      implicit def readFromOption[A: TypeTag](f: () => Option[A]): Read[A] = new Read[A] {
+      implicit def readFromOption[A](f: () => Option[A]): Read[A] = new Read[A] {
         override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
       }
-      implicit def readFromSeq[A: TypeTag](f: () => Seq[A]): Read[A] = new Read[A] {
+      implicit def readFromSeq[A](f: () => Seq[A]): Read[A] = new Read[A] {
         override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
       }
 

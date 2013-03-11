@@ -47,7 +47,7 @@ private[akka] case class OriginRef[+A: NotNothing : TypeTag](ref: ActorRef)(time
   override def selectDynamic(name: String) =
     await(request[Option[Origin.MetaInfo.Value[_]]](MetaInfo.Get(name)))
 
-  override def update[B: TypeTag](name: Origin.MetaInfo.Name, value: B) {
+  override def update[B](name: Origin.MetaInfo.Name, value: B) {
     ref ! MetaInfo.Set(name, new Origin.MetaInfo.Value(value))
   }
 

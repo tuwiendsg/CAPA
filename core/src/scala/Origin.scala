@@ -34,7 +34,7 @@ trait Origin[+A] extends Equals with Dynamic {
   def family: Origin.Family
 
   def selectDynamic(name: Origin.MetaInfo.Name): Option[Origin.MetaInfo.Value[_]]
-  def update[A: TypeTag](name: Origin.MetaInfo.Name, value: A)
+  def update[A](name: Origin.MetaInfo.Name, value: A)
 
   def read(): Option[(Origin.Value[A], Origin.MetaInfo)]
   def returns[B: NotNothing : TypeTag]: Boolean

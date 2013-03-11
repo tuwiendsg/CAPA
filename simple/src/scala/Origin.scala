@@ -34,7 +34,7 @@ private[simple] abstract class Origin[+A : TypeTag](override val name: Origin.Na
 
   override def selectDynamic(name: Origin.MetaInfo.Name) = Option(meta.get(name))
 
-  override def update[A: TypeTag](name: Origin.MetaInfo.Name, value: A) {
+  override def update[A](name: Origin.MetaInfo.Name, value: A) {
     meta.put(name, new Origin.MetaInfo.Value(value))
   }
 
