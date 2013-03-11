@@ -18,8 +18,10 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.language.higherKinds
+import scala.language.{higherKinds, implicitConversions}
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
@@ -37,7 +39,20 @@ trait FactoryComponent {
 
   object OriginFactory {
 
-    type Read[A] = () => Option[A]
+    sealed trait Read[A] extends (() => Option[A])
+
+    implicit def fromValue[A](f: () => A): Read[A] = new Read[A] {
+      override def apply() = Option(f())
+    }
+
+    implicit def fromOption[A](f: () => Option[A]): Read[A] = new Read[A] {
+      override def apply() = f()
+    }
+
+    implicit def fromFuture[A](f: () => Future[A])(implicit timeout: FiniteDuration): Read[A] =
+      new Read[A] {
+        override def apply() = Option(Await.result(f(), timeout))
+      }
 
     trait Logging extends OriginFactory {
 
