@@ -29,7 +29,7 @@ import util.Logger
 
 trait MemberFactoryComponent {
 
-  protected type Origin[+A] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin.Local[A]
   protected def in(family: Origin.Family): MemberFactory
 
   protected trait MemberFactory {

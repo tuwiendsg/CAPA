@@ -16,26 +16,23 @@
 
 package at.ac.tuwien.infosys
 package amber
-package origin
+package util
 
-import org.mockito.Mockito.verify
+import scala.concurrent.{future, Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 
-class DelegatorFinderSpec extends Spec
-                          with FinderComponent.Delegator {
+import scalaz.Comonad
 
-  override val finder = new FinderComponent
-  class FinderComponent extends amber.origin.FinderComponent {
-    override type Origin[+A] = amber.Origin[A]
-    override val origins = mock[OriginFinder]("origin.Finder")
-  }
+trait FutureComonad {
 
-  "Delegator.OriginFinder" should {
-    "invoke the delegatee's find method" in {
-      val selection = Selections.all
+  implicit def context: ExecutionContext
 
-      origins.find(selection)
+  def timeout: FiniteDuration = 1.second
 
-      verify(finder.origins).find(selection)
-    }
+  implicit object FutureIsComonad extends Comonad[Future] {
+    def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
+    def cobind[A, B](fa: Future[A])(f: Future[A] => B): Future[B] = future {f(fa)}
+    def cojoin[A](fa: Future[A]): Future[Future[A]] = future {fa}
+    def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
   }
 }

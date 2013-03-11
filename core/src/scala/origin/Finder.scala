@@ -21,56 +21,80 @@ package origin
 import scala.language.higherKinds
 
 import scala.collection.immutable.Set
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
+import scalaz.Id.Id
+
 import util.MultiTrie
 
-trait FinderComponent {
+sealed trait FinderComponent[X[+_]] {
 
-  protected type Origin[+A] <: amber.Origin[A]
-  protected def origins: OriginFinder
+  protected type Origin[+A] <: amber.Origin[X, A]
+  def origins: OriginFinder
 
-  protected type Selection = MultiTrie.Selection
-  protected val Selections = MultiTrie.Selections
+  type Selection = MultiTrie.Selection
+  val Selections = MultiTrie.Selections
 
-  protected trait OriginFinder {
-    def find(selection: Selection): Set[Origin[_]]
+  trait OriginFinder {
+    def find(selection: Selection): X[Set[Origin[_]]]
   }
 }
 
 object FinderComponent {
 
-  trait Default extends FinderComponent with origin.BuilderComponent {
-
-    abstract override protected def builder: OriginBuilder = _builder
-    override protected def origins: OriginFinder = _origins
-
-    protected trait OriginFinder extends super.OriginFinder {
-      private val trie = MultiTrie[Origin[_]]()
-      override def find(selection: Selection) = trie.select(selection)
-      def add(origin: Origin[_]) {trie add (origin.name, origin)}
-    }
-
-    private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                               (read: OriginBuilder.Read[A]) = {
-        val result = Default.super.builder.build(name, family)(read)
-        origins.add(result)
-        result
-      }
-    }
-
-    private object _origins extends OriginFinder
+  trait Local extends FinderComponent[Id] {
+    protected override type Origin[+A] <: amber.Origin.Local[A]
   }
 
-  trait Delegator extends FinderComponent {
+  trait Remote extends FinderComponent[Future] {
+    protected override type Origin[+A] <: amber.Origin.Remote[A]
+  }
 
-    protected val finder: FinderComponent
+  object Local {
+    trait Default extends Local with origin.BuilderComponent {
+
+      abstract override protected def builder: OriginBuilder = _builder
+      override def origins: OriginFinder = _origins
+
+      trait OriginFinder extends super.OriginFinder {
+        private val trie = MultiTrie[Origin[_]]()
+        override def find(selection: Selection) = trie.select(selection)
+        def add(origin: Origin[_]) {trie add (origin.name, origin)}
+      }
+
+      private object _builder extends OriginBuilder {
+        override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
+                                                 (read: OriginBuilder.Read[A]) = {
+          val result = Default.super.builder.build(name, family)(read)
+          origins.add(result)
+          result
+        }
+      }
+
+      private object _origins extends OriginFinder
+    }
+  }
+
+  sealed trait Delegator[X[+_]] extends FinderComponent[X] {
+
+    protected val finder: FinderComponent[X]
 
     override protected type Origin[+A] = finder.Origin[A]
-    override protected object origins extends OriginFinder {
+    override object origins extends OriginFinder {
       override def find(selection: Selection) = finder.origins.find(selection)
+    }
+  }
+
+  object Delegator {
+
+    trait Local extends Delegator[Id] with FinderComponent.Local {
+      override protected val finder: FinderComponent.Local
+    }
+
+    trait Remote extends Delegator[Future] with FinderComponent.Remote {
+      override protected val finder: FinderComponent.Remote
     }
   }
 }

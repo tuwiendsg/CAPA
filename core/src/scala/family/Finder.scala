@@ -29,7 +29,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 trait FinderComponent {
 
-  protected type Origin[+A] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin.Local[A]
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {

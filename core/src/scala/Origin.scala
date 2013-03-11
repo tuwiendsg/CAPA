@@ -17,27 +17,31 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.language.dynamics
+import scala.language.{dynamics, higherKinds}
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID.randomUUID
 
 import scala.collection.{immutable, Map}
-import scala.reflect.runtime.universe.TypeTag
+import scala.concurrent.Future
+import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import scalaz.Equal.equalA
+import scalaz.Id.Id
+import scalaz.OptionT
+import scalaz.syntax.equal._
 
 import util.{NotNothing, Path}
 
-trait Origin[+A] extends Equals with Dynamic {
+sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
 
-  def name: Origin.Name
-  def family: Origin.Family
+  def name: X[Origin.Name]
+  def family: X[Origin.Family]
 
-  def selectDynamic(name: Origin.MetaInfo.Name): Option[Origin.MetaInfo.Value[_]]
-  def update[A: TypeTag](name: Origin.MetaInfo.Name, value: A)
+  def selectDynamic(name: Origin.MetaInfo.Name): OptionT[X, Origin.MetaInfo.Value[_]]
+  def update[B](name: Origin.MetaInfo.Name, value: B)
 
-  def read(): Option[(Origin.Value[A], Origin.MetaInfo)]
-  def returns[B: NotNothing : TypeTag]: Boolean
+  def read(): OptionT[X, (Origin.Value[A], Origin.MetaInfo)]
 }
 
 object Origin {
@@ -52,6 +56,46 @@ object Origin {
   object Family {
     def random() = Family(randomUUID().toString)
     implicit val hasEqual = equalA[Family]
+  }
+
+  trait Local[+A] extends Origin[Id, A] {
+    def returns[B: NotNothing : TypeTag]: Boolean
+  }
+
+  trait Remote[+A] extends Origin[Future, A]
+
+  object Local {
+    abstract class Default[+A : TypeTag](override val name: Origin.Name,
+                                         override val family: Origin.Family)
+        extends amber.Origin.Local[A] {
+
+      protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
+
+      override def selectDynamic(name: Origin.MetaInfo.Name) =
+        OptionT[Id, Origin.MetaInfo.Value[_]](Option(meta.get(name)))
+
+      override def update[A](name: Origin.MetaInfo.Name, value: A) {
+        meta.put(name, new Origin.MetaInfo.Value(value))
+      }
+
+      override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
+
+      override lazy val hashCode =
+        41 * (41 * (41 + name.hashCode) + family.hashCode) + typeTag[A].hashCode
+
+      override def equals(other: Any) = other match {
+        case that: Origin.Local[_] =>
+          (that canEqual this) &&
+          (this.name === that.name) &&
+          (this.family === that.family) &&
+          that.returns[A]
+        case _ => false
+      }
+
+      override def canEqual(other: Any) = other.isInstanceOf[Origin.Local[_]]
+
+      override lazy val toString = s"amber.Origin.Local[${typeOf[A]}]($name)"
+    }
   }
 
   sealed trait MetaInfo extends Dynamic with Serializable {

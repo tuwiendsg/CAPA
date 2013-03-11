@@ -18,9 +18,19 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-trait FinderBehaviors {
-  this: Spec with FinderComponent =>
+import scala.language.higherKinds
 
+import scala.concurrent.Future
+
+import scalaz.Comonad
+import scalaz.Id.{id, Id}
+
+import util.FutureComonad
+
+sealed trait FinderBehaviors[X[+_]] {
+  this: Spec with FinderComponent[X] =>
+
+  def X: Comonad[X]
   def fixture: Fixture
 
   trait Fixture {
@@ -33,8 +43,23 @@ trait FinderBehaviors {
         val name = random[Origin.Name]
         val origin = fixture.create(name)
 
-        origins.find(Selections.exact(name)) should contain(origin)
+        X.copoint(origins.find(Selections.exact(name))) should contain(origin)
       }
     }
+  }
+}
+
+object FinderBehaviors {
+
+  trait Local extends FinderBehaviors[Id] {
+    this: Spec with FinderComponent.Local =>
+
+    override val X = id
+  }
+
+  trait Remote extends FinderBehaviors[Future] with FutureComonad {
+    this: Spec with FinderComponent.Remote =>
+
+    override val X = implicitly[Comonad[Future]]
   }
 }

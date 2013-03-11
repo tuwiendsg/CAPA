@@ -16,21 +16,19 @@
 
 package at.ac.tuwien.infosys
 package amber
-package akka
+package origin
 
-private[akka] sealed trait Message extends Serializable
+class RemoteDelegatorFinderSpec extends Spec
+                                with FinderComponent.Delegator.Remote
+                                with DelegatorFinderBehaviors.Remote {
 
-private[akka] object Message {
-  object Request {
+  override val finder = new FinderComponent
+  class FinderComponent extends amber.origin.FinderComponent.Remote {
+    override type Origin[+A] = amber.Origin.Remote[A]
+    override val origins = mock[OriginFinder]("origin.Finder")
+  }
 
-    case object Read extends Message
-
-    object MetaInfo {
-      case object Name extends Message
-      case object Family extends Message
-      case class Get(name: Origin.MetaInfo.Name) extends Message
-      case class Set[+A](name: Origin.MetaInfo.Name, value: Origin.MetaInfo.Value[A])
-        extends Message
-    }
+  "Remote.Delegator.OriginFinder" should {
+    behave like aDelegator.forOriginFinder
   }
 }

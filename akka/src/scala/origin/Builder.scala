@@ -19,43 +19,45 @@ package amber
 package akka
 package origin
 
-import scala.collection.immutable.HashMap
-import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-import _root_.akka.actor.{ActorSystem, Props}
+import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 
-import amber.util.{ConfigurableComponent, Logging}
+import scalaz.Id.Id
+import scalaz.OptionT
+import scalaz.syntax.applicative._
 
-trait BuilderComponent extends amber.origin.BuilderComponent with ConfigurableComponent {
-  this: Logging =>
+import amber.util.ConfigurableComponent
+
+trait BuilderComponent extends amber.origin.BuilderComponent
+                       with ConfigurableComponent {
 
   override protected type Configuration <: BuilderComponent.Configuration
 
-  override protected type Origin[+A] = OriginRef[A]
-  override protected def builder: super.OriginBuilder = _builder
+  override protected type Origin[+A] = Origin.Local[A]
+  override protected def builder: OriginBuilder = _builder
 
-  protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                             (_read: OriginBuilder.Read[A]) = {
-      OriginRef[A](configuration.system.actorOf(Props(
-        new OriginActor(name, family)(logger.create(s"amber.akka.Origin($name)")) {
-          override protected def read(meta: Origin.MetaInfo) = _read(meta)
-        }
-      ).withDispatcher("amber.origins.dispatcher")))(configuration.timeout)
-    }
+  private object _builder extends OriginBuilder {
+    override def build[A: ClassTag : TypeTag](name: amber.Origin.Name, family: amber.Origin.Family)
+                                             (_read: OriginBuilder.Read[A]) =
+      new Origin(name, family) {
+
+        override val actor: ActorRef = configuration.system.actorOf(
+          Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
+        )
+
+        override def read() = OptionT((
+          for {(value, meta) <- _read(amber.Origin.MetaInfo(meta))}
+            yield (amber.Origin.Value(name, value), meta)
+        ).point[Id])
+      }
   }
-
-  private object _builder extends OriginBuilder
 }
 
 object BuilderComponent {
   trait Configuration {
     def system: ActorSystem
-    def timeout: FiniteDuration = FiniteDuration(
-      system.settings.config.getMilliseconds("akka.actor.typed.timeout"),
-      MILLISECONDS
-    )
   }
 }

@@ -20,9 +20,10 @@ package simple
 
 import amber.util.{EventSource, Logging}
 
-trait System extends simple.origin.BuilderComponent
-             with amber.System
-             with amber.origin.FinderComponent.Default
+trait System extends amber.System.Local
+             with amber.origin.BuilderComponent.Default
+             with amber.origin.BuilderComponent.Logging
+             with amber.origin.FinderComponent.Local.Default
              with amber.family.FinderComponent.Default
              with amber.origin.FactoryComponent.Default
              with amber.family.MemberFactoryComponent.Default {

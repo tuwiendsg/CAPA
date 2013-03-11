@@ -41,12 +41,12 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   var build: (Origin.Name, Origin.Family) => Unit = _
 
   def mocker[A: ClassTag : TypeTag] =
-    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A]), amber.Origin[A]] {
+    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A]), Origin[A]] {
       def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A])) =
-        BuilderComponent.this.mock[Origin[A]](s"mock.Origin[${typeOf[A]}]")
+        BuilderComponent.this.mock[Origin.Local[A]](s"mock.Origin.Local[${typeOf[A]}]")
     }
 
-  override protected type Origin[+A] = amber.Origin[A]
+  override protected type Origin[+A] = amber.Origin.Local[A]
   override protected def builder = new OriginBuilder {
     override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
                                              (read: OriginBuilder.Read[A]) = {

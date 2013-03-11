@@ -16,23 +16,19 @@
 
 package at.ac.tuwien.infosys
 package amber
-package demo
-package temperature
+package origin
 
-import scala.util.Random
+class LocalDelegatorFinderSpec extends Spec
+                               with FinderComponent.Delegator.Local
+                               with DelegatorFinderBehaviors.Local {
 
-trait System extends amber.System.Local {
-  object Temperature {
+  override val finder = new FinderComponent
+  class FinderComponent extends amber.origin.FinderComponent.Local {
+    override type Origin[+A] = amber.Origin.Local[A]
+    override val origins = mock[OriginFinder]("origin.Finder")
+  }
 
-    map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
-    map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
-
-    def createCelsius(location: String): Origin.Local[Int] = {
-      val temperature = origin.create("temperature/celsius") {
-        () => Random.nextInt(55) - 15
-      }
-      temperature("location") = location
-      temperature
-    }
+  "Local.Delegator.OriginFinder" should {
+    behave like aDelegator.forOriginFinder
   }
 }

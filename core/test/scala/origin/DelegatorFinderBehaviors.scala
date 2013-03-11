@@ -16,26 +16,39 @@
 
 package at.ac.tuwien.infosys
 package amber
-package family
+package origin
+
+import scala.language.higherKinds
+
+import scala.concurrent.Future
+
+import scalaz.Id.Id
 
 import org.mockito.Mockito.verify
 
-class DelegatorFinderSpec extends Spec
-                          with FinderComponent.Delegator {
+trait DelegatorFinderBehaviors[X[+_]] {
+  this: Spec with FinderComponent.Delegator[X] =>
 
-  override val finder = new FinderComponent
-  class FinderComponent extends amber.family.FinderComponent {
-    override type Origin[+A] = amber.Origin.Local[A]
-    override val families = mock[FamilyFinder]("family.Finder")
+  object aDelegator {
+    def forOriginFinder() {
+      "invoke the delegatee's find method" in {
+        val selection = Selections.all
+
+        origins.find(selection)
+
+        verify(finder.origins).find(selection)
+      }
+    }
+  }
+}
+
+object DelegatorFinderBehaviors {
+
+  trait Local extends DelegatorFinderBehaviors[Id] {
+    this: Spec with FinderComponent.Delegator.Local =>
   }
 
-  "Delegator.FamilyFinder" should {
-    "invoke the delegatee's find method" in {
-      val family = random[Origin.Family]
-
-      families.find(family)
-
-      verify(finder.families).find(family)
-    }
+  trait Remote extends DelegatorFinderBehaviors[Future] {
+    this: Spec with FinderComponent.Delegator.Remote =>
   }
 }
