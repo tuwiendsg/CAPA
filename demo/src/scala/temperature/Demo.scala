@@ -67,7 +67,7 @@ trait Demo extends Runnable with Scheduling with ConfigurableComponent {
 }
 
 object Demo {
-  trait Configuration {
+  trait Configuration extends Scheduling.Configuration {
     def period: FiniteDuration = 2.seconds
   }
 }

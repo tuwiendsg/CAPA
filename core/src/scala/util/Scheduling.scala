@@ -24,12 +24,14 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
-trait Scheduling {
+trait Scheduling extends ConfigurableComponent {
   this: Logging =>
+
+  override protected type Configuration <: Scheduling.Configuration
 
   @transient private[this] val log: Logger = logger.create("amber.Scheduler")
 
-  private val scheduler = Executors.newScheduledThreadPool(1)
+  private val scheduler = Executors.newScheduledThreadPool(configuration.threads)
 
   def after(delay: Duration)(f: () => Unit) {
     scheduler.schedule(toRunnable(f), delay.length, delay.unit)
@@ -47,5 +49,11 @@ trait Scheduling {
         case ex: Exception => log.error("Scheduled task finished unsuccessfully!", Some(ex))
       }
     }
+  }
+}
+
+object Scheduling {
+  trait Configuration {
+    def threads: Int = 1
   }
 }
