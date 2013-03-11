@@ -18,46 +18,86 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import _root_.akka.actor.{PoisonPill, Props}
+
 import amber.util.{ConfigurableComponent, Logging}
 import akka.util.EventSource
 
-trait System extends amber.System
-             with akka.origin.BuilderComponent
-             with amber.origin.BuilderComponent.Logging
-             with amber.origin.FinderComponent.Local.Default
-             with amber.family.FinderComponent.Default
-             with amber.origin.FactoryComponent.Default
-             with amber.family.MemberFactoryComponent.Default
-             with ConfigurableComponent {
-  this: Logging =>
-
-  override protected type Configuration = System.Configuration
-
-  @transient private[this] val log = logger.create("amber.akka.System")
-
-  override val stopped = EventSource[Unit](configuration.system)
-  override def origin: super.OriginFactory = _origin
-  override protected def in(f: amber.Origin.Family) = new MemberFactory with MemberFactory.Logging {
-    override protected val family = f
-    @transient override protected val log =
-      logger.create(s"amber.simple.family.MemberFactory($family)")
-  }
-
-  override def shutdown() {
-    log.info("Shutting down")
-    super.shutdown()
-    stopped emit ()
-    log.info("Shutdown successful")
-  }
-
-  trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
-    @transient override protected val log = logger.create("amber.akka.origin.Factory")
-    override val created = EventSource[Origin[_]](configuration.system)
-  }
-
-  private object _origin extends OriginFactory
-}
-
 object System {
-  trait Configuration extends origin.BuilderComponent.Configuration
+
+  trait Local extends amber.System.Local
+               with akka.origin.BuilderComponent
+               with amber.origin.BuilderComponent.Logging
+               with amber.origin.FinderComponent.Local.Default
+               with akka.origin.FinderComponent.Local
+               with amber.family.FinderComponent.Default
+               with amber.origin.FactoryComponent.Default
+               with amber.family.MemberFactoryComponent.Default
+               with ConfigurableComponent {
+    this: Logging =>
+
+    override protected type Configuration = Local.Configuration
+
+    @transient private[this] val log = logger.create("amber.akka.System.Local")
+
+    override val stopped = EventSource[Unit](configuration.system)
+    override def origin: super.OriginFactory = _origin
+    override protected def in(f: amber.Origin.Family) = new MemberFactory with MemberFactory.Logging {
+      override protected val family = f
+      @transient override protected val log =
+        logger.create(s"amber.akka.family.MemberFactory($family)")
+    }
+
+    override def shutdown() {
+      log.info("Shutting down")
+      super.shutdown()
+      actors.finder ! PoisonPill
+      stopped emit ()
+      log.info("Shutdown successful")
+    }
+
+    trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
+      @transient override protected val log = logger.create("amber.akka.origin.Factory")
+      override val created = EventSource[Origin[_]](configuration.system)
+    }
+
+    private object _origin extends OriginFactory
+    private val actors = Actors
+    private object Actors {
+      val finder = configuration.system.actorOf(
+        Props(new akka.origin.FinderComponent.Actor(Local.this)),
+        name = "origins-finder"
+      )
+    }
+  }
+
+  object Local {
+    trait Configuration extends origin.BuilderComponent.Configuration
+  }
+
+  trait Remote extends amber.System.Remote
+               with origin.FinderComponent.Remote
+               with ConfigurableComponent {
+    this: Logging =>
+
+    override protected type Configuration = Remote.Configuration
+
+    @transient private[this] val log = logger.create("amber.akka.System.Remote")
+
+    override val stopped = EventSource[Unit](configuration.system)
+
+    override def shutdown() {
+      log.info("Shutting down")
+      super.shutdown()
+      stopped emit ()
+      log.info("Shutdown successful")
+    }
+  }
+
+  object Remote {
+    trait Configuration extends amber.System.Remote.Configuration
+                        with origin.FinderComponent.Remote.Configuration {
+      override def context = system.dispatcher
+    }
+  }
 }

@@ -21,7 +21,7 @@ package temperature
 
 import scala.util.Random
 
-trait System extends amber.System {
+trait System extends amber.System.Local {
   object Temperature {
 
     map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}

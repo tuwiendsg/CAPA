@@ -30,9 +30,9 @@ object Simple extends Demo with App with util.SLF4JLogging {
 
 object Akka extends Demo with App with util.SLF4JLogging {
 
-  override val system = new akka.System with super.System {
+  override val system = new akka.System.Local with super.System {
 
-    override protected object configuration extends akka.System.Configuration {
+    override protected object configuration extends akka.System.Local.Configuration {
       override val system = ActorSystem("TemperatureDemo")
     }
 

@@ -20,7 +20,7 @@ package simple
 
 import amber.util.{EventSource, Logging}
 
-trait System extends amber.System
+trait System extends amber.System.Local
              with amber.origin.BuilderComponent.Default
              with amber.origin.BuilderComponent.Logging
              with amber.origin.FinderComponent.Local.Default

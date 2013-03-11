@@ -17,25 +17,64 @@
 package at.ac.tuwien.infosys
 package amber
 
-import util.Events
+import scala.language.higherKinds
 
-trait System extends origin.FinderComponent.Local
-             with origin.FactoryComponent
-             with family.MemberFactoryComponent
-             with Processing
-             with Processing.Default.Conversions
-             with Processing.Default.Operations {
+import scala.concurrent.Future
 
+import scalaz.Id.Id
+
+import util.{ConfigurableComponent, Events}
+
+sealed trait System[X[+_]] {
+  def client: Client[X]
   def stopped: Events[Unit]
+  def shutdown()
+}
 
-  def client: Client = _client
-  def shutdown() {
-    process.shutdown()
+object System {
+
+  trait Local extends System[Id]
+              with origin.FinderComponent.Local
+              with origin.FactoryComponent
+              with family.MemberFactoryComponent
+              with Processing
+              with Processing.Default.Conversions
+              with Processing.Default.Operations {
+
+    override def client: Client = _client
+    override def shutdown() {
+      process.shutdown()
+    }
+
+    trait Client extends Client.Local with amber.origin.FinderComponent.Delegator.Local {
+      override protected val finder = Local.this
+    }
+
+    private object _client extends Client
   }
 
-  trait Client extends Client.Local with amber.origin.FinderComponent.Delegator.Local {
-    override protected val finder = System.this
+  trait Remote extends System[Future]
+               with origin.FinderComponent.Remote
+               with ConfigurableComponent {
+
+    override protected type Configuration <: Remote.Configuration
+
+    override def client: Client = _client
+    override def shutdown() {}
+
+    trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
+      override protected val finder = Remote.this
+    }
+
+    private object _client extends Client {
+      override protected type Configuration = Client.Remote.Configuration
+      override protected object configuration extends Client.Remote.Configuration {
+        override def context = Remote.this.configuration.context
+      }
+    }
   }
 
-  private object _client extends Client
+  object Remote {
+    trait Configuration extends Client.Remote.Configuration
+  }
 }
