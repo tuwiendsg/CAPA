@@ -28,12 +28,12 @@ trait System extends origin.FinderComponent.Local
 
   def stopped: Events[Unit]
 
-  def client: amber.Client = _client
+  def client: Client = _client
   def shutdown() {
     process.shutdown()
   }
 
-  trait Client extends amber.Client with amber.origin.FinderComponent.Delegator.Local {
+  trait Client extends Client.Local with amber.origin.FinderComponent.Delegator.Local {
     override protected val finder = System.this
   }
 

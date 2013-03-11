@@ -17,17 +17,28 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.language.{dynamics, implicitConversions}
+import scala.language.{dynamics, higherKinds, implicitConversions}
 
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 import scala.collection.JavaConversions._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
-import util.{Filter, Filterable, NotNothing}
+import scalaz.Applicative
+import scalaz.Id.{id, Id}
+import scalaz.std.vector._
+import scalaz.syntax.applicative._
 
-trait Client extends origin.FinderComponent.Local {
+import util.{ConfigurableComponent, Filter, Filterable, NotNothing}
+
+sealed trait Client[X[+_]] {
+  this: origin.FinderComponent[X] =>
+
+  implicit def X: Applicative[X]
+  def read[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[Origin.Value[A]]]
 
   case class Query(selection: Selection, filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
@@ -36,17 +47,15 @@ trait Client extends origin.FinderComponent.Local {
 
   implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)
 
-  def read[A: NotNothing : TypeTag](query: Query): Stream[Origin.Value[A]] =
-    for {
-      origin <- origins.find(query.selection).toStream if origin.returns[A]
-      (value, meta) <- origin.asInstanceOf[Origin[A]].read().run if query.filter(meta)
-    } yield value
+  def readAll[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[A]] =
+    read[A](query) map {_ map {_.value}}
 
-  def readAll[A: NotNothing : TypeTag](query: Query): Stream[A] = read[A](query) map {_.value}
-  def readOne[A: NotNothing : TypeTag](query: Query): Option[A] = readAll[A](query).headOption
-  def readAll(definition: Entity.Definition): Stream[Entity.Instance] = definition.instances()
-  def readOne(definition: Entity.Definition): Option[Entity.Instance] =
-    readAll(definition).headOption
+  def readOne[A: NotNothing : ClassTag : TypeTag](query: Query): X[Option[A]] =
+    readAll[A](query) map {_.headOption}
+
+  def readAll(definition: Entity.Definition): X[Seq[Entity.Instance]] = definition.instances()
+  def readOne(definition: Entity.Definition): X[Option[Entity.Instance]] =
+    readAll(definition) map {_.headOption}
 
   def entity(name: Entity.Name) = new Entity.Definition.Builder(name)
 
@@ -57,24 +66,25 @@ trait Client extends origin.FinderComponent.Local {
     object Field {
 
       type Name = String
-      sealed trait Read[+A] extends ((Field.Name) => Stream[Value[A]])
+      sealed trait Read[+A] extends ((Field.Name) => X[Seq[Value[A]]])
 
-      implicit def readFromOption[A](f: () => Option[A]): Read[A] = new Read[A] {
-        override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
+      implicit def readFromOption[A](f: () => X[Option[A]]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
-      implicit def readFromSeq[A](f: () => Seq[A]): Read[A] = new Read[A] {
-        override def apply(name: Field.Name) = f().to[Stream] map (Value(name, _))
+      implicit def readFromSeq[A](f: () => X[Seq[A]]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
 
       private[amber] case class Type[+A](name: Field.Name)(read: Read[A]) {
-        def values(): Stream[Value[A]] = read(name)
+        def values(): X[Seq[Value[A]]] = read(name)
       }
 
       private[amber] type Value[+A] = util.Value.Named[Field.Name, A]
       private[amber] val Value = util.Value.Named
 
       private[amber] object Values {
-        def apply(types: Set[Type[_]]): Seq[Stream[Value[_]]] = types.to[Vector] map {_.values()}
+        def apply(types: Set[Type[_]]): X[Seq[Seq[Value[_]]]] =
+          X.sequence(types.to[Vector] map {_.values()})
       }
     }
 
@@ -82,13 +92,13 @@ trait Client extends origin.FinderComponent.Local {
                                          fields: Set[Field.Type[_]],
                                          filter: Filter[Instance]) {
 
-      def instances(): Stream[Instance] = {
-        def cartesianProduct(values: Seq[Stream[Field.Value[_]]]) =
-          values.foldRight(Stream(Vector.empty[Field.Value[_]])) {
+      def instances(): X[Seq[Instance]] = {
+        def cartesianProduct(values: X[Seq[Seq[Field.Value[_]]]]) =
+          values map {_.foldRight(Seq(Vector.empty[Field.Value[_]])) {
             for {a <- _; bs <- _} yield bs :+ a
-          }
+          }}
 
-        Instances(name, cartesianProduct(Field.Values(fields))) filter {filter(_)}
+        Instances(name, cartesianProduct(Field.Values(fields))) map {_ filter {filter(_)}}
       }
 
       override lazy val toString = name + fields.mkString("(", ", " ,")")
@@ -122,8 +132,54 @@ trait Client extends origin.FinderComponent.Local {
     }
 
     private[amber] object Instances {
-      def apply(name: Entity.Name, values: Stream[Seq[Field.Value[_]]]): Stream[Instance] =
-        values map {Instance(name, _)}
+      def apply(name: Entity.Name, values: X[Seq[Seq[Field.Value[_]]]]): X[Seq[Instance]] =
+        values map {_ map {Instance(name, _)}}
+    }
+  }
+}
+
+object Client {
+
+  trait Local extends Client[Id] with origin.FinderComponent.Local {
+
+    override implicit val X = id
+
+    override def read[A: NotNothing : ClassTag : TypeTag](query: Query) =
+      for {
+        origin <- origins.find(query.selection).to[Stream] if origin.returns[A]
+        (value, meta) <- origin.asInstanceOf[Origin[A]].read().run if query.filter(meta)
+      } yield value
+  }
+
+  trait Remote extends Client[Future]
+               with origin.FinderComponent.Remote
+               with ConfigurableComponent {
+
+    override protected type Configuration <: Remote.Configuration
+    implicit private def context: ExecutionContext = configuration.context
+
+    override implicit val X: Applicative[Future] = new Applicative[Future] {
+      override def point[A](a: => A) = Future.successful(a)
+      override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
+      override def ap[A, B](fa: => Future[A])(ff: => Future[A => B]) =
+        fa flatMap {a => ff map {_(a)}}
+    }
+
+    override def read[A: NotNothing : ClassTag : TypeTag](query: Query) =
+      origins.find(query.selection) map {
+        _.to[Vector] map {_.read().run}
+      } flatMap {X.sequence(_) map {
+        for {
+          reading <- _
+          (value, meta) <- reading if query.filter(meta)
+          a <- value.as[A]
+        } yield Origin.Value(value.name, a)
+      }}
+  }
+
+  object Remote {
+    trait Configuration {
+      def context: ExecutionContext
     }
   }
 }

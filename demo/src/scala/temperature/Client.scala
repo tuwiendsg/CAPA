@@ -22,7 +22,7 @@ package temperature
 import scalaz.std.string._
 import scalaz.syntax.equal._
 
-trait Client extends amber.Client {
+trait Client extends amber.Client.Local {
 
   import Selections.exact
 
