@@ -40,12 +40,13 @@ sealed trait Client[X[+_]] {
   implicit def X: Applicative[X]
   def read[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[Origin.Value[A]]]
 
-  case class Query(selection: Selection, filter: Filter[Origin.MetaInfo])
+  class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
-    override def where(filter: Filter[Origin.MetaInfo]): Query = copy(filter = filter)
+    override def where(filter: Filter[Origin.MetaInfo]): Query = new Query(selection, filter)
   }
 
-  implicit def selectionToQuery(selection: Selection): Query = Query(selection, Filter.tautology)
+  implicit def selectionToQuery(selection: Selection): Query =
+    new Query(selection, Filter.tautology)
 
   def readAll[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[A]] =
     read[A](query) map {_ map {_.value}}
@@ -75,22 +76,23 @@ sealed trait Client[X[+_]] {
         override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
 
-      private[amber] case class Type[+A](name: Field.Name)(read: Read[A]) {
+      private[Entity] class Type[+A](val name: Field.Name)(read: Read[A]) {
         def values(): X[Seq[Value[A]]] = read(name)
       }
 
-      private[amber] type Value[+A] = util.Value.Named[Field.Name, A]
-      private[amber] val Value = util.Value.Named
+      private[Entity] type Value[+A] = util.Value.Named[Field.Name, A]
+      private[Entity] val Value = util.Value.Named
 
-      private[amber] object Values {
+      private[Entity] object Values {
         def apply(types: Set[Type[_]]): X[Seq[Seq[Value[_]]]] =
           X.sequence(types.to[Vector] map {_.values()})
       }
     }
 
-    case class Definition private[amber](name: Entity.Name,
-                                         fields: Set[Field.Type[_]],
-                                         filter: Filter[Instance]) {
+    class Definition private[Entity](val name: Entity.Name, val filter: Filter[Instance])
+                                    (types: Set[Field.Type[_]]) {
+
+      lazy val fields: Set[Field.Name] = types map {_.name}
 
       def instances(): X[Seq[Instance]] = {
         def cartesianProduct(values: X[Seq[Seq[Field.Value[_]]]]) =
@@ -98,10 +100,10 @@ sealed trait Client[X[+_]] {
             for {a <- _; bs <- _} yield bs :+ a
           }}
 
-        Instances(name, cartesianProduct(Field.Values(fields))) map {_ filter {filter(_)}}
+        Instances(name, cartesianProduct(Field.Values(types))) map {_ filter {filter(_)}}
       }
 
-      override lazy val toString = name + fields.mkString("(", ", " ,")")
+      override lazy val toString = name + types.mkString("(", ", " ,")")
     }
 
     object Definition {
@@ -113,15 +115,15 @@ sealed trait Client[X[+_]] {
         override def where(filter: Filter[Instance]) {this.filter = filter}
 
         def updateDynamic[A](name: String)(read: Field.Read[A]) {
-          fields put (name, Field.Type[A](name)(read))
+          fields put (name, new Field.Type[A](name)(read))
         }
 
-        def build(): Definition = Definition(name, fields.values.to[Set], filter)
+        def build(): Definition = new Definition(name, filter)(fields.values.to[Set])
       }
     }
 
-    case class Instance private[amber](name: Entity.Name,
-                                       values: Seq[Field.Value[_]]) extends Dynamic {
+    class Instance private[Entity](val name: Entity.Name)
+                                  (values: Seq[Field.Value[_]]) extends Dynamic {
 
       private lazy val properties = HashMap.empty ++ (values map {v => (v.name, v)})
       lazy val fields: Set[Field.Name] = (values map {_.name}).to[Set]
@@ -131,9 +133,9 @@ sealed trait Client[X[+_]] {
       override lazy val toString = name + values.mkString("(", ", " ,")")
     }
 
-    private[amber] object Instances {
+    private[Entity] object Instances {
       def apply(name: Entity.Name, values: X[Seq[Seq[Field.Value[_]]]]): X[Seq[Instance]] =
-        values map {_ map {Instance(name, _)}}
+        values map {_ map {new Instance(name)(_)}}
     }
   }
 }
