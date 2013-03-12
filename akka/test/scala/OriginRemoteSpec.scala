@@ -35,9 +35,10 @@ class OriginRemoteSpec extends Spec("OriginRemoteSpec")
   override implicit val context = system.dispatcher
 
   override val fixture = new Fixture {
-    override def create[A: Type](name: amber.Origin.Name,
-                                 family: amber.Origin.Family,
-                                 _read: Fixture.Read[A]) = {
+    override def create[A](name: amber.Origin.Name,
+                           family: amber.Origin.Family,
+                           _read: Fixture.Read[A])
+                          (implicit typeA: Type[A]) = {
       new Origin.Remote[A](name, family)(system.actorOf(
         Props(new Origin.Actor(
           new amber.Origin.Local.Default(name, family) {
@@ -47,7 +48,7 @@ class OriginRemoteSpec extends Spec("OriginRemoteSpec")
             ).point[Id])
           }
         )).withDispatcher("amber.origins.dispatcher")
-      ))(timeout)
+      ))(timeout, typeA)
     }
   }
 

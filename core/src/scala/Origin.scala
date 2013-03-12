@@ -40,6 +40,7 @@ sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
   def selectDynamic(name: Origin.MetaInfo.Name): OptionT[X, Origin.MetaInfo.Value[_]]
   def update[B: Type](name: Origin.MetaInfo.Name, value: B)
 
+  def returns[B: NotNothing : Type]: Boolean
   def read(): OptionT[X, (Origin.Value[A], Origin.MetaInfo)]
 }
 
@@ -57,9 +58,7 @@ object Origin {
     implicit val hasEqual = equalA[Family]
   }
 
-  trait Local[+A] extends Origin[Id, A] {
-    def returns[B: NotNothing : Type]: Boolean
-  }
+  trait Local[+A] extends Origin[Id, A]
 
   trait Remote[+A] extends Origin[Future, A]
 

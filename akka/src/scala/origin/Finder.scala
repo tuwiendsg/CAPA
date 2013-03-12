@@ -29,7 +29,7 @@ import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import _root_.akka.pattern.{ask, pipe}
 import _root_.akka.util.Timeout
 
-import amber.util.ConfigurableComponent
+import amber.util.{ConfigurableComponent, Type}
 import amber.util.MultiTrie.Selection
 
 object FinderComponent {
@@ -56,7 +56,8 @@ object FinderComponent {
       override def find(selection: Selection) =
         ask(reference, Request.Find(selection)).mapTo[Response.Find] map {
           result =>
-            for {(name, family, actor) <- result} yield new Origin[Any](name, family)(actor)
+            for {(name, family, ttype, actor) <- result}
+              yield new Origin(name, family)(actor)(timeout, ttype)
         }
     }
   }
@@ -81,7 +82,7 @@ object FinderComponent {
       case Request.Find(selection) =>
         future {
           for {origin <- finder.origins.find(selection)}
-            yield (origin.name, origin.family, origin.actor)
+            yield (origin.name, origin.family, origin.ttype, origin.actor)
         } pipeTo sender
     }
   }
@@ -95,7 +96,7 @@ object FinderComponent {
     }
 
     object Response {
-      type Find = Set[(amber.Origin.Name, amber.Origin.Family, ActorRef)]
+      type Find = Set[(amber.Origin.Name, amber.Origin.Family, Type[_], ActorRef)]
     }
   }
 }

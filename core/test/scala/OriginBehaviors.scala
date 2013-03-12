@@ -60,11 +60,11 @@ sealed trait OriginBehaviors[X[+_]] {
     type Read[+A] = () => Option[A]
   }
 
-  def anOrigin: OriginSpec
-
-  trait OriginSpec {
+  object anOrigin {
 
     class A
+    class U extends A
+    class B
 
     "has the specified name" in {
       val name = random[Origin.Name]
@@ -98,6 +98,30 @@ sealed trait OriginBehaviors[X[+_]] {
 
         X.copoint(origin.selectDynamic(name).run).as[A].value should be(value)
       }
+    }
+
+    "does return the same type" in {
+      val origin = fixture.create[A]()
+
+      origin.returns[A] should be(true)
+    }
+
+    "does return a super type" in {
+      val origin = fixture.create[U]()
+
+      origin.returns[A] should be(true)
+    }
+
+    "does not return a different type" in {
+      val origin = fixture.create[A]()
+
+      origin.returns[B] should be(false)
+    }
+
+    "does not return a sub type" in {
+      val origin = fixture.create[A]()
+
+      origin.returns[U] should be(false)
     }
 
     "use the specified read function" in {
@@ -166,38 +190,6 @@ object OriginBehaviors {
     override type Origin[+A] <: Origin.Local[A]
 
     override val X = id
-    override object anOrigin extends OriginSpec with LocalSpec
-
-    trait LocalSpec {
-
-      class A
-      class U extends A
-      class B
-
-      "does return the same type" in {
-        val origin = fixture.create[A]()
-
-        origin.returns[A] should be(true)
-      }
-
-      "does return a super type" in {
-        val origin = fixture.create[U]()
-
-        origin.returns[A] should be(true)
-      }
-
-      "does not return a different type" in {
-        val origin = fixture.create[A]()
-
-        origin.returns[B] should be(false)
-      }
-
-      "does not return a sub type" in {
-        val origin = fixture.create[A]()
-
-        origin.returns[U] should be(false)
-      }
-    }
   }
 
   trait Remote extends OriginBehaviors[Future] with FutureComonad {
@@ -206,6 +198,5 @@ object OriginBehaviors {
     override type Origin[+A] <: Origin.Remote[A]
 
     override val X = implicitly[Comonad[Future]]
-    override object anOrigin extends OriginSpec
   }
 }

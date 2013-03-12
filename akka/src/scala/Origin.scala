@@ -29,7 +29,7 @@ import scalaz.OptionT
 import scalaz.syntax.comonad._
 import scalaz.syntax.equal._
 
-import amber.util.Type
+import amber.util.{NotNothing, Type}
 
 object Origin {
 
@@ -39,15 +39,17 @@ object Origin {
 
     def actor: ActorRef
 
+    private[akka] val ttype: Type[_ <: A] = typeA
     override lazy val toString = s"akka.Origin.Local[$typeA]($name)"
   }
 
   class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
                   (private[akka] val ref: ActorRef)
-                  (implicit timeout: Timeout) extends amber.Origin.Remote[A] {
+                  (implicit timeout: Timeout, typeA: Type[A]) extends amber.Origin.Remote[A] {
 
     import Message.{Request, Response}
 
+    override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
     override def read() = OptionT(request[Response.Read[A]](Request.Read))
 
     override def selectDynamic(name: String) =

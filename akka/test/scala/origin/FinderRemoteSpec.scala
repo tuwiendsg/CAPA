@@ -63,7 +63,7 @@ class FinderRemoteSpec extends Spec("FinderRemoteSpec")
   override val fixture = new Fixture {
     override def create(name: amber.Origin.Name) = {
       val origin = local.origin.create(name)(mock[local.OriginFactory.Read[AnyRef]]("Origin.read"))
-      new Origin.Remote[AnyRef](name, origin.family)(origin.actor)(timeout)
+      new Origin.Remote[AnyRef](name, origin.family)(origin.actor)(timeout, Type[AnyRef])
     }
   }
 

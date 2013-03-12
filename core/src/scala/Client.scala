@@ -25,18 +25,17 @@ import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
 
-import scalaz.Applicative
+import scalaz.Monad
 import scalaz.Id.{id, Id}
 import scalaz.std.vector._
-import scalaz.syntax.applicative._
+import scalaz.syntax.monad._
 
 import util.{ConfigurableComponent, Filter, Filterable, NotNothing, Type}
 
 sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
 
-  implicit def X: Applicative[X]
-  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]]
+  implicit def X: Monad[X]
 
   class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
@@ -45,6 +44,14 @@ sealed trait Client[X[+_]] {
 
   implicit def selectionToQuery(selection: Selection): Query =
     new Query(selection, Filter.tautology)
+
+  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]] =
+    origins.find(query.selection) flatMap {result =>
+        X.sequence(
+          for {origin <- result.to[Vector] if origin.returns[A]}
+            yield origin.asInstanceOf[Origin[A]].read().run
+        ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
+      }
 
   def readAll[A: NotNothing : Type](query: Query): X[Seq[A]] = read[A](query) map {_ map {_.value}}
   def readOne[A: NotNothing : Type](query: Query): X[Option[A]] =
@@ -141,12 +148,6 @@ object Client {
   trait Local extends Client[Id] with origin.FinderComponent.Local {
 
     override implicit val X = id
-
-    override def read[A: NotNothing : Type](query: Query) =
-      for {
-        origin <- origins.find(query.selection).to[Stream] if origin.returns[A]
-        (value, meta) <- origin.asInstanceOf[Origin[A]].read().run if query.filter(meta)
-      } yield value
   }
 
   trait Remote extends Client[Future]
@@ -156,23 +157,11 @@ object Client {
     override protected type Configuration <: Remote.Configuration
     implicit private def context: ExecutionContext = configuration.context
 
-    override implicit val X: Applicative[Future] = new Applicative[Future] {
+    override implicit val X: Monad[Future] = new Monad[Future] {
       override def point[A](a: => A) = Future.successful(a)
       override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
-      override def ap[A, B](fa: => Future[A])(ff: => Future[A => B]) =
-        fa flatMap {a => ff map {_(a)}}
+      override def bind[A, B](future: Future[A])(f: A => Future[B]) = future.flatMap(f)
     }
-
-    override def read[A: NotNothing : Type](query: Query) =
-      origins.find(query.selection) map {
-        _.to[Vector] map {_.read().run}
-      } flatMap {X.sequence(_) map {
-        for {
-          reading <- _
-          (value, meta) <- reading if query.filter(meta)
-          a <- value.as[A]
-        } yield Origin.Value(value.name, a)
-      }}
   }
 
   object Remote {
