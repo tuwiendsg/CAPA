@@ -28,10 +28,9 @@ import _root_.akka.util.Timeout
 
 import scalaz.OptionT
 import scalaz.syntax.comonad._
+import scalaz.syntax.equal._
 
 object Origin {
-
-  import Message.{Request, Response}
 
   abstract class Local[+A: TypeTag](name: amber.Origin.Name, family: amber.Origin.Family)
       extends amber.Origin.Local.Default[A](name, family) {
@@ -41,13 +40,13 @@ object Origin {
     override lazy val toString = s"akka.Origin.Local[${typeOf[A]}]($name)"
   }
 
-  class Remote[+A](private[akka] val ref: ActorRef)
-                  (timeout: Timeout) extends amber.Origin.Remote[A] {
+  class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
+                  (private[akka] val ref: ActorRef)
+                  (implicit timeout: Timeout) extends amber.Origin.Remote[A] {
+
+    import Message.{Request, Response}
 
     override def read() = OptionT(request[Response.Read[A]](Request.Read))
-
-    override lazy val name = request[amber.Origin.Name](Request.MetaInfo.Name)
-    override lazy val family = request[amber.Origin.Family](Request.MetaInfo.Family)
 
     override def selectDynamic(name: String) =
       OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
@@ -56,16 +55,18 @@ object Origin {
       ref ! Request.MetaInfo.Set(name, value)
     }
 
-    override lazy val hashCode = ref.hashCode
+    override lazy val hashCode = 41 * (41 * (41 + name.hashCode) + family.hashCode) + ref.hashCode
 
-    override def equals(other: Any) = other match {
-      case that: akka.Origin.Remote[_] =>
-        (that canEqual this) &&
-        (this.ref == that.ref)
-      case _ => false
-    }
+      override def equals(other: Any) = other match {
+        case that: Remote[_] =>
+          (that canEqual this) &&
+          (this.name === that.name) &&
+          (this.family === that.family) &&
+          (this.ref == that.ref)
+        case _ => false
+      }
 
-    override def canEqual(other: Any) = other.isInstanceOf[akka.Origin.Remote[_]]
+    override def canEqual(other: Any) = other.isInstanceOf[Remote[_]]
 
     override lazy val toString = s"akka.Origin.Remote($ref)"
 
@@ -75,12 +76,11 @@ object Origin {
 
   class Actor[+A](origin: amber.Origin.Local[A]) extends _root_.akka.actor.Actor {
 
+    import Message.Request
     import context.dispatcher
 
     override def receive = {
       case Request.Read => future {blocking {origin.read().run.copoint}} pipeTo sender
-      case Request.MetaInfo.Name => sender ! origin.name
-      case Request.MetaInfo.Family => sender ! origin.family
       case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name).run.copoint
       case set: Request.MetaInfo.Set[_] => set(origin)
     }
@@ -95,8 +95,6 @@ object Origin {
       case object Read extends Message
 
       object MetaInfo {
-        case object Name extends Message
-        case object Family extends Message
         case class Get(name: amber.Origin.MetaInfo.Name) extends Message
         case class Set[+A](name: amber.Origin.MetaInfo.Name, value: A) extends Message {
           def apply(origin: amber.Origin.Local[_]) {origin(name) = value}

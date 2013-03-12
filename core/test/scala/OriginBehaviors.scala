@@ -75,14 +75,14 @@ sealed trait OriginBehaviors[X[+_]] {
       val name = random[Origin.Name]
       val origin = fixture.create[Any](name)
 
-      X.copoint(origin.name) should be(name)
+      origin.name should be(name)
     }
 
     "is in the specified family" in {
       val family = random[Origin.Family]
       val origin = fixture.create[Any](family)
 
-      X.copoint(origin.family) should be(family)
+      origin.family should be(family)
     }
 
     "if a meta value was never assigned" should {
@@ -123,7 +123,7 @@ sealed trait OriginBehaviors[X[+_]] {
           val origin = fixture.create(read)
 
           val (Origin.Value(name, _), _) = X.copoint(origin.read().run).value
-          name should be(X.copoint(origin.name))
+          name should be(origin.name)
         }
 
         "contains the result of the specified read function" in {

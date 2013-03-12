@@ -35,8 +35,8 @@ import util.{NotNothing, Path}
 
 sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
 
-  def name: X[Origin.Name]
-  def family: X[Origin.Family]
+  def name: Origin.Name
+  def family: Origin.Family
 
   def selectDynamic(name: Origin.MetaInfo.Name): OptionT[X, Origin.MetaInfo.Value[_]]
   def update[B](name: Origin.MetaInfo.Name, value: B)

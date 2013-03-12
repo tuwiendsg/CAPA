@@ -38,7 +38,7 @@ class OriginRemoteSpec extends Spec("OriginRemoteSpec")
     override def create[A: ClassTag : TypeTag](name: amber.Origin.Name,
                                                family: amber.Origin.Family,
                                                _read: Fixture.Read[A]) = {
-      new Origin.Remote[A](system.actorOf(
+      new Origin.Remote[A](name, family)(system.actorOf(
         Props(new Origin.Actor(
           new amber.Origin.Local.Default(name, family) {
             override def read() = OptionT((

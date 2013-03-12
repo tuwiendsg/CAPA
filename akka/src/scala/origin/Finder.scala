@@ -35,8 +35,6 @@ import amber.util.MultiTrie.Selection
 
 object FinderComponent {
 
-  import Message.Request
-
   trait Local extends amber.origin.FinderComponent.Local {
     protected override type Origin[+A] <: Origin.Local[A]
   }
@@ -50,13 +48,16 @@ object FinderComponent {
 
     private object _origins extends OriginFinder {
 
+      import Message.{Request, Response}
+
       implicit private def context = configuration.system.dispatcher
+      implicit private def timeout: Timeout = configuration.timeout
       private def reference = configuration.reference
-      private def timeout = configuration.timeout
 
       override def find(selection: Selection) =
-        ask(reference, Request.Find(selection))(timeout).mapTo[Set[ActorRef]] map {
-          actors => for {actor <- actors} yield new Origin.Remote[Any](actor)(timeout)
+        ask(reference, Request.Find(selection)).mapTo[Response.Find] map {
+          result =>
+            for {(name, family, actor) <- result} yield new Origin[Any](name, family)(actor)
         }
     }
   }
@@ -74,19 +75,28 @@ object FinderComponent {
 
   class Actor(finder: FinderComponent.Local) extends _root_.akka.actor.Actor {
 
+    import Message.Request
     import context.dispatcher
 
     override def receive = {
       case Request.Find(selection) =>
-        future {for {origin <- finder.origins.find(selection)} yield origin.actor} pipeTo sender
+        future {
+          for {origin <- finder.origins.find(selection)}
+            yield (origin.name, origin.family, origin.actor)
+        } pipeTo sender
     }
   }
 
   private sealed trait Message extends Serializable
 
   private object Message {
+
     object Request {
       case class Find(selection: Selection) extends Message
+    }
+
+    object Response {
+      type Find = Set[(amber.Origin.Name, amber.Origin.Family, ActorRef)]
     }
   }
 }
