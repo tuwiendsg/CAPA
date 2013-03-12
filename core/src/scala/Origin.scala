@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID.randomUUID
 
 import scala.collection.{immutable, Map}
+import scala.collection.JavaConversions._
 import scala.concurrent.Future
 
 import scalaz.Equal.equalA
@@ -73,17 +74,12 @@ object Origin {
     type Reading[+A] = Option[A]
 
     abstract class Default[+A](override val name: Origin.Name, override val family: Origin.Family)
-                              (implicit typeA: Type[A]) extends Origin.Local[A] {
-
-      protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
-
-      override def selectDynamic(name: Origin.MetaInfo.Name) = Option(meta.get(name))
-
-      override def update[A: Type](name: Origin.MetaInfo.Name, value: A) {
-        meta.put(name, new Origin.MetaInfo.Value(value))
-      }
+                              (implicit typeA: Type[A])
+        extends Origin.Local[A] with MetaInfo.Local {
 
       override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
+
+      override def selectDynamic(name: Origin.MetaInfo.Name) = select(name)
 
       override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
@@ -116,8 +112,35 @@ object Origin {
     type Name = String
     type Value[+A] = util.Value[A]
 
-    def apply(values: Map[Name, Value[_]]): MetaInfo = Default(immutable.HashMap.empty ++ values)
-    def compose(first: MetaInfo, second: MetaInfo): MetaInfo = Composition(first, second)
+    trait Local {
+      this: Origin[_] =>
+
+      private val values = new ConcurrentHashMap[MetaInfo.Name, MetaInfo.Value[_]]
+
+      protected def meta: MetaInfo = MetaInfo(values)
+
+      protected def select(name: MetaInfo.Name): Option[MetaInfo.Value[_]] =
+        Option(values.get(name))
+
+      override def update[A: Type](name: MetaInfo.Name, value: A) {
+        values.put(name, new Origin.MetaInfo.Value(value))
+      }
+    }
+
+    case object empty extends MetaInfo {
+      override def selectDynamic(name: Name) = None
+    }
+
+    def apply(values: Map[Name, Value[_]]): MetaInfo =
+      if (values.isEmpty) empty else Default(immutable.HashMap.empty ++ values)
+
+    def compose(first: MetaInfo, second: MetaInfo): MetaInfo = first match {
+      case `empty` => second
+      case _ => second match {
+        case `empty` => first
+        case _ => Composition(first, second)
+      }
+    }
 
     implicit class Enriched(val meta: MetaInfo) extends AnyVal {
       def :+(other: MetaInfo): MetaInfo = compose(meta, other)

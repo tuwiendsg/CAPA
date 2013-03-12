@@ -28,7 +28,7 @@ import scalaz.Id.{id, Id}
 
 import util.{NotNothing, Type}
 
-sealed trait FinderBehaviors[X[+_]] {
+trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
 
   def Y: Comonad[X]
@@ -42,44 +42,42 @@ sealed trait FinderBehaviors[X[+_]] {
     def create[A: NotNothing : Type](name: Origin.Name): Origin[A]
   }
 
-  object aFinder {
-    def forOrigins() {
-      "find an origin" when {
-        "type is the same" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create[A](name)
+  def anOriginFinder {
+    "find an origin" when {
+      "type is the same" in {
+        val name = random[Origin.Name]
+        val origin = fixture.create[A](name)
 
-          Y.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
-        }
-
-        "type is a super type" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create[U](name)
-
-          val result = Y.copoint(origins.find[A](Selections.exact(name))) map {
-            _.asInstanceOf[Origin[Any]]
-          }
-          result should contain(origin.asInstanceOf[Origin[Any]])
-        }
+        Y.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
       }
 
-      "not find an origin" when {
-        "type is a sub type" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create[A](name)
+      "type is a super type" in {
+        val name = random[Origin.Name]
+        val origin = fixture.create[U](name)
 
-          Y.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+        val result = Y.copoint(origins.find[A](Selections.exact(name))) map {
+          _.asInstanceOf[Origin[Any]]
         }
+        result should contain(origin.asInstanceOf[Origin[Any]])
+      }
+    }
 
-        "type is a different type" in {
-          val name = random[Origin.Name]
-          val origin = fixture.create[A](name)
+    "not find an origin" when {
+      "type is a sub type" in {
+        val name = random[Origin.Name]
+        val origin = fixture.create[A](name)
 
-          val result = Y.copoint(origins.find[B](Selections.exact(name))) map {
-            _.asInstanceOf[Origin[Any]]
-          }
-          result should not(contain(origin.asInstanceOf[Origin[Any]]))
+        Y.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+      }
+
+      "type is a different type" in {
+        val name = random[Origin.Name]
+        val origin = fixture.create[A](name)
+
+        val result = Y.copoint(origins.find[B](Selections.exact(name))) map {
+          _.asInstanceOf[Origin[Any]]
         }
+        result should not(contain(origin.asInstanceOf[Origin[Any]]))
       }
     }
   }

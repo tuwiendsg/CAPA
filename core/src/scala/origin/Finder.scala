@@ -58,6 +58,36 @@ object FinderComponent {
     override implicit protected def X = futureMonad(configuration.context)
   }
 
+  sealed trait Default[X[+_]] extends FinderComponent[X] with BuilderComponent {
+
+    abstract override protected def builder: OriginBuilder = _builder
+    override def origins: OriginFinder = _origins
+
+    trait OriginFinder extends super.OriginFinder {
+
+      private val trie = MultiTrie[Origin[_]]()
+
+      override def find[A: NotNothing : Type](selection: Selection) =
+        X.point(
+          for {origin <- trie.select(selection) if origin.returns[A]}
+            yield origin.asInstanceOf[Origin[A]]
+        )
+
+      private[Default] def add(origin: Origin[_]) {trie add (origin.name, origin)}
+    }
+
+    private object _builder extends OriginBuilder {
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (read: OriginBuilder.Read[A]) = {
+        val result = Default.super.builder.build(name, family)(read)
+        origins.add(result)
+        result
+      }
+    }
+
+    private object _origins extends OriginFinder
+  }
+
   sealed trait Delegator[X[+_]] extends FinderComponent[X] {
 
     protected val finder: FinderComponent[X]
@@ -69,36 +99,28 @@ object FinderComponent {
   }
 
   object Local {
-    trait Default extends Local with origin.BuilderComponent {
-
-      abstract override protected def builder: OriginBuilder = _builder
-      override def origins: OriginFinder = _origins
-
-      trait OriginFinder extends super.OriginFinder {
-        private val trie = MultiTrie[Origin[_]]()
-        override def find[A: NotNothing : Type](selection: Selection) =
-          for {origin <- trie.select(selection) if origin.returns[A]}
-            yield origin.asInstanceOf[Origin[A]]
-
-        private[Default] def add(origin: Origin[_]) {trie add (origin.name, origin)}
-      }
-
-      private object _builder extends OriginBuilder {
-        override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                                   (read: OriginBuilder.Read[A]) = {
-          val result = Default.super.builder.build(name, family)(read)
-          origins.add(result)
-          result
-        }
-      }
-
-      private object _origins extends OriginFinder
-    }
+    trait Default extends FinderComponent.Local
+                  with BuilderComponent.Local
+                  with FinderComponent.Default[Id]
   }
 
   object Remote {
+
     trait Configuration {
       def context: ExecutionContext
+    }
+
+    trait Default extends FinderComponent.Remote
+                  with BuilderComponent.Remote
+                  with FinderComponent.Default[Future]
+                  with ConfigurableComponent {
+
+      override protected type Configuration <: Default.Configuration
+    }
+
+    object Default {
+      trait Configuration extends BuilderComponent.Remote.Configuration
+                          with FinderComponent.Remote.Configuration
     }
   }
 

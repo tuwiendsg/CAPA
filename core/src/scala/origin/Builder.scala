@@ -20,55 +20,106 @@ package origin
 
 import scala.language.higherKinds
 
-import scala.collection.JavaConversions._
+import scala.concurrent.ExecutionContext
 
-import util.Type
+import scalaz.Monad
+import scalaz.OptionT.optionTMonadPlus
+import scalaz.std.option.optionInstance
+import scalaz.syntax.monad._
+
+import util.{ConfigurableComponent, Type}
 
 trait BuilderComponent {
 
-  protected type Origin[+A] <: Origin.Local[A]
-  protected def builder: OriginBuilder
+  protected type Origin[+A] <: amber.Origin[A]
+  protected type Reading[+A]
 
+  implicit protected def Reading: Monad[Reading]
+
+  protected def builder: OriginBuilder
   protected trait OriginBuilder {
     def build[A: Type](name: Origin.Name, family: Origin.Family)
                       (read: OriginBuilder.Read[A]): Origin[A]
   }
 
   protected object OriginBuilder {
-    type Read[+A] = (Origin.MetaInfo) => Origin.Local.Reading[(Origin.Value[A], Origin.MetaInfo)]
+    type Read[+A] = (Origin.MetaInfo) => Reading[(Origin.Value[A], Origin.MetaInfo)]
   }
 }
 
 object BuilderComponent {
 
-  trait Default extends BuilderComponent {
+  trait Local extends BuilderComponent {
 
-    override protected type Origin[+A] = Origin.Local.Default[A]
-    override protected def builder: OriginBuilder = _builder
+    override protected type Origin[+A] <: Origin.Local[A]
 
-    private object _builder extends OriginBuilder {
-      override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                                 (_read: OriginBuilder.Read[A]) =
-        new Origin(name, family) {
-          override def read() = _read(Origin.MetaInfo(meta))
-        }
-    }
+    override protected type Reading[+A] = Origin.Local.Reading[A]
+    override implicit protected def Reading = optionInstance
   }
 
-  trait Logging extends BuilderComponent {
+  trait Remote extends BuilderComponent with ConfigurableComponent {
+
+    override protected type Configuration <: Remote.Configuration
+    override protected type Origin[+A] <: Origin.Remote[A]
+
+    override protected type Reading[+A] = Origin.Remote.Reading[A]
+    override implicit protected def Reading = optionTMonadPlus(futureMonad(configuration.context))
+  }
+
+  sealed trait Logging extends BuilderComponent {
     this: util.Logging =>
 
+    private[BuilderComponent] val loggerPrefix = "Origin"
     abstract override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
       override def build[A](name: Origin.Name, family: Origin.Family)
                            (read: OriginBuilder.Read[A])
                            (implicit typeA: Type[A]) = {
-        val log = logger.create(s"Origin.Local[$typeA]($name)")
-        Logging.super.builder.build(name, family)(read andThen {_ map {
-          case result@(value, _) => log.debug(s"Read $value from $name"); result
-        }})
+        val log = logger.create(s"$loggerPrefix[$typeA]($name)")
+        Logging.super.builder.build(name, family)(read andThen {
+          result =>
+            result.map {case (value, _) => log.debug(s"Read $value")}
+            result
+        })
       }
+    }
+  }
+
+  object Local {
+    trait Default extends Local {
+
+      override protected type Origin[+A] = Origin.Local.Default[A]
+      override protected def builder: OriginBuilder = _builder
+
+      private object _builder extends OriginBuilder {
+        override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                   (_read: OriginBuilder.Read[A]) =
+          new Origin(name, family) {
+            override def read() = _read(meta)
+          }
+      }
+    }
+  }
+
+  object Remote {
+    trait Configuration {
+      def context: ExecutionContext
+    }
+  }
+
+  object Logging {
+
+    trait Local extends BuilderComponent.Local with Logging {
+      this: util.Logging =>
+
+      override private[BuilderComponent] val loggerPrefix = "Origin.Local"
+    }
+
+    trait Remote extends BuilderComponent.Remote with Logging {
+      this: util.Logging =>
+
+      override private[BuilderComponent] val loggerPrefix = "Origin.Remote"
     }
   }
 }

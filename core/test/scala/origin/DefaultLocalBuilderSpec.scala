@@ -18,13 +18,13 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-class DefaultLocalFinderSpec extends Spec
-                             with mock.origin.BuilderComponent.Local.Default
-                             with FinderComponent.Local.Default
-                             with DefaultFinderBehaviors.Local
-                             with DefaultFinderBehaviors.OnMockBuilder.Local {
+class DefaultLocalBuilderSpec extends Spec
+                              with BuilderComponent.Local.Default
+                              with BuilderBehaviors.Local {
 
-  "Default.Local.OriginFinder" should {
-    behave like anOriginFinder
+  override type Origin[+A] = Origin.Local.Default[A]
+
+  "Default.Local.OriginBuilder" should {
+    behave like aBuilder
   }
 }

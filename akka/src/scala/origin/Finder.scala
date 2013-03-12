@@ -21,9 +21,10 @@ package origin
 
 import scala.language.higherKinds
 
+import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable.Set
-import scala.concurrent.{Future, ExecutionContext}
-import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+import scala.concurrent.Future
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import _root_.akka.pattern.{ask, pipe}
@@ -31,7 +32,7 @@ import _root_.akka.util.Timeout
 
 import scalaz.Id.Id
 
-import amber.util.{ConfigurableComponent, NotNothing, Type}
+import amber.util.{ConfigurableComponent, MultiTrie, NotNothing, Type}
 import amber.util.MultiTrie.Selection
 
 sealed trait FinderComponent[X[+_]] {
@@ -43,18 +44,18 @@ sealed trait FinderComponent[X[+_]] {
 object FinderComponent {
 
   trait Local extends amber.origin.FinderComponent.Local.Default with FinderComponent[Id] {
-    override protected type Origin[+A] = Origin.Local[A]
+    override protected type Origin[+A] <: Origin.Local[A]
   }
 
-  trait Remote extends amber.origin.FinderComponent.Remote
+  trait Remote extends BuilderComponent.Remote
                with FinderComponent[Future]
+               with amber.origin.FinderComponent.Remote.Default
                with ConfigurableComponent {
 
     override protected type Configuration <: Remote.Configuration
-    override protected type Origin[+A] = Origin.Remote[A]
+    override protected type Origin[+A] <: Origin.Remote[A]
 
     override def origins: OriginFinder = _origins
-
     private object _origins extends OriginFinder {
 
       import Message.Request
@@ -65,22 +66,18 @@ object FinderComponent {
       override def find[A: NotNothing](selection: Selection)(implicit typeA: Type[A]) =
         ask(configuration.finder, Request.Find[A](selection)).mapTo[Set[Origin.Serialized[_]]] map {
           for {origin <- _ if origin.returns[A]} yield origin.toRemote.asInstanceOf[Origin[A]]
+        } recover {case _: TimeoutException => Set.empty} flatMap {
+          remote => super.find[A](selection) map {_ ++ remote}
         }
     }
   }
 
   object Remote {
-    trait Configuration extends amber.origin.FinderComponent.Remote.Configuration {
+    trait Configuration extends BuilderComponent.Remote.Configuration
+                        with amber.origin.FinderComponent.Remote.Default.Configuration {
 
-      def local: ActorSystem
       def remote: String
-
-      override def context: ExecutionContext = local.dispatcher
       def finder: ActorRef = local.actorFor(s"${remote}/user/${Actor.name}")
-      def timeout: FiniteDuration = FiniteDuration(
-        local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
-        MILLISECONDS
-      )
     }
   }
 

@@ -20,7 +20,8 @@ package mock.origin
 
 import org.mockito.Mockito.verify
 
-class BuilderSpec extends Spec with BuilderComponent.Default with BuilderComponent.InSpec {
+sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
+  this: Spec with BuilderComponent =>
 
   trait Fixture {
 
@@ -33,23 +34,34 @@ class BuilderSpec extends Spec with BuilderComponent.Default with BuilderCompone
     }
   }
 
-  "mock.OriginBuilder" when {
-    "an origin is built" should {
-      "invoke the mocked build method" in {
+  def aMockBuilder {
+    "invoke the mocked build method" when {
+      "an origin is built" in {
         new Fixture{
           origin.build()
 
           verify(build).apply(name, family)
         }
       }
+    }
 
-      "save the origin that was last built" in {
-        new Fixture {
-          val result = origin.build()
+    "save the origin that was last built" in {
+      new Fixture {
+        val result = origin.build()
 
-          built.last should be(result)
-        }
+        built.last should be(result)
       }
     }
+  }
+}
+
+object BuilderBehaviors {
+
+  trait Local extends BuilderBehaviors {
+    this: Spec with BuilderComponent.Local =>
+  }
+
+  trait Remote extends BuilderBehaviors {
+    this: Spec with BuilderComponent.Remote =>
   }
 }

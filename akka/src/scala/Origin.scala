@@ -63,21 +63,13 @@ object Origin {
 
   val Local = amber.Origin.Local
 
-  class Remote[+A](override val name: Origin.Name, override val family: Origin.Family)
-                  (reference: ActorRef)(implicit timeout: Timeout, typeA: Type[A])
+  abstract class Remote[+A](override val name: Origin.Name, override val family: Origin.Family)
+                           (implicit timeout: Timeout, typeA: Type[A])
       extends amber.Origin.Remote[A] with Origin[A] {
 
     import Message.{Request, Response}
 
     override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
-    override def read() = OptionT(request[Response.Reading[A]](Request.Read))
-
-    override def selectDynamic(name: String) =
-      OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
-
-    override def update[B: Type](name: Origin.MetaInfo.Name, value: B) {
-      reference ! Request.MetaInfo.Set(name, value)
-    }
 
     override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
@@ -95,23 +87,60 @@ object Origin {
 
     override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 
-    override private[akka] val actor = reference
     override protected def write() = new Origin.Serialized[A](name, family)(actor)
-
-    private def request[B: ClassTag](message: Message) = ask(reference, message)(timeout).mapTo[B]
   }
 
-  val Remote = amber.Origin.Remote
+  object Remote {
 
-  class Actor[+A](origin: amber.Origin.Local[A]) extends _root_.akka.actor.Actor {
+    type Reading[+A] = amber.Origin.Remote.Reading[A]
 
-    import Message.Request
-    import context.dispatcher
+    def apply[A: Type](name: Origin.Name, family: Origin.Family)
+                      (reference: ActorRef)
+                      (implicit timeout: Timeout): Origin.Remote[A] =
+      new Origin.Remote[A](name, family) {
 
-    override def receive = {
-      case Request.Read => future {blocking {origin.read()}} pipeTo sender
-      case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name)
-      case set: Request.MetaInfo.Set[_] => set(origin)
+        import Message.{Request, Response}
+
+        override private[akka] val actor = reference
+
+        override def read() = OptionT(request[Response.Reading[A]](Request.Read))
+
+        override def selectDynamic(name: String) =
+          OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
+
+        override def update[B: Type](name: Origin.MetaInfo.Name, value: B) {
+          reference ! Request.MetaInfo.Set(name, value)
+        }
+
+        private def request[B: ClassTag](message: Message) =
+          ask(reference, message)(timeout).mapTo[B]
+      }
+  }
+
+  object Actor {
+
+    import Message.{Request, Response}
+
+    class Local[+A](origin: amber.Origin.Local[A]) extends _root_.akka.actor.Actor {
+
+      import context.dispatcher
+
+      override def receive = {
+        case Request.Read => future {blocking {origin.read()}} pipeTo sender
+        case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name)
+        case set: Request.MetaInfo.Set[_] => set(origin)
+      }
+    }
+
+    class Remote[+A](origin: amber.Origin.Remote[A]) extends _root_.akka.actor.Actor {
+
+      import context.dispatcher
+
+      override def receive = {
+        case Request.Read => origin.read().run pipeTo sender
+        case Request.MetaInfo.Get(name) => origin.selectDynamic(name).run pipeTo sender
+        case set: Request.MetaInfo.Set[_] => set(origin)
+      }
     }
   }
 
@@ -121,7 +150,9 @@ object Origin {
     def returns[B: NotNothing](implicit typeB: Type[B]): Boolean = typeA <:< typeB
 
     def toRemote(implicit timeout: Timeout): Origin.Remote[A] =
-      new Origin.Remote[A](name, family)(reference)
+      Origin.Remote[A](name, family)(reference)
+
+    override lazy val toString = s"akka.Origin.Serialized[$typeA]($name, $family)"
   }
 
   private sealed trait Message extends Serializable
@@ -135,7 +166,7 @@ object Origin {
       object MetaInfo {
         case class Get(name: Origin.MetaInfo.Name) extends Message
         case class Set[+A: Type](name: Origin.MetaInfo.Name, value: A) extends Message {
-          def apply(origin: amber.Origin.Local[_]) {origin(name) = value}
+          def apply(origin: amber.Origin[_]) {origin(name) = value}
         }
       }
     }

@@ -25,7 +25,7 @@ import org.mockito.Mockito.{never, verify, when}
 import util.{Filter, Type}
 
 class ProcessingSpec extends Spec
-                     with mock.origin.BuilderComponent.Default
+                     with mock.origin.BuilderComponent.Local.Default
                      with mock.origin.BuilderComponent.InSpec
                      with origin.FinderComponent.Local.Default
                      with family.FinderComponent.Default

@@ -19,36 +19,85 @@ package amber
 package akka
 package origin
 
-import scala.collection.JavaConversions._
+import scala.language.higherKinds
 
-import _root_.akka.actor.{ActorRef, ActorSystem, Props}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+
+import _root_.akka.actor.{ActorSystem, Props}
+import _root_.akka.util.Timeout
+
+import scalaz.OptionT
 
 import amber.util.{ConfigurableComponent, Type}
 
-trait BuilderComponent extends amber.origin.BuilderComponent
-                       with ConfigurableComponent {
+object BuilderComponent {
 
-  override protected type Configuration <: BuilderComponent.Configuration
+  trait Local extends amber.origin.BuilderComponent.Local with ConfigurableComponent {
 
-  override protected type Origin[+A] = Origin.Local[A]
-  override protected def builder: OriginBuilder = _builder
+    override protected type Configuration <: Local.Configuration
 
-  private object _builder extends OriginBuilder {
-    override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                               (_read: OriginBuilder.Read[A]) =
-      new Origin(name, family) {
+    override protected type Origin[+A] = Origin.Local[A]
+    override protected def builder: OriginBuilder = _builder
 
-        override private[akka] val actor: ActorRef = configuration.system.actorOf(
-          Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
+    private object _builder extends OriginBuilder {
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]) =
+        new Origin(name, family) {
+
+        override private[akka] lazy val actor = configuration.system.actorOf(
+          Props(new Origin.Actor.Local(this)).withDispatcher("amber.origins.dispatcher")
         )
 
-        override def read() = _read(Origin.MetaInfo(meta))
+        override def read() = _read(meta)
       }
+    }
   }
-}
 
-object BuilderComponent {
-  trait Configuration {
-    def system: ActorSystem
+  object Local {
+    trait Configuration {
+      def system: ActorSystem
+    }
+  }
+
+  trait Remote extends amber.origin.BuilderComponent.Remote with ConfigurableComponent {
+
+    override protected type Origin[+A] = Origin.Remote[A]
+    override protected type Configuration <: Remote.Configuration
+
+    override protected def builder: OriginBuilder = _builder
+
+    private object _builder extends OriginBuilder {
+
+      implicit private def context = configuration.context
+      implicit private def timeout: Timeout = configuration.timeout
+
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]) =
+        new Origin.Remote(name, family) with Origin.MetaInfo.Local {
+
+          override private[akka] lazy val actor = configuration.local.actorOf(
+            Props(new Origin.Actor.Remote[A](this)).withDispatcher("amber.origins.dispatcher")
+          )
+
+          override def read() = _read(meta)
+
+          override def selectDynamic(name: Origin.MetaInfo.Name) =
+            OptionT(Future.successful(select(name)))
+        }
+    }
+  }
+
+  object Remote {
+    trait Configuration extends amber.origin.BuilderComponent.Remote.Configuration {
+
+      def local: ActorSystem
+
+      override def context: ExecutionContext = local.dispatcher
+      def timeout: FiniteDuration = FiniteDuration(
+        local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
+        MILLISECONDS
+      )
+    }
   }
 }

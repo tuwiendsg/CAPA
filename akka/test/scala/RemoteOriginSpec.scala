@@ -32,14 +32,13 @@ class RemoteOriginSpec extends Spec("RemoteOriginSpec")
   override val fixture = new Fixture {
     override def create[A](name: Origin.Name, family: Origin.Family, _read: Fixture.Read[A])
                           (implicit typeA: Type[A]) = {
-      new Origin.Remote[A](name, family)(system.actorOf(
-        Props(new Origin.Actor(
-          new Origin.Local.Default(name, family) {
-            override def read() =
-              for {value <- _read()} yield (Origin.Value(name, value), Origin.MetaInfo(meta))
-          }
-        )).withDispatcher("amber.origins.dispatcher")
-      ))(timeout, typeA)
+      Origin.Remote[A](name, family)(system.actorOf(
+          Props(new Origin.Actor.Local(
+            new Origin.Local.Default(name, family) {
+              override def read() = for {value <- _read()} yield (Origin.Value(name, value), meta)
+            }
+          )).withDispatcher("amber.origins.dispatcher")
+        ))(typeA, timeout)
     }
   }
 

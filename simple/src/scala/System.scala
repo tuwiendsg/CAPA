@@ -21,8 +21,8 @@ package simple
 import amber.util.{EventSource, Logging}
 
 trait System extends amber.System.Local
-             with amber.origin.BuilderComponent.Default
-             with amber.origin.BuilderComponent.Logging
+             with amber.origin.BuilderComponent.Local.Default
+             with amber.origin.BuilderComponent.Logging.Local
              with amber.origin.FinderComponent.Local.Default
              with amber.family.FinderComponent.Default
              with amber.origin.FactoryComponent.Default

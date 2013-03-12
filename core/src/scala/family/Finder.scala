@@ -29,7 +29,7 @@ import util.Type
 
 trait FinderComponent {
 
-  protected type Origin[+A] <: Origin.Local[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {

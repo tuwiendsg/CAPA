@@ -53,7 +53,7 @@ trait MemberFactoryComponent {
 
 object MemberFactoryComponent {
   trait Default extends MemberFactoryComponent {
-    this: origin.BuilderComponent with FinderComponent =>
+    this: origin.BuilderComponent.Local with FinderComponent =>
 
     override protected def in(f: Origin.Family) = new MemberFactory {
       override protected val family = f

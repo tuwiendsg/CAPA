@@ -135,7 +135,7 @@ object MultiTrie {
       for {
         _ <- dropWhile[A] {path => (path >:> start) && (path =/= start)}
         result <- peek[A] {
-          case path if path === start => iteratee
+          case `start` => iteratee
           case _ => done[A]
         }
       } yield result

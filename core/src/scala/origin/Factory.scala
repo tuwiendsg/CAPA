@@ -68,7 +68,7 @@ trait FactoryComponent {
 }
 
 object FactoryComponent {
-  trait Default extends FactoryComponent with BuilderComponent {
+  trait Default extends FactoryComponent with BuilderComponent.Local {
 
     abstract override protected val builder: OriginBuilder = _builder
     override def origin: OriginFactory = _origin

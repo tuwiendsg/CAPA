@@ -26,8 +26,8 @@ import akka.util.EventSource
 object System {
 
   trait Local extends amber.System.Local
-               with akka.origin.BuilderComponent
-               with amber.origin.BuilderComponent.Logging
+               with akka.origin.BuilderComponent.Local
+               with amber.origin.BuilderComponent.Logging.Local
                with akka.origin.FinderComponent.Local
                with amber.family.FinderComponent.Default
                with amber.origin.FactoryComponent.Default
@@ -66,6 +66,8 @@ object System {
   }
 
   trait Remote extends amber.System.Remote
+               with akka.origin.BuilderComponent.Remote
+               with amber.origin.BuilderComponent.Logging.Remote
                with akka.origin.FinderComponent.Remote {
     this: Logging =>
 

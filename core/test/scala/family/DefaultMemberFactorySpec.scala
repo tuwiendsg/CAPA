@@ -24,7 +24,7 @@ import org.mockito.Mockito.{times, verify, when}
 import util.Type
 
 class DefaultMemberFactorySpec extends Spec
-                               with mock.origin.BuilderComponent.Default
+                               with mock.origin.BuilderComponent.Local.Default
                                with mock.origin.BuilderComponent.InSpec
                                with family.FinderComponent.Default
                                with MemberFactoryComponent.Default
