@@ -18,18 +18,17 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
-
 import org.mockito.Mockito.when
+
+import util.Type
 
 class DefaultFinderSpec extends Spec
                         with mock.origin.BuilderComponent
                         with FinderComponent.Local.Default
                         with FinderBehaviors.Local {
 
-  override def mocker[A: ClassTag : TypeTag] =
-    super.mocker[A] andThen {case ((name, family, _, _), origin) =>
+  override def mocker[A: Type] =
+    super.mocker[A] andThen {case ((name, family, _), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
     }

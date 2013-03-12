@@ -18,12 +18,9 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import scala.reflect.ClassTag
-
 import org.mockito.Mockito.verify
 
-class BuilderSpec extends Spec
-                  with BuilderComponent {
+class BuilderSpec extends Spec with BuilderComponent {
 
   trait Fixture {
 

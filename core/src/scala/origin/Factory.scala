@@ -22,10 +22,8 @@ import scala.language.{higherKinds, implicitConversions}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
-import util.{Events, EventSource, Logger}
+import util.{Events, EventSource, Logger, Type}
 
 trait FactoryComponent {
 
@@ -34,7 +32,7 @@ trait FactoryComponent {
 
   trait OriginFactory {
     def created: Events[Origin[_]]
-    def create[A: ClassTag : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]): Origin[A]
+    def create[A: Type](name: Origin.Name)(read: OriginFactory.Read[A]): Origin[A]
   }
 
   object OriginFactory {
@@ -58,11 +56,11 @@ trait FactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A: ClassTag : TypeTag](name: Origin.Name)
-                                                         (read: OriginFactory.Read[A]) = {
-        log.debug(s"Creating $name origin of type ${typeOf[A]}")
+      abstract override def create[A](name: Origin.Name)(read: OriginFactory.Read[A])
+                                     (implicit typeA: Type[A]) = {
+        log.debug(s"Creating $name origin of type $typeA")
         val result = super.create(name)(read)
-        log.info(s"Created $name origin of type ${typeOf[A]}")
+        log.info(s"Created $name origin of type $typeA")
         result
       }
     }
@@ -79,13 +77,13 @@ object FactoryComponent {
 
       override val created = EventSource[Origin[_]]()
 
-      override def create[A: ClassTag : TypeTag](name: Origin.Name)(read: OriginFactory.Read[A]) =
+      override def create[A: Type](name: Origin.Name)(read: OriginFactory.Read[A]) =
         builder.build(name, Origin.Family.random()) {meta => read() map {(_, meta)}}
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                               (read: OriginBuilder.Read[A]) = {
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family)(read)
         origin.created.emit(result)
         result

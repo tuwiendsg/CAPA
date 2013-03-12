@@ -22,12 +22,10 @@ import scala.language.higherKinds
 
 import scala.collection.immutable.Set
 import scala.concurrent.Future
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Id.Id
 
-import util.MultiTrie
+import util.{MultiTrie, Type}
 
 sealed trait FinderComponent[X[+_]] {
 
@@ -65,8 +63,8 @@ object FinderComponent {
       }
 
       private object _builder extends OriginBuilder {
-        override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                                 (read: OriginBuilder.Read[A]) = {
+        override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                   (read: OriginBuilder.Read[A]) = {
           val result = Default.super.builder.build(name, family)(read)
           origins.add(result)
           result

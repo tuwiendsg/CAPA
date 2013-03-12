@@ -19,12 +19,11 @@ package amber
 package akka
 package origin
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
-
 import _root_.akka.actor.{ActorRef, Props}
 
 import org.mockito.Mockito.when
+
+import amber.util.Type
 
 class FinderRemoteSpec extends Spec("FinderRemoteSpec")
                        with FinderComponent.Remote
@@ -47,9 +46,10 @@ class FinderRemoteSpec extends Spec("FinderRemoteSpec")
     override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      def build[A: ClassTag : TypeTag](name: amber.Origin.Name, family: amber.Origin.Family)
-                                      (read: OriginBuilder.Read[A]) = {
-        val origin = mock[Origin.Local[A]](s"mock.akka.Origin.Local[${typeOf[A]}]")
+      def build[A](name: amber.Origin.Name, family: amber.Origin.Family)
+                  (read: OriginBuilder.Read[A])
+                  (implicit typeA: Type[A]) = {
+        val origin = mock[Origin.Local[A]](s"mock.akka.Origin.Local[$typeA]")
         when(origin.name) thenReturn name
         when(origin.family) thenReturn family
         when(origin.actor) thenReturn mock[ActorRef]("mock.ActorRef")

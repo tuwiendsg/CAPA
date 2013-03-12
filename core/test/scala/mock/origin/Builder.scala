@@ -19,12 +19,10 @@ package amber
 package mock.origin
 
 import scala.collection.immutable.List
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import org.scalatest.BeforeAndAfterEach
 
-import util.Mocker
+import util.{Mocker, Type}
 
 trait BuilderComponent extends amber.origin.BuilderComponent
                        with BeforeAndAfterEach {
@@ -40,17 +38,17 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   var built: List[Origin[_]] = _
   var build: (Origin.Name, Origin.Family) => Unit = _
 
-  def mocker[A: ClassTag : TypeTag] =
-    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A]), Origin[A]] {
-      def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A], TypeTag[A])) =
-        BuilderComponent.this.mock[Origin.Local[A]](s"mock.Origin.Local[${typeOf[A]}]")
+  def mocker[A](implicit typeA: Type[A]) =
+    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
+      def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) =
+        BuilderComponent.this.mock[Origin.Local[A]](s"mock.Origin.Local[$typeA]")
     }
 
   override protected type Origin[+A] = amber.Origin.Local[A]
   override protected def builder = new OriginBuilder {
-    override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                             (read: OriginBuilder.Read[A]) = {
-      val origin = mocker[A].mock(name, family, read, typeTag[A])
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                               (read: OriginBuilder.Read[A]) = {
+      val origin = mocker[A].mock(name, family, read)
       built = built :+ origin
       BuilderComponent.this.build(name, family)
 

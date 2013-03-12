@@ -20,13 +20,11 @@ package amber
 import scala.language.higherKinds
 
 import scala.collection.immutable.{Seq, Vector}
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.syntax.equal._
 import scalaz.syntax.id._
 
-import util.Observer
+import util.{Observer, Type}
 import util.Events.observe
 
 trait Processing {
@@ -36,7 +34,7 @@ trait Processing {
 
     private var observers = Vector.empty[Observer]
 
-    def apply[A: TypeTag, B: ClassTag : TypeTag]
+    def apply[A: Type, B: Type]
         (f: PartialFunction[Origin.Name, (Origin.Name, A => B)]): Observer = {
       val observer = observe(origin.created) {
         case o if o.returns[A] =>
@@ -64,15 +62,14 @@ trait Processing {
   }
 
   object map {
-    def apply[A: TypeTag, B: ClassTag : TypeTag](input: Origin.Name, output: Origin.Name)
-                                                (f: A => B): Observer =
+    def apply[A: Type, B: Type](input: Origin.Name, output: Origin.Name)(f: A => B): Observer =
       process {
         case name if input === name => output -> f
       }
   }
 
   object operation {
-    def apply[A: TypeTag, B: ClassTag : TypeTag](operation: Operation.Name)(f: A => B): Observer =
+    def apply[A: Type, B: Type](operation: Operation.Name)(f: A => B): Observer =
       process {
         case name => (name / operation) -> f
       }

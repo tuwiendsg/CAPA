@@ -24,8 +24,8 @@ import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 
 import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
+
+import util.Type
 
 trait FinderComponent {
 
@@ -60,8 +60,8 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                               (read: OriginBuilder.Read[A]) = {
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family)(read)
         families.add(result)
         result

@@ -18,8 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
+import util.Type
 
 class DefaultBuilderSpec extends Spec
                          with BuilderComponent.Default
@@ -27,9 +26,7 @@ class DefaultBuilderSpec extends Spec
 
   override type Origin[+A] = Origin.Local.Default[A]
   override val fixture = new Fixture {
-    override def create[A: ClassTag : TypeTag](name: Origin.Name,
-                                               family: Origin.Family,
-                                               read: Fixture.Read[A]) =
+    override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
       builder.build(name, family) {meta => read() map {(_, meta)}}
   }
 

@@ -20,8 +20,6 @@ package amber
 import scala.language.higherKinds
 
 import scala.concurrent.Future
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Comonad
 import scalaz.Id.{id, Id}
@@ -29,7 +27,7 @@ import scalaz.Id.{id, Id}
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
-import util.{Filter, FutureComonad, NotNothing}
+import util.{Filter, FutureComonad, NotNothing, Type}
 
 sealed trait OriginBehaviors[X[+_]] {
   this: Spec =>
@@ -41,23 +39,20 @@ sealed trait OriginBehaviors[X[+_]] {
 
   trait Fixture {
 
-    def create[A: ClassTag : TypeTag](name: Origin.Name,
-                                      family: Origin.Family,
-                                      read: Fixture.Read[A]): Origin[A]
+    def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]): Origin[A]
 
-    def create[A: NotNothing : ClassTag: TypeTag](): Origin[A] = create(random[Origin.Name])
+    def create[A: NotNothing : Type](): Origin[A] = create(random[Origin.Name])
 
-    def create[A: NotNothing : ClassTag: TypeTag](name: Origin.Name): Origin[A] =
+    def create[A: NotNothing : Type](name: Origin.Name): Origin[A] =
       create(name, random[Origin.Family])
 
-    def create[A: NotNothing : ClassTag: TypeTag](family: Origin.Family): Origin[A] =
+    def create[A: NotNothing : Type](family: Origin.Family): Origin[A] =
       create(random[Origin.Name], family)
 
-    def create[A: NotNothing : ClassTag : TypeTag](name: Origin.Name,
-                                                   family: Origin.Family): Origin[A] =
+    def create[A: NotNothing : Type](name: Origin.Name, family: Origin.Family): Origin[A] =
       create(name, family, mock[Fixture.Read[A]]("Origin.read"))
 
-    def create[A: ClassTag : TypeTag](read: Fixture.Read[A]): Origin[A] =
+    def create[A: Type](read: Fixture.Read[A]): Origin[A] =
       create(random[Origin.Name], random[Origin.Family], read)
   }
 

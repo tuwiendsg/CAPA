@@ -24,21 +24,19 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 import scala.collection.JavaConversions._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 import scalaz.Applicative
 import scalaz.Id.{id, Id}
 import scalaz.std.vector._
 import scalaz.syntax.applicative._
 
-import util.{ConfigurableComponent, Filter, Filterable, NotNothing}
+import util.{ConfigurableComponent, Filter, Filterable, NotNothing, Type}
 
 sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
 
   implicit def X: Applicative[X]
-  def read[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[Origin.Value[A]]]
+  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]]
 
   class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
@@ -48,10 +46,8 @@ sealed trait Client[X[+_]] {
   implicit def selectionToQuery(selection: Selection): Query =
     new Query(selection, Filter.tautology)
 
-  def readAll[A: NotNothing : ClassTag : TypeTag](query: Query): X[Seq[A]] =
-    read[A](query) map {_ map {_.value}}
-
-  def readOne[A: NotNothing : ClassTag : TypeTag](query: Query): X[Option[A]] =
+  def readAll[A: NotNothing : Type](query: Query): X[Seq[A]] = read[A](query) map {_ map {_.value}}
+  def readOne[A: NotNothing : Type](query: Query): X[Option[A]] =
     readAll[A](query) map {_.headOption}
 
   def readAll(definition: Entity.Definition): X[Seq[Entity.Instance]] = definition.instances()
@@ -69,10 +65,10 @@ sealed trait Client[X[+_]] {
       type Name = String
       sealed trait Read[+A] extends ((Field.Name) => X[Seq[Value[A]]])
 
-      implicit def readFromOption[A](f: () => X[Option[A]]): Read[A] = new Read[A] {
+      implicit def readFromOption[A: util.Type](f: () => X[Option[A]]): Read[A] = new Read[A] {
         override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
-      implicit def readFromSeq[A](f: () => X[Seq[A]]): Read[A] = new Read[A] {
+      implicit def readFromSeq[A: util.Type](f: () => X[Seq[A]]): Read[A] = new Read[A] {
         override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
 
@@ -146,7 +142,7 @@ object Client {
 
     override implicit val X = id
 
-    override def read[A: NotNothing : ClassTag : TypeTag](query: Query) =
+    override def read[A: NotNothing : Type](query: Query) =
       for {
         origin <- origins.find(query.selection).to[Stream] if origin.returns[A]
         (value, meta) <- origin.asInstanceOf[Origin[A]].read().run if query.filter(meta)
@@ -167,7 +163,7 @@ object Client {
         fa flatMap {a => ff map {_(a)}}
     }
 
-    override def read[A: NotNothing : ClassTag : TypeTag](query: Query) =
+    override def read[A: NotNothing : Type](query: Query) =
       origins.find(query.selection) map {
         _.to[Vector] map {_.read().run}
       } flatMap {X.sequence(_) map {

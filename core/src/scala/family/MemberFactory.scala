@@ -20,12 +20,9 @@ package family
 
 import scala.language.higherKinds
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
-
 import scalaz.syntax.equal._
 
-import util.Logger
+import util.{Logger, Type}
 
 trait MemberFactoryComponent {
 
@@ -33,8 +30,7 @@ trait MemberFactoryComponent {
   protected def in(family: Origin.Family): MemberFactory
 
   protected trait MemberFactory {
-    def create[A: ClassTag : TypeTag](name: Origin.Name)
-                                     (read: MemberFactory.Read[A]): Option[Origin[A]]
+    def create[A: Type](name: Origin.Name)(read: MemberFactory.Read[A]): Option[Origin[A]]
   }
 
   protected object MemberFactory {
@@ -45,10 +41,10 @@ trait MemberFactoryComponent {
 
       protected def log: Logger
 
-      abstract override def create[A: ClassTag : TypeTag](name: Origin.Name)
-                                                         (read: MemberFactory.Read[A]) = {
+      abstract override def create[A](name: Origin.Name)(read: MemberFactory.Read[A])
+                                     (implicit typeA: Type[A]) = {
         val result = super.create(name)(read)
-        if (result.isDefined) log.debug(s"Created $name origin of type ${typeOf[A]}")
+        if (result.isDefined) log.debug(s"Created $name origin of type $typeA")
         result
       }
     }
@@ -67,7 +63,7 @@ object MemberFactoryComponent {
 
       protected def family: Origin.Family
 
-      override def create[A: ClassTag : TypeTag](name: Origin.Name)(read: MemberFactory.Read[A]) =
+      override def create[A: Type](name: Origin.Name)(read: MemberFactory.Read[A]) =
         family.synchronized {
           val exists = families.find(family) exists {
             origin => (name === origin.name) && origin.returns[A]

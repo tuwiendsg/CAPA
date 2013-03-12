@@ -24,14 +24,13 @@ import java.util.UUID.randomUUID
 
 import scala.collection.{immutable, Map}
 import scala.concurrent.Future
-import scala.reflect.runtime.universe.{typeOf, typeTag, TypeTag}
 
 import scalaz.Equal.equalA
 import scalaz.Id.Id
 import scalaz.OptionT
 import scalaz.syntax.equal._
 
-import util.{NotNothing, Path}
+import util.{NotNothing, Path, Type}
 
 sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
 
@@ -39,7 +38,7 @@ sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
   def family: Origin.Family
 
   def selectDynamic(name: Origin.MetaInfo.Name): OptionT[X, Origin.MetaInfo.Value[_]]
-  def update[B](name: Origin.MetaInfo.Name, value: B)
+  def update[B: Type](name: Origin.MetaInfo.Name, value: B)
 
   def read(): OptionT[X, (Origin.Value[A], Origin.MetaInfo)]
 }
@@ -59,29 +58,28 @@ object Origin {
   }
 
   trait Local[+A] extends Origin[Id, A] {
-    def returns[B: NotNothing : TypeTag]: Boolean
+    def returns[B: NotNothing : Type]: Boolean
   }
 
   trait Remote[+A] extends Origin[Future, A]
 
   object Local {
-    abstract class Default[+A : TypeTag](override val name: Origin.Name,
-                                         override val family: Origin.Family)
-        extends amber.Origin.Local[A] {
+    abstract class Default[+A](override val name: Origin.Name, override val family: Origin.Family)
+                              (implicit typeA: Type[A]) extends amber.Origin.Local[A] {
 
       protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
 
       override def selectDynamic(name: Origin.MetaInfo.Name) =
         OptionT[Id, Origin.MetaInfo.Value[_]](Option(meta.get(name)))
 
-      override def update[A](name: Origin.MetaInfo.Name, value: A) {
+      override def update[A: Type](name: Origin.MetaInfo.Name, value: A) {
         meta.put(name, new Origin.MetaInfo.Value(value))
       }
 
-      override def returns[B: NotNothing : TypeTag] = typeOf[A] <:< typeOf[B]
+      override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
 
       override lazy val hashCode =
-        41 * (41 * (41 + name.hashCode) + family.hashCode) + typeTag[A].hashCode
+        41 * (41 * (41 + name.hashCode) + family.hashCode) + typeA.hashCode
 
       override def equals(other: Any) = other match {
         case that: Origin.Local[_] =>
@@ -94,7 +92,7 @@ object Origin {
 
       override def canEqual(other: Any) = other.isInstanceOf[Origin.Local[_]]
 
-      override lazy val toString = s"amber.Origin.Local[${typeOf[A]}]($name)"
+      override lazy val toString = s"amber.Origin.Local[$typeA]($name)"
     }
   }
 

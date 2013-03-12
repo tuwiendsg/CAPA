@@ -24,7 +24,6 @@ import scala.language.higherKinds
 import scala.collection.immutable.Set
 import scala.concurrent.future
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
-import scala.reflect.runtime.universe.TypeTag
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import _root_.akka.pattern.{ask, pipe}

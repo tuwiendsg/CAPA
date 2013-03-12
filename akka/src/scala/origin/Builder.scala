@@ -20,8 +20,6 @@ package akka
 package origin
 
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 
@@ -29,7 +27,7 @@ import scalaz.Id.Id
 import scalaz.OptionT
 import scalaz.syntax.applicative._
 
-import amber.util.ConfigurableComponent
+import amber.util.{ConfigurableComponent, Type}
 
 trait BuilderComponent extends amber.origin.BuilderComponent
                        with ConfigurableComponent {
@@ -40,8 +38,8 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   override protected def builder: OriginBuilder = _builder
 
   private object _builder extends OriginBuilder {
-    override def build[A: ClassTag : TypeTag](name: amber.Origin.Name, family: amber.Origin.Family)
-                                             (_read: OriginBuilder.Read[A]) =
+    override def build[A: Type](name: amber.Origin.Name, family: amber.Origin.Family)
+                               (_read: OriginBuilder.Read[A]) =
       new Origin(name, family) {
 
         override val actor: ActorRef = configuration.system.actorOf(

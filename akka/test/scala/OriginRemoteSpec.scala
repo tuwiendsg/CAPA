@@ -19,14 +19,14 @@ package amber
 package akka
 
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import _root_.akka.actor.Props
 
 import scalaz.Id.Id
 import scalaz.OptionT
 import scalaz.syntax.applicative._
+
+import amber.util.Type
 
 class OriginRemoteSpec extends Spec("OriginRemoteSpec")
                        with OriginBehaviors.Remote {
@@ -35,9 +35,9 @@ class OriginRemoteSpec extends Spec("OriginRemoteSpec")
   override implicit val context = system.dispatcher
 
   override val fixture = new Fixture {
-    override def create[A: ClassTag : TypeTag](name: amber.Origin.Name,
-                                               family: amber.Origin.Family,
-                                               _read: Fixture.Read[A]) = {
+    override def create[A: Type](name: amber.Origin.Name,
+                                 family: amber.Origin.Family,
+                                 _read: Fixture.Read[A]) = {
       new Origin.Remote[A](name, family)(system.actorOf(
         Props(new Origin.Actor(
           new amber.Origin.Local.Default(name, family) {

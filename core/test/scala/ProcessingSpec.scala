@@ -18,8 +18,6 @@ package at.ac.tuwien.infosys
 package amber
 
 import scala.collection.immutable.HashMap
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Id._
 import scalaz.OptionT
@@ -29,7 +27,7 @@ import scalaz.syntax.comonad._
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{never, verify, when}
 
-import util.Filter
+import util.{Filter, Type}
 
 trait ProcessingSpec extends Spec
                      with mock.origin.BuilderComponent
@@ -39,11 +37,11 @@ trait ProcessingSpec extends Spec
                      with family.MemberFactoryComponent.Default
                      with Processing {
 
-  override def mocker[A: ClassTag : TypeTag] =
-    super.mocker[A] andThen {case ((name, family, read, tag), origin) =>
+  override def mocker[A](implicit typeA: Type[A]) =
+    super.mocker[A] andThen {case ((name, family, read), origin) =>
       when(origin.name) thenReturn name
       when(origin.family) thenReturn family
-      when(origin.returns(anything(), equalTo(tag))) thenReturn true
+      when(origin.returns(anything(), equalTo(typeA))) thenReturn true
 
       val meta = mock[Origin.MetaInfo]("Origin.MetaInfo")
       when(meta.selectDynamic(anything())) thenAnswer {

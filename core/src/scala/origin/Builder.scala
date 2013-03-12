@@ -21,14 +21,12 @@ package origin
 import scala.language.higherKinds
 
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 import scalaz.Id.Id
 import scalaz.OptionT
 import scalaz.syntax.applicative._
 
-import amber.util.Logging
+import util.Type
 
 trait BuilderComponent {
 
@@ -36,8 +34,8 @@ trait BuilderComponent {
   protected def builder: OriginBuilder
 
   protected trait OriginBuilder {
-    def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                    (read: OriginBuilder.Read[A]): Origin[A]
+    def build[A: Type](name: Origin.Name, family: Origin.Family)
+                      (read: OriginBuilder.Read[A]): Origin[A]
   }
 
   protected object OriginBuilder {
@@ -53,8 +51,8 @@ object BuilderComponent {
     override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                               (_read: OriginBuilder.Read[A]) =
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]) =
         new Origin(name, family) {
           override def read() = OptionT((
             for {(value, meta) <- _read(Origin.MetaInfo(meta))}
@@ -70,8 +68,8 @@ object BuilderComponent {
     abstract override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      override def build[A: ClassTag : TypeTag](name: Origin.Name, family: Origin.Family)
-                                               (read: OriginBuilder.Read[A]) = {
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (read: OriginBuilder.Read[A]) = {
         val log = logger.create(s"amber.Origin.Local($name)")
         Logging.super.builder.build(name, family)(read andThen {
           case result@Some((value, _)) =>

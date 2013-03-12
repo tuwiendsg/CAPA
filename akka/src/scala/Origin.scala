@@ -20,7 +20,6 @@ package akka
 
 import scala.concurrent.{blocking, future, Future}
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 import _root_.akka.actor.ActorRef
 import _root_.akka.pattern.{ask, pipe}
@@ -30,14 +29,17 @@ import scalaz.OptionT
 import scalaz.syntax.comonad._
 import scalaz.syntax.equal._
 
+import amber.util.Type
+
 object Origin {
 
-  abstract class Local[+A: TypeTag](name: amber.Origin.Name, family: amber.Origin.Family)
+  abstract class Local[+A](name: amber.Origin.Name, family: amber.Origin.Family)
+                          (implicit typeA: Type[A])
       extends amber.Origin.Local.Default[A](name, family) {
 
     def actor: ActorRef
 
-    override lazy val toString = s"akka.Origin.Local[${typeOf[A]}]($name)"
+    override lazy val toString = s"akka.Origin.Local[$typeA]($name)"
   }
 
   class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
@@ -51,7 +53,7 @@ object Origin {
     override def selectDynamic(name: String) =
       OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
 
-    override def update[B](name: amber.Origin.MetaInfo.Name, value: B) {
+    override def update[B: Type](name: amber.Origin.MetaInfo.Name, value: B) {
       ref ! Request.MetaInfo.Set(name, value)
     }
 
@@ -96,7 +98,7 @@ object Origin {
 
       object MetaInfo {
         case class Get(name: amber.Origin.MetaInfo.Name) extends Message
-        case class Set[+A](name: amber.Origin.MetaInfo.Name, value: A) extends Message {
+        case class Set[+A: Type](name: amber.Origin.MetaInfo.Name, value: A) extends Message {
           def apply(origin: amber.Origin.Local[_]) {origin(name) = value}
         }
       }
