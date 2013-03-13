@@ -68,9 +68,10 @@ object BuilderComponent {
     abstract override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                                 (read: OriginBuilder.Read[A]) = {
-        val log = logger.create(s"amber.Origin.Local($name)")
+      override def build[A](name: Origin.Name, family: Origin.Family)
+                           (read: OriginBuilder.Read[A])
+                           (implicit typeA: Type[A]) = {
+        val log = logger.create(s"Origin.Local[$typeA]($name)")
         Logging.super.builder.build(name, family)(read andThen {
           case result@Some((value, _)) =>
             log.debug(s"Read $value from $name")

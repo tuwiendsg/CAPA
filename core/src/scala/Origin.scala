@@ -90,7 +90,7 @@ object Origin {
 
       override def canEqual(other: Any) = other.isInstanceOf[Origin.Local[_]]
 
-      override lazy val toString = s"amber.Origin.Local[$typeA]($name)"
+      override lazy val toString = s"amber.Origin.Local[$typeA]($name, $family)"
     }
   }
 

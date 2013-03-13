@@ -40,7 +40,7 @@ object Origin {
     def actor: ActorRef
 
     private[akka] val ttype: Type[_ <: A] = typeA
-    override lazy val toString = s"akka.Origin.Local[$typeA]($name)"
+    override lazy val toString = s"akka.Origin.Local[$typeA]($name, $family)"
   }
 
   class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
@@ -72,7 +72,7 @@ object Origin {
 
     override def canEqual(other: Any) = other.isInstanceOf[Remote[_]]
 
-    override lazy val toString = s"akka.Origin.Remote($ref)"
+    override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 
     private def request[B: ClassTag](message: Message): Future[B] =
       ask(ref, message)(timeout).mapTo[B]

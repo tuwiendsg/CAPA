@@ -22,7 +22,7 @@ class Value[+A](value: A)(implicit typeA: Type[A]) extends Serializable {
   def as[B: NotNothing](implicit typeB: Type[B]): Option[B] =
     if (typeA <:< typeB) Some(value.asInstanceOf[B]) else None
 
-  override lazy val toString = s"Value($value)"
+  override lazy val toString = s"Value[$typeA]($value)"
 }
 
 object Value {
