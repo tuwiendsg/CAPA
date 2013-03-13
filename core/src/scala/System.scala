@@ -35,8 +35,8 @@ object System {
 
   trait Local extends System[Id]
               with origin.FinderComponent.Local
+              with family.FinderComponent
               with origin.FactoryComponent
-              with family.MemberFactoryComponent
               with Processing
               with Processing.Default.Conversions
               with Processing.Default.Operations {

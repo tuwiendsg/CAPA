@@ -30,7 +30,6 @@ class ProcessingSpec extends Spec
                      with origin.FinderComponent.Local.Default
                      with family.FinderComponent.Default
                      with origin.FactoryComponent.Default
-                     with family.MemberFactoryComponent.Default
                      with Processing {
 
   override def mocker[A](implicit typeA: Type[A]) =
@@ -45,6 +44,14 @@ class ProcessingSpec extends Spec
           origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name])
       }
       when(origin.read()) thenAnswer {_: Array[AnyRef] => read(meta)}
+      when(origin.map(anything())(anything())(anything())) thenAnswer {
+        args: Array[AnyRef] =>
+          val name = args(0).asInstanceOf[Origin.Name]
+          val f = args(1).asInstanceOf[A => Any]
+          val typeB = args(2).asInstanceOf[Type[Any]]
+
+          builder.map(origin, name)(f)(typeB)
+      }
     }
 
   class A

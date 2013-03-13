@@ -28,7 +28,7 @@ import util.Events.observe
 
 trait Processing {
   this: origin.FinderComponent.Local with origin.FactoryComponent
-                                     with family.MemberFactoryComponent =>
+                                     with family.FinderComponent =>
 
   object process {
 
@@ -39,9 +39,11 @@ trait Processing {
       def onOrigin(source: Origin[A]) {
         if (f isDefinedAt source.name) {
           val (name, g) = f(source.name)
-          in(source.family).create[B](name) {
-            () =>
-              for {(Origin.Value(_, value), meta) <- source.read()} yield (g(value), meta)
+          source.family.synchronized {
+            val exists = families.find(source.family) exists {
+              origin => (name === origin.name) && origin.returns[B]
+            }
+            if (!exists) source.map(name)(g)
           }
         }
       }
@@ -66,16 +68,12 @@ trait Processing {
 
   object map {
     def apply[A: Type, B: Type](input: Origin.Name, output: Origin.Name)(f: A => B): Observer =
-      process {
-        case name if input === name => output -> f
-      }
+      process {case `input` => output -> f}
   }
 
   object operation {
     def apply[A: Type, B: Type](operation: Operation.Name)(f: A => B): Observer =
-      process {
-        case name => (name / operation) -> f
-      }
+      process {case name => (name / operation) -> f}
   }
 }
 

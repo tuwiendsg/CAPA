@@ -25,19 +25,13 @@ trait System extends amber.System.Local
              with amber.origin.BuilderComponent.Logging.Local
              with amber.origin.FinderComponent.Local.Default
              with amber.family.FinderComponent.Default
-             with amber.origin.FactoryComponent.Default
-             with amber.family.MemberFactoryComponent.Default {
+             with amber.origin.FactoryComponent.Default {
   this: Logging =>
 
   @transient private[this] val log = logger.create("amber.simple.System")
 
   override val stopped = EventSource[Unit]()
   override def origin: super.OriginFactory = _origin
-  override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
-    override protected val family = f
-    @transient override protected val log =
-      logger.create(s"amber.simple.family.MemberFactory($family)")
-  }
 
   override def shutdown() {
     log.info("Shutting down")

@@ -30,8 +30,7 @@ object System {
                with amber.origin.BuilderComponent.Logging.Local
                with akka.origin.FinderComponent.Local
                with amber.family.FinderComponent.Default
-               with amber.origin.FactoryComponent.Default
-               with amber.family.MemberFactoryComponent.Default {
+               with amber.origin.FactoryComponent.Default {
     this: Logging =>
 
     @transient private[this] val log = logger.create("amber.akka.System.Local")
@@ -39,11 +38,6 @@ object System {
     override val stopped = EventSource[Unit](configuration.system)
     override def origin: super.OriginFactory = _origin
     override protected val actor: akka.origin.FinderComponent.Actor = _actor
-    override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
-      override protected val family = f
-      @transient override protected val log =
-        logger.create(s"amber.akka.family.MemberFactory($family)")
-    }
 
     override def shutdown() {
       log.info("Shutting down")
