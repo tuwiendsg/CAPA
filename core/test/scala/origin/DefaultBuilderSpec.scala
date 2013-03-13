@@ -18,6 +18,10 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scalaz.Id.Id
+import scalaz.OptionT
+import scalaz.syntax.applicative._
+
 import util.Type
 
 class DefaultBuilderSpec extends Spec
@@ -27,7 +31,7 @@ class DefaultBuilderSpec extends Spec
   override type Origin[+A] = Origin.Local.Default[A]
   override val fixture = new Fixture {
     override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
-      builder.build(name, family) {meta => read() map {(_, meta)}}
+      builder.build(name, family) {meta => OptionT((read() map {(_, meta)}).point[Id])}
   }
 
   "Default.OriginBuilder" when {

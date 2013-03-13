@@ -49,9 +49,7 @@ trait ProcessingSpec extends Spec
           origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name]).run.copoint
       }
       when(origin.read()) thenAnswer {
-        _: Array[AnyRef] => OptionT(
-          (read(meta) map {case (value, meta) => (Origin.Value(name, value), meta)}).point[Id]
-        )
+        _: Array[AnyRef] => read(meta) map {case (value, meta) => (Origin.Value(name, value), meta)}
       }
     }
 }

@@ -24,7 +24,6 @@ import scala.collection.JavaConversions._
 
 import scalaz.Id.Id
 import scalaz.OptionT
-import scalaz.syntax.applicative._
 
 import util.Type
 
@@ -39,7 +38,7 @@ trait BuilderComponent {
   }
 
   protected object OriginBuilder {
-    type Read[+A] = (Origin.MetaInfo) => Option[(A, Origin.MetaInfo)]
+    type Read[+A] = (Origin.MetaInfo) => OptionT[Id, (A, Origin.MetaInfo)]
   }
 }
 
@@ -54,10 +53,9 @@ object BuilderComponent {
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (_read: OriginBuilder.Read[A]) =
         new Origin(name, family) {
-          override def read() = OptionT((
+          override def read() =
             for {(value, meta) <- _read(Origin.MetaInfo(meta))}
               yield (Origin.Value(name, value), meta)
-          ).point[Id])
         }
     }
   }
@@ -72,12 +70,9 @@ object BuilderComponent {
                            (read: OriginBuilder.Read[A])
                            (implicit typeA: Type[A]) = {
         val log = logger.create(s"Origin.Local[$typeA]($name)")
-        Logging.super.builder.build(name, family)(read andThen {
-          case result@Some((value, _)) =>
-            log.debug(s"Read $value from $name")
-            result
-          case other => other
-        })
+        Logging.super.builder.build(name, family)(read andThen {_ map {
+          case result@(value, _) => log.debug(s"Read $value from $name"); result
+        }})
       }
     }
   }
