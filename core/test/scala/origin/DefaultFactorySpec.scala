@@ -64,6 +64,23 @@ class DefaultFactorySpec extends Spec
           }
         }
       }
+
+      "an origin is mapped" in {
+        new Fixture {
+          val observe = mock[Events.Observe[Any]]("Events.observe")
+          when(observe.isDefinedAt(anything())) thenReturn true
+          val observer = Events.observe(origin.created)(observe)
+
+          try {
+            val read = mock[OriginBuilder.Read[AnyRef]]("Origin.read")
+            val underlying = builder.build(name, random[Origin.Family])(read)
+            val result = builder.map(underlying, name) {_ => random[Int]}
+            verify(observe).apply(result)
+          } finally {
+            observer.dispose()
+          }
+        }
+      }
     }
   }
 }

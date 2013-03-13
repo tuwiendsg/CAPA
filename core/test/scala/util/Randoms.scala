@@ -19,7 +19,7 @@ package amber
 package util
 
 import scala.collection.immutable.Stream
-import scala.util.Random.alphanumeric
+import scala.util.Random.{alphanumeric, nextInt}
 
 import scalaz.Equal
 import scalaz.std.anyVal._
@@ -37,6 +37,10 @@ trait Randoms {
 
   implicit object StringHasRandom extends Random[String] {
     override def instance() = new String(alphanumeric.take(10).toArray)
+  }
+
+  implicit object IntHasRandom extends Random[Int] {
+    override def instance() = nextInt()
   }
 
   implicit object PathHasRandom extends Random[Path] {

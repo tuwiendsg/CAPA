@@ -77,9 +77,16 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
+
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family)(read)
+        origins.add(result)
+        result
+      }
+
+      override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+        val result = Default.super.builder.map(underlying, name)(f)
         origins.add(result)
         result
       }

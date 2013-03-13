@@ -19,8 +19,11 @@ package amber
 package util
 
 class Value[+A](value: A)(implicit typeA: Type[A]) extends Serializable {
+
   def as[B: NotNothing](implicit typeB: Type[B]): Option[B] =
     if (typeA <:< typeB) Some(value.asInstanceOf[B]) else None
+
+  def map[B: Type](f: A => B): Value[B] = new Value[B](f(value))
 
   override lazy val toString = s"Value[$typeA]($value)"
 }
@@ -28,6 +31,7 @@ class Value[+A](value: A)(implicit typeA: Type[A]) extends Serializable {
 object Value {
 
   case class Named[A, +B: Type](name: A, value: B) extends Value[B](value) {
+    override def map[C: Type](f: B => C): Named[A, C] = Named[A, C](name, f(value))
     override lazy val toString = s"$name = $value"
   }
 

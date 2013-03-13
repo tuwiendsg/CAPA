@@ -45,6 +45,10 @@ sealed trait Origin[+A] extends Dynamic with Equals {
 
   def returns[B: NotNothing : Type]: Boolean
   def read(): Reading[(Origin.Value[A], Origin.MetaInfo)]
+
+  def map[B: Type](name: Origin.Name)(f: A => B): Origin[B]
+
+  def map[B: Type](f: A => B): Origin[B] = map(name)(f)
 }
 
 object Origin {
@@ -63,10 +67,12 @@ object Origin {
 
   trait Local[+A] extends Origin[A] {
     override type Reading[+A] = Local.Reading[A]
+    override def map[B: Type](name: Origin.Name)(f: A => B): Local[B]
   }
 
   trait Remote[+A] extends Origin[A] {
     override type Reading[+A] = Remote.Reading[A]
+    override def map[B: Type](name: Origin.Name)(f: A => B): Remote[B]
   }
 
   object Local {

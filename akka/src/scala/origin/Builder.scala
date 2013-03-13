@@ -41,16 +41,32 @@ object BuilderComponent {
     override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                                 (_read: OriginBuilder.Read[A]) =
-        new Origin(name, family) {
+
+      private abstract class Origin[+A: Type](name: Origin.Name, family: Origin.Family)
+          extends Local.this.Origin[A](name, family) with OriginBuilder.OriginOps[A] {
 
         override private[akka] lazy val actor = configuration.system.actorOf(
           Props(new Origin.Actor.Local(this)).withDispatcher("amber.origins.dispatcher")
         )
-
-        override def read() = _read(meta)
       }
+
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]): Local.this.Origin[A] =
+        new Origin(name, family) {
+          override def read() = _read(meta)
+        }
+
+      override def map[A, B: Type](underlying: Local.this.Origin[A], name: Origin.Name)
+                                  (f: A => B): Local.this.Origin[B] =
+        new Origin(name, underlying.family) {
+
+          override def read() = underlying.read() map {
+            case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+          }
+
+          override def selectDynamic(name: Origin.MetaInfo.Name) =
+            super.selectDynamic(name) orElse underlying.selectDynamic(name)
+        }
     }
   }
 
@@ -72,18 +88,35 @@ object BuilderComponent {
       implicit private def context = configuration.context
       implicit private def timeout: Timeout = configuration.timeout
 
+      private abstract class Origin[+A: Type](name: Origin.Name, family: Origin.Family)
+          extends Remote.this.Origin[A](name, family)
+          with Origin.MetaInfo.Local
+          with OriginBuilder.OriginOps[A] {
+
+        override private[akka] lazy val actor = configuration.local.actorOf(
+          Props(new Origin.Actor.Remote[A](this)).withDispatcher("amber.origins.dispatcher")
+        )
+
+        override def selectDynamic(name: Origin.MetaInfo.Name) =
+            OptionT(Future.successful(select(name)))
+      }
+
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
-                                 (_read: OriginBuilder.Read[A]) =
-        new Origin.Remote(name, family) with Origin.MetaInfo.Local {
-
-          override private[akka] lazy val actor = configuration.local.actorOf(
-            Props(new Origin.Actor.Remote[A](this)).withDispatcher("amber.origins.dispatcher")
-          )
-
+                                 (_read: OriginBuilder.Read[A]): Remote.this.Origin[A] =
+        new Origin[A](name, family) {
           override def read() = _read(meta)
+        }
+
+      override def map[A, B: Type](underlying: Remote.this.Origin[A], name: Origin.Name)
+                                  (f: A => B): Remote.this.Origin[B] =
+        new Origin(name, underlying.family) {
+
+          override def read() = underlying.read() map {
+            case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+          }
 
           override def selectDynamic(name: Origin.MetaInfo.Name) =
-            OptionT(Future.successful(select(name)))
+            super.selectDynamic(name) orElse underlying.selectDynamic(name)
         }
     }
   }

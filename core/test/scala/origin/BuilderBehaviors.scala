@@ -31,6 +31,13 @@ sealed trait BuilderBehaviors {
     "build an origin" which {
       behave like anOrigin
     }
+
+    "build a mapped origin over an underlying origin" which {
+      behave like aMappedOrigin(new Mapper {
+        override def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) =
+          builder.map(underlying, name)(f)
+      })
+    }
   }
 }
 

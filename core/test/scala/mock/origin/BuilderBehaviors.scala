@@ -18,7 +18,9 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import org.mockito.Mockito.verify
+import org.mockito.Mockito.{verify, when}
+
+import util.Type
 
 sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
   this: Spec with BuilderComponent =>
@@ -29,8 +31,16 @@ sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
     val family = random[Origin.Family]
 
     object origin {
-      def build(): Origin[_] =
-        builder.build(name, family)(mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
+
+      def build(): Origin[_] = {
+        val origin = builder.build(name, family)(mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
+        when(origin.family) thenReturn family
+        origin
+      }
+
+      def map[A, B: Type](underlying: Origin[A], name: Origin.Name): Origin[_] = {
+        builder.map(underlying, name)(mock[A => B]("Origin.map"))
+      }
     }
   }
 
@@ -50,6 +60,25 @@ sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
         val result = origin.build()
 
         built.last should be(result)
+      }
+    }
+
+    "an origin is mapped over an underlying origin" should {
+      "invoke the mocked build method" in {
+        new Fixture{
+          val other = random[Origin.Name]
+          origin.map(origin.build(), other)
+
+          verify(build).apply(other, family)
+        }
+      }
+
+      "save the origin that was last built" in {
+        new Fixture {
+          val result = origin.map(origin.build(), name)
+
+          built.last should be(result)
+        }
       }
     }
   }

@@ -65,7 +65,8 @@ object FinderComponent {
 
       override def find[A: NotNothing](selection: Selection)(implicit typeA: Type[A]) =
         ask(configuration.finder, Request.Find[A](selection)).mapTo[Set[Origin.Serialized[_]]] map {
-          for {origin <- _ if origin.returns[A]} yield origin.toRemote.asInstanceOf[Origin[A]]
+          for {origin <- _ if origin.returns[A]}
+            yield origin.toRemote(Remote.this).asInstanceOf[Origin[A]]
         } recover {case _: TimeoutException => Set.empty} flatMap {
           remote => super.find[A](selection) map {_ ++ remote}
         }

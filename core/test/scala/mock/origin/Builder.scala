@@ -22,6 +22,8 @@ import scala.language.higherKinds
 
 import scala.collection.immutable.List
 
+import scalaz.syntax.functor._
+
 import org.scalatest.BeforeAndAfterEach
 
 import util.{Mocker, Mocking, Type}
@@ -37,11 +39,24 @@ trait BuilderComponent extends amber.origin.BuilderComponent with Mocking {
   override protected def builder: OriginBuilder = _builder
 
   private object _builder extends OriginBuilder {
+
     override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                (read: OriginBuilder.Read[A]) = {
       val origin = mocker[A].mock((name, family, read))
       built = built :+ origin
       BuilderComponent.this.build(name, family)
+
+      origin
+    }
+
+    override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+      val origin = mocker[B].mock((name, underlying.family, {meta =>
+        underlying.read().asInstanceOf[Reading[(Origin.Value[A], Origin.MetaInfo)]] map {
+          case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+        }
+      }))
+      built = built :+ origin
+      BuilderComponent.this.build(name, underlying.family)
 
       origin
     }
