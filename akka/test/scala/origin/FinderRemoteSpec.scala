@@ -21,9 +21,10 @@ package origin
 
 import _root_.akka.actor.{ActorRef, Props}
 
+import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when
 
-import amber.util.Type
+import amber.util.{NotNothing, Type}
 
 class FinderRemoteSpec extends Spec("FinderRemoteSpec")
                        with FinderComponent.Remote
@@ -53,6 +54,10 @@ class FinderRemoteSpec extends Spec("FinderRemoteSpec")
         when(origin.name) thenReturn name
         when(origin.family) thenReturn family
         when(origin.actor) thenReturn mock[ActorRef]("mock.ActorRef")
+        when(origin.ttype) thenAnswer {_: Array[AnyRef] => typeA}
+        when(origin.returns(anything(), anything())) thenAnswer {
+          args: Array[AnyRef] => typeA <:< args(1).asInstanceOf[Type[_]]
+        }
         origin
       }
     }
@@ -61,9 +66,9 @@ class FinderRemoteSpec extends Spec("FinderRemoteSpec")
   val actor = system.actorOf(Props(new FinderComponent.Actor(local)), name="origins-finder")
 
   override val fixture = new Fixture {
-    override def create(name: amber.Origin.Name) = {
-      val origin = local.origin.create(name)(mock[local.OriginFactory.Read[AnyRef]]("Origin.read"))
-      new Origin.Remote[AnyRef](name, origin.family)(origin.actor)(timeout, Type[AnyRef])
+    override def create[A: NotNothing](name: amber.Origin.Name)(implicit typeA: Type[A]) = {
+      val origin = local.origin.create(name)(mock[local.OriginFactory.Read[A]]("Origin.read"))
+      new Origin.Remote(name, origin.family)(origin.actor)(timeout, typeA)
     }
   }
 

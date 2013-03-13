@@ -24,19 +24,24 @@ import scala.concurrent.Future
 
 import scalaz.Id.Id
 
+import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.verify
+
+import util.Type
 
 trait DelegatorFinderBehaviors[X[+_]] {
   this: Spec with FinderComponent.Delegator[X] =>
+
+  class A
 
   object aDelegator {
     def forOriginFinder() {
       "invoke the delegatee's find method" in {
         val selection = Selections.all
 
-        origins.find(selection)
+        origins.find[A](selection)
 
-        verify(finder.origins).find(selection)
+        verify(finder.origins).find(equalTo(selection))(anything(), equalTo(Type[A]))
       }
     }
   }

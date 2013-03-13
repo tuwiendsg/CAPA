@@ -20,12 +20,13 @@ package origin
 
 import scala.language.higherKinds
 
+import scala.collection.immutable.Set
 import scala.concurrent.Future
 
 import scalaz.Comonad
 import scalaz.Id.{id, Id}
 
-import util.FutureComonad
+import util.{FutureComonad, NotNothing, Type}
 
 sealed trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
@@ -33,17 +34,52 @@ sealed trait FinderBehaviors[X[+_]] {
   def X: Comonad[X]
   def fixture: Fixture
 
+  class A
+  class U extends A
+  class B
+
   trait Fixture {
-    def create(name: Origin.Name): Origin[_]
+    def create[A: NotNothing : Type](name: Origin.Name): Origin[A]
   }
 
   object aFinder {
     def forOrigins() {
-      "find an origin" in {
-        val name = random[Origin.Name]
-        val origin = fixture.create(name)
+      "find an origin" when {
+        "type is the same" in {
+          val name = random[Origin.Name]
+          val origin = fixture.create[A](name)
 
-        X.copoint(origins.find(Selections.exact(name))) should contain(origin)
+          X.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
+        }
+
+        "type is a super type" in {
+          val name = random[Origin.Name]
+          val origin = fixture.create[U](name)
+
+          val result = X.copoint(origins.find[A](Selections.exact(name))) map {
+            _.asInstanceOf[Origin[Any]]
+          }
+          result should contain(origin.asInstanceOf[Origin[Any]])
+        }
+      }
+
+      "not find an origin" when {
+        "type is a sub type" in {
+          val name = random[Origin.Name]
+          val origin = fixture.create[A](name)
+
+          X.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+        }
+
+        "type is a different type" in {
+          val name = random[Origin.Name]
+          val origin = fixture.create[A](name)
+
+          val result = X.copoint(origins.find[B](Selections.exact(name))) map {
+            _.asInstanceOf[Origin[Any]]
+          }
+          result should not(contain(origin.asInstanceOf[Origin[Any]]))
+        }
       }
     }
   }

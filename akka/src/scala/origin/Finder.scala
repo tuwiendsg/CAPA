@@ -29,7 +29,7 @@ import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import _root_.akka.pattern.{ask, pipe}
 import _root_.akka.util.Timeout
 
-import amber.util.{ConfigurableComponent, Type}
+import amber.util.{ConfigurableComponent, NotNothing, Type}
 import amber.util.MultiTrie.Selection
 
 object FinderComponent {
@@ -53,11 +53,11 @@ object FinderComponent {
       implicit private def timeout: Timeout = configuration.timeout
       private def reference = configuration.reference
 
-      override def find(selection: Selection) =
-        ask(reference, Request.Find(selection)).mapTo[Response.Find] map {
+      override def find[A: NotNothing](selection: Selection)(implicit typeA: Type[A]) =
+        ask(reference, Request.Find[A](selection)).mapTo[Response.Find] map {
           result =>
-            for {(name, family, ttype, actor) <- result}
-              yield new Origin(name, family)(actor)(timeout, ttype)
+            for {(name, family, ttype, actor) <- result if ttype <:< typeA}
+              yield (new Origin(name, family)(actor)(timeout, ttype)).asInstanceOf[Origin[A]]
         }
     }
   }
@@ -79,9 +79,9 @@ object FinderComponent {
     import context.dispatcher
 
     override def receive = {
-      case Request.Find(selection) =>
+      case find: Request.Find[_] =>
         future {
-          for {origin <- finder.origins.find(selection)}
+          for {origin <- find(finder)}
             yield (origin.name, origin.family, origin.ttype, origin.actor)
         } pipeTo sender
     }
@@ -92,7 +92,9 @@ object FinderComponent {
   private object Message {
 
     object Request {
-      case class Find(selection: Selection) extends Message
+      case class Find[A: Type](selection: Selection) extends Message {
+        def apply(finder: FinderComponent.Local) = finder.origins.find[A](selection)
+      }
     }
 
     object Response {

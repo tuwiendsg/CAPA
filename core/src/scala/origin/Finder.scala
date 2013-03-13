@@ -25,7 +25,7 @@ import scala.concurrent.Future
 
 import scalaz.Id.Id
 
-import util.{MultiTrie, Type}
+import util.{MultiTrie, NotNothing, Type}
 
 sealed trait FinderComponent[X[+_]] {
 
@@ -36,7 +36,7 @@ sealed trait FinderComponent[X[+_]] {
   val Selections = MultiTrie.Selections
 
   trait OriginFinder {
-    def find(selection: Selection): X[Set[Origin[_]]]
+    def find[A: NotNothing : Type](selection: Selection): X[Set[Origin[A]]]
   }
 }
 
@@ -58,8 +58,11 @@ object FinderComponent {
 
       trait OriginFinder extends super.OriginFinder {
         private val trie = MultiTrie[Origin[_]]()
-        override def find(selection: Selection) = trie.select(selection)
-        def add(origin: Origin[_]) {trie add (origin.name, origin)}
+        override def find[A: NotNothing : Type](selection: Selection) =
+          for {origin <- trie.select(selection) if origin.returns[A]}
+            yield origin.asInstanceOf[Origin[A]]
+
+        private[Default] def add(origin: Origin[_]) {trie add (origin.name, origin)}
       }
 
       private object _builder extends OriginBuilder {
@@ -81,7 +84,7 @@ object FinderComponent {
 
     override protected type Origin[+A] = finder.Origin[A]
     override object origins extends OriginFinder {
-      override def find(selection: Selection) = finder.origins.find(selection)
+      override def find[A: NotNothing : Type](selection: Selection) = finder.origins.find(selection)
     }
   }
 
