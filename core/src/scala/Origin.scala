@@ -77,8 +77,7 @@ object Origin {
 
       override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
 
-      override lazy val hashCode =
-        41 * (41 * (41 + name.hashCode) + family.hashCode) + typeA.hashCode
+      override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
       override def equals(other: Any) = other match {
         case that: Origin.Local[_] =>

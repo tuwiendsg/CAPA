@@ -59,16 +59,16 @@ object Origin {
       ref ! Request.MetaInfo.Set(name, value)
     }
 
-    override lazy val hashCode = 41 * (41 * (41 + name.hashCode) + family.hashCode) + ref.hashCode
+    override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
-      override def equals(other: Any) = other match {
-        case that: Remote[_] =>
-          (that canEqual this) &&
-          (this.name === that.name) &&
-          (this.family === that.family) &&
-          (this.ref == that.ref)
-        case _ => false
-      }
+    override def equals(other: Any) = other match {
+      case that: Remote[_] =>
+        (that canEqual this) &&
+        (this.name === that.name) &&
+        (this.family === that.family) &&
+        that.returns[A]
+      case _ => false
+    }
 
     override def canEqual(other: Any) = other.isInstanceOf[Remote[_]]
 
