@@ -57,7 +57,7 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
 
   object local extends amber.mock.origin.BuilderComponent.Local
                with FinderComponent.Local
-               with amber.origin.FactoryComponent.Default {
+               with amber.origin.FactoryComponent.Local.Default {
 
     override protected type Origin[+A] = Origin.Local[A]
 

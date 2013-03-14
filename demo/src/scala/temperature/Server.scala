@@ -60,7 +60,7 @@ trait Server extends akka.System.Local with Runnable {
 }
 
 object Server {
-  trait Configuration extends akka.origin.BuilderComponent.Local.Configuration {
+  trait Configuration extends akka.System.Local.Configuration {
 
     val name: String = "temperature-server"
     val locations: Set[String] = Set("A", "B")

@@ -27,7 +27,7 @@ import util.{Observer, Type}
 import util.Events.observe
 
 trait Processing {
-  this: origin.FinderComponent.Local with origin.FactoryComponent
+  this: origin.FinderComponent.Local with origin.FactoryComponent.Local
                                      with family.FinderComponent =>
 
   object process {

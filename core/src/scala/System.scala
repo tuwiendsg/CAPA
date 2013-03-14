@@ -36,7 +36,7 @@ object System {
   trait Local extends System[Id]
               with origin.FinderComponent.Local
               with family.FinderComponent
-              with origin.FactoryComponent
+              with origin.FactoryComponent.Local
               with Processing
               with Processing.Default.Conversions
               with Processing.Default.Operations {
@@ -53,7 +53,9 @@ object System {
     private object _client extends Client
   }
 
-  trait Remote extends System[Future] with origin.FinderComponent.Remote {
+  trait Remote extends System[Future]
+               with origin.FinderComponent.Remote
+               with origin.FactoryComponent.Remote {
 
     override def client: Client = _client
     override def shutdown() {}

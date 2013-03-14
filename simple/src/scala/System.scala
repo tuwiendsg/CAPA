@@ -25,7 +25,7 @@ trait System extends amber.System.Local
              with amber.origin.BuilderComponent.Logging.Local
              with amber.origin.FinderComponent.Local.Default
              with amber.family.FinderComponent.Default
-             with amber.origin.FactoryComponent.Default {
+             with amber.origin.FactoryComponent.Local.Default {
   this: Logging =>
 
   @transient private[this] val log = logger.create("amber.simple.System")

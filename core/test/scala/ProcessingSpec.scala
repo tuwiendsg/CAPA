@@ -29,7 +29,7 @@ class ProcessingSpec extends Spec
                      with mock.origin.BuilderComponent.InSpec
                      with origin.FinderComponent.Local.Default
                      with family.FinderComponent.Default
-                     with origin.FactoryComponent.Default
+                     with origin.FactoryComponent.Local.Default
                      with Processing {
 
   override def mocker[A](implicit typeA: Type[A]) =

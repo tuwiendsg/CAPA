@@ -18,35 +18,16 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.reflect.runtime.universe.typeTag
-
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
 import util.Events
 
-class DefaultFactorySpec extends Spec
-                         with mock.origin.BuilderComponent.Local.Default
-                         with mock.origin.BuilderComponent.InSpec
-                         with FactoryComponent.Default
-                         with FactoryBehaviors {
+sealed trait DefaultFactoryBehaviors extends FactoryBehaviors {
+  this: Spec with origin.BuilderComponent with FactoryComponent.Default =>
 
-  "Default.OriginFactory" should {
-    behave like aFactory
-
-    "invoke the builder" in {
-      new Fixture {
-        origin.create(name)(read)
-
-        verify(build).apply(equalTo(name), any(classOf[Origin.Family]))
-      }
-    }
-
-    "return the result of the builder" in {
-      new Fixture {
-        origin.create(name)(read) should be(built.last)
-      }
-    }
+  override def aFactory() {
+    super.aFactory()
 
     "notify the creation of the origin" when {
       "an origin is built" in {
@@ -81,6 +62,55 @@ class DefaultFactorySpec extends Spec
           }
         }
       }
+    }
+  }
+}
+
+object DefaultFactoryBehaviors {
+
+  trait Local extends DefaultFactoryBehaviors  {
+    this: Spec with origin.BuilderComponent.Local
+               with FactoryComponent.Local
+               with FactoryComponent.Default =>
+  }
+
+  trait Remote extends DefaultFactoryBehaviors {
+    this: Spec with origin.BuilderComponent.Remote
+               with FactoryComponent.Remote
+               with FactoryComponent.Default =>
+  }
+
+  sealed trait OnMockBuilder extends mock.origin.BuilderComponent.InSpec
+                             with DefaultFactoryBehaviors {
+    this: Spec with mock.origin.BuilderComponent with FactoryComponent.Default =>
+
+    override def aFactory() {
+      super.aFactory()
+
+      "invoke the builder" in {
+        new Fixture {
+          origin.create(name)(read)
+
+          verify(build).apply(equalTo(name), any(classOf[Origin.Family]))
+        }
+      }
+
+      "return the result of the builder" in {
+        new Fixture {
+          origin.create(name)(read) should be(built.last)
+        }
+      }
+    }
+  }
+
+  object OnMockBuilder {
+
+    trait Local extends OnMockBuilder with DefaultFactoryBehaviors.Local {
+      this: Spec with mock.origin.BuilderComponent.Local with FactoryComponent.Local.Default =>
+    }
+
+    trait Remote extends OnMockBuilder with DefaultFactoryBehaviors.Remote {
+      this: Spec with mock.origin.BuilderComponent.Remote with FactoryComponent.Remote.Default =>
     }
   }
 }
