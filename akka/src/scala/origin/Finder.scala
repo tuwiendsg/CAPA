@@ -22,7 +22,7 @@ package origin
 import scala.language.higherKinds
 
 import scala.collection.immutable.Set
-import scala.concurrent.future
+import scala.concurrent.{future, ExecutionContext}
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
@@ -35,7 +35,7 @@ import amber.util.MultiTrie.Selection
 object FinderComponent {
 
   trait Local extends amber.origin.FinderComponent.Local {
-    protected override type Origin[+A] <: Origin.Local[A]
+    override protected type Origin[+A] <: Origin.Local[A]
   }
 
   trait Remote extends amber.origin.FinderComponent.Remote with ConfigurableComponent {
@@ -47,27 +47,26 @@ object FinderComponent {
 
     private object _origins extends OriginFinder {
 
-      import Message.{Request, Response}
+      import Message.Request
 
-      implicit private def context = configuration.system.dispatcher
+      implicit private def context = configuration.context
       implicit private def timeout: Timeout = configuration.timeout
-      private def reference = configuration.reference
 
       override def find[A: NotNothing](selection: Selection)(implicit typeA: Type[A]) =
-        ask(reference, Request.Find[A](selection)).mapTo[Response.Find] map {
-          result =>
-            for {(name, family, ttype, actor) <- result if ttype <:< typeA}
-              yield (new Origin(name, family)(actor)(timeout, ttype)).asInstanceOf[Origin[A]]
+        ask(configuration.finder, Request.Find[A](selection)).mapTo[Set[Origin.Serialized[_]]] map {
+          for {origin <- _ if origin.returns[A]} yield origin.toRemote.asInstanceOf[Origin[A]]
         }
     }
   }
 
   object Remote {
     trait Configuration {
-      def system: ActorSystem
-      def reference: ActorRef = system.actorFor("/user/origins-finder")
+      def local: ActorSystem
+      def remote: String
+      def context: ExecutionContext = local.dispatcher
+      def finder: ActorRef = local.actorFor(s"${remote}/user/${Actor.name}")
       def timeout: FiniteDuration = FiniteDuration(
-        system.settings.config.getMilliseconds("akka.actor.typed.timeout"),
+        local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
         MILLISECONDS
       )
     }
@@ -79,26 +78,21 @@ object FinderComponent {
     import context.dispatcher
 
     override def receive = {
-      case find: Request.Find[_] =>
-        future {
-          for {origin <- find(finder)}
-            yield (origin.name, origin.family, origin.ttype, origin.actor)
-        } pipeTo sender
+      case find: Request.Find[_] => future {find(finder)} pipeTo sender
     }
+  }
+
+  object Actor {
+    val name: String = "origins-finder"
   }
 
   private sealed trait Message extends Serializable
 
   private object Message {
-
     object Request {
       case class Find[A: Type](selection: Selection) extends Message {
         def apply(finder: FinderComponent.Local) = finder.origins.find[A](selection)
       }
-    }
-
-    object Response {
-      type Find = Set[(amber.Origin.Name, amber.Origin.Family, Type[_], ActorRef)]
     }
   }
 }

@@ -54,14 +54,13 @@ object AkkaRemote extends Demo.Remote with App with util.SLF4JLogging {
 
     override protected object configuration extends akka.System.Remote.Configuration {
       private val name = "temperature-client"
-      override val system = ActorSystem(name, ConfigFactory.load.getConfig(name))
-      override val reference =
-        system.actorFor("akka://temperature-server@127.0.0.1:2552/user/origins-finder")
+      override val local = ActorSystem(name, ConfigFactory.load.getConfig(name))
+      override val remote = "akka://temperature-server@127.0.0.1:2552"
     }
 
     override def shutdown() {
       super.shutdown()
-      configuration.system.shutdown()
+      configuration.local.shutdown()
     }
   }
 

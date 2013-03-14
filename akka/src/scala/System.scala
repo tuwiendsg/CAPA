@@ -66,17 +66,17 @@ object System {
     private object Actors {
       val finder = configuration.system.actorOf(
         Props(new akka.origin.FinderComponent.Actor(Local.this)),
-        name = "origins-finder"
+        name = akka.origin.FinderComponent.Actor.name
       )
     }
   }
 
   object Local {
-    trait Configuration extends origin.BuilderComponent.Configuration
+    trait Configuration extends akka.origin.BuilderComponent.Configuration
   }
 
   trait Remote extends amber.System.Remote
-               with origin.FinderComponent.Remote
+               with akka.origin.FinderComponent.Remote
                with ConfigurableComponent {
     this: Logging =>
 
@@ -84,7 +84,7 @@ object System {
 
     @transient private[this] val log = logger.create("amber.akka.System.Remote")
 
-    override val stopped = EventSource[Unit](configuration.system)
+    override val stopped = EventSource[Unit](configuration.local)
 
     override def shutdown() {
       log.info("Shutting down")
@@ -96,8 +96,6 @@ object System {
 
   object Remote {
     trait Configuration extends amber.System.Remote.Configuration
-                        with origin.FinderComponent.Remote.Configuration {
-      override def context = system.dispatcher
-    }
+                        with akka.origin.FinderComponent.Remote.Configuration
   }
 }

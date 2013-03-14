@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import java.io.ObjectStreamException
+
 import scala.concurrent.{blocking, future, Future}
 import scala.reflect.ClassTag
 
@@ -35,17 +37,20 @@ object Origin {
 
   abstract class Local[+A](name: amber.Origin.Name, family: amber.Origin.Family)
                           (implicit typeA: Type[A])
-      extends amber.Origin.Local.Default[A](name, family) {
+      extends amber.Origin.Local.Default[A](name, family) with java.io.Serializable {
 
-    def actor: ActorRef
+    private[akka] def actor: ActorRef
 
-    private[akka] val ttype: Type[_ <: A] = typeA
     override lazy val toString = s"akka.Origin.Local[$typeA]($name, $family)"
+
+    @throws[ObjectStreamException] def writeReplace(): AnyRef =
+      new Origin.Serialized[A](name, family)(actor)
   }
 
   class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
-                  (private[akka] val ref: ActorRef)
-                  (implicit timeout: Timeout, typeA: Type[A]) extends amber.Origin.Remote[A] {
+                  (reference: ActorRef)
+                  (implicit timeout: Timeout, typeA: Type[A])
+      extends amber.Origin.Remote[A] with java.io.Serializable {
 
     import Message.{Request, Response}
 
@@ -56,7 +61,7 @@ object Origin {
       OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
 
     override def update[B: Type](name: amber.Origin.MetaInfo.Name, value: B) {
-      ref ! Request.MetaInfo.Set(name, value)
+      reference ! Request.MetaInfo.Set(name, value)
     }
 
     override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
@@ -74,8 +79,10 @@ object Origin {
 
     override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 
-    private def request[B: ClassTag](message: Message): Future[B] =
-      ask(ref, message)(timeout).mapTo[B]
+    @throws[ObjectStreamException] def writeReplace(): AnyRef =
+      new Origin.Serialized[A](name, family)(reference)
+
+    private def request[B: ClassTag](message: Message) = ask(reference, message)(timeout).mapTo[B]
   }
 
   class Actor[+A](origin: amber.Origin.Local[A]) extends _root_.akka.actor.Actor {
@@ -88,6 +95,15 @@ object Origin {
       case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name).run.copoint
       case set: Request.MetaInfo.Set[_] => set(origin)
     }
+  }
+
+  class Serialized[A](name: amber.Origin.Name, family: amber.Origin.Family)
+                     (reference: ActorRef)(implicit typeA: Type[A]) extends java.io.Serializable {
+
+    def returns[B: NotNothing](implicit typeB: Type[B]): Boolean = typeA <:< typeB
+
+    def toRemote(implicit timeout: Timeout): Origin.Remote[A] =
+      new Origin.Remote[A](name, family)(reference)
   }
 
   private sealed trait Message extends Serializable

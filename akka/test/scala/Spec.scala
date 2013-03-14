@@ -28,6 +28,7 @@ abstract class Spec(val system: ActorSystem) extends amber.Spec
   def this(name: String) = this(ActorSystem(name))
 
   override def afterAll() {
+    super.afterAll()
     system.shutdown()
   }
 }

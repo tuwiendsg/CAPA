@@ -41,7 +41,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
                                (_read: OriginBuilder.Read[A]) =
       new Origin(name, family) {
 
-        override val actor: ActorRef = configuration.system.actorOf(
+        override private[akka] val actor: ActorRef = configuration.system.actorOf(
           Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
         )
 
