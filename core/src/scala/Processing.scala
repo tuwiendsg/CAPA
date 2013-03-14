@@ -20,15 +20,18 @@ package amber
 import scala.language.higherKinds
 
 import scala.collection.immutable.{Seq, Vector}
+import scala.concurrent.Future
 
+import scalaz.Id.Id
 import scalaz.syntax.equal._
+import scalaz.syntax.functor._
 
 import util.{Observer, Type}
 import util.Events.observe
 
-trait Processing {
-  this: origin.FinderComponent.Local with origin.FactoryComponent.Local
-                                     with family.FinderComponent =>
+trait Processing[X[+_]] {
+  this: origin.FinderComponent[X] with origin.FactoryComponent
+                                  with family.FinderComponent =>
 
   object process {
 
@@ -52,7 +55,7 @@ trait Processing {
         case origin if origin.returns[A] => onOrigin(origin.asInstanceOf[Origin[A]])
       }
       synchronized {observers = observers :+ observer}
-      for {origin <- origins.find[A](Selections.all)} onOrigin(origin)
+      origins.find[A](Selections.all) map {for {origin <- _} onOrigin(origin)}
       observer
     }
 
@@ -78,17 +81,29 @@ trait Processing {
 }
 
 object Processing {
+
+  trait Local extends Processing[Id] {
+    this: origin.FinderComponent.Local with origin.FactoryComponent.Local
+                                       with family.FinderComponent =>
+  }
+
+  trait Remote extends Processing[Future] {
+    this: origin.FinderComponent.Remote with origin.FactoryComponent.Remote
+                                        with family.FinderComponent =>
+  }
+
   object Default {
-    trait Conversions {
-      this: Processing =>
+
+    sealed trait Conversions[X[+_]] {
+      this: Processing[X] =>
 
       process[Int, Long] {case name => name -> {x => x.toLong}}
       process[Int, Double] {case name => name -> {x => x.toDouble}}
       process[Long, Double] {case name => name -> {x => x.toDouble}}
     }
 
-    trait Operations {
-      this: Processing =>
+    sealed trait Operations[X[+_]] {
+      this: Processing[X] =>
 
       import scala.math.sqrt
 
@@ -141,6 +156,32 @@ object Processing {
             result + diff * diff
           }) / xs.size
           sqrt(variance)
+      }
+    }
+  }
+
+  object Local {
+    object Default {
+
+      trait Conversions extends Processing.Default.Conversions[Id] {
+        this: Processing.Local =>
+      }
+
+      trait Operations extends Processing.Default.Operations[Id] {
+        this: Processing.Local =>
+      }
+    }
+  }
+
+  object Remote {
+    object Default {
+
+      trait Conversions extends Processing.Default.Conversions[Future] {
+        this: Processing.Remote =>
+      }
+
+      trait Operations extends Processing.Default.Operations[Future] {
+        this: Processing.Remote =>
       }
     }
   }

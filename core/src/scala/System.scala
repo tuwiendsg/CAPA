@@ -37,9 +37,9 @@ object System {
               with origin.FinderComponent.Local
               with family.FinderComponent
               with origin.FactoryComponent.Local
-              with Processing
-              with Processing.Default.Conversions
-              with Processing.Default.Operations {
+              with Processing.Local
+              with Processing.Local.Default.Conversions
+              with Processing.Local.Default.Operations {
 
     override def client: Client = _client
     override def shutdown() {
@@ -55,10 +55,16 @@ object System {
 
   trait Remote extends System[Future]
                with origin.FinderComponent.Remote
-               with origin.FactoryComponent.Remote {
+               with family.FinderComponent
+               with origin.FactoryComponent.Remote
+               with Processing.Remote
+               with Processing.Remote.Default.Conversions
+               with Processing.Remote.Default.Operations {
 
     override def client: Client = _client
-    override def shutdown() {}
+    override def shutdown() {
+      process.shutdown()
+    }
 
     trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
 

@@ -40,11 +40,14 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
   override protected def configuration: Configuration = _configuration
   private object _configuration extends Configuration
 
-  import Selections.exact
+  map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
+  map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
 
   override def client: Client = _client
-
   trait Client extends super.Client {
+
+    import Selections.exact
+
     val temperature = entity("Temperature")
     temperature.celsius = {() =>
       for {

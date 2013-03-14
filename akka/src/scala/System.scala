@@ -70,6 +70,7 @@ object System {
                with akka.origin.BuilderComponent.Remote
                with amber.origin.BuilderComponent.Logging.Remote
                with akka.origin.FinderComponent.Remote
+               with amber.family.FinderComponent.Default
                with akka.origin.FactoryComponent.Remote
                with ConfigurableComponent {
     this: Logging =>
