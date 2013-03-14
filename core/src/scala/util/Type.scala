@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
-import java.io.{ObjectInputStream, ObjectOutputStream, ObjectStreamException}
+import java.io.{ObjectStreamException, Serializable}
 
 import scala.collection.immutable.{Seq, Vector}
 import scala.reflect.ClassTag
@@ -28,7 +28,7 @@ import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe.{manifestToTypeTag, TypeRef, TypeTag}
 
-trait Type[A] extends java.io.Serializable with Equals {
+trait Type[A] extends Serializable with Equals {
 
   def classTag: ClassTag[A]
   def manifest: Manifest[A]
@@ -60,6 +60,8 @@ trait Type[A] extends java.io.Serializable with Equals {
 
   override def canEqual(other: Any) = other.isInstanceOf[Type[_]]
 
+  override lazy val toString = typeTag.tpe.toString
+
   @throws[ObjectStreamException] def writeReplace(): AnyRef =
     new Type.Serialized(klass.getName, arguments)
 }
@@ -73,8 +75,6 @@ object Type {
 
     override lazy val classTag = ClassTag(_manifest.runtimeClass).asInstanceOf[ClassTag[A]]
     override lazy val klass = _manifest.runtimeClass.asInstanceOf[Class[A]]
-
-    override lazy val toString = _typeTag.tpe.toString
   }
 
   implicit def fromAny[A: Manifest : TypeTag]: Type[A] = apply[A]
@@ -99,9 +99,7 @@ object Type {
     apply[A](manifest, typeTag)
   }
 
-  private class Serialized[A](name: String, arguments: Seq[Type[_]]) extends java.io.Serializable {
+  private class Serialized[A](name: String, arguments: Seq[Type[_]]) extends Serializable {
     @throws[ObjectStreamException] def readResolve(): AnyRef = Type[A](name, arguments)
-
-    override lazy val toString = name
   }
 }
