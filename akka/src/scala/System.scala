@@ -36,7 +36,7 @@ object System {
                with ConfigurableComponent {
     this: Logging =>
 
-    override protected type Configuration = Local.Configuration
+    override protected type Configuration <: Local.Configuration
 
     @transient private[this] val log = logger.create("amber.akka.System.Local")
 
@@ -80,7 +80,7 @@ object System {
                with ConfigurableComponent {
     this: Logging =>
 
-    override protected type Configuration = Remote.Configuration
+    override protected type Configuration <: Remote.Configuration
 
     @transient private[this] val log = logger.create("amber.akka.System.Remote")
 

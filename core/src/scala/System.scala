@@ -63,15 +63,17 @@ object System {
     override def shutdown() {}
 
     trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
-      override protected val finder = Remote.this
-    }
 
-    private object _client extends Client {
+      override protected val finder = Remote.this
+
       override protected type Configuration = Client.Remote.Configuration
-      override protected object configuration extends Client.Remote.Configuration {
+      override protected def configuration: Configuration = _configuration
+      private object _configuration extends Client.Remote.Configuration {
         override def context = Remote.this.configuration.context
       }
     }
+
+    private object _client extends Client
   }
 
   object Remote {

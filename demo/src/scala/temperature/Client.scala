@@ -19,57 +19,85 @@ package amber
 package demo
 package temperature
 
-import scala.language.higherKinds
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.util.Try
 
-import scala.concurrent.Future
+import com.typesafe.config.ConfigFactory
 
-import scalaz.Functor
-import scalaz.Id.{id, Id}
-import scalaz.std.option._
+import _root_.akka.actor.ActorSystem
+
 import scalaz.std.string._
 import scalaz.syntax.equal._
-import scalaz.syntax.applicative._
 
+import util.{Logging, Scheduling}
 import util.Value._
 
-sealed trait Client[X[+_]] {
-  this: amber.Client[X] with origin.FinderComponent[X] =>
+trait Client extends akka.System.Remote with Scheduling with Runnable {
+  this: Logging =>
 
-  implicit def X: Functor[X]
+  override protected type Configuration = Client.Configuration
+  override protected def configuration: Configuration = _configuration
+  private object _configuration extends Configuration
 
   import Selections.exact
 
-  val temperature = entity("Temperature")
-  temperature.celsius = {() =>
-    readAll[Double](exact("temperature/celsius") where {
-      meta => for {location <- meta.location.as[String]} yield location === "A"
-    }) map {Some(_)} map {for {values <- _; if !values.isEmpty} yield values.min}
-  }
-  temperature.kelvin = {() =>
-    readAll[Double](exact("temperature/kelvin") where {
-      meta => for {location <- meta.location.as[String]} yield location === "B"
-    }) map {Some(_)} map {for {values <- _; if !values.isEmpty} yield values.max}
-  }
-  temperature.where {
-    entity =>
+  override def client: Client = _client
+
+  trait Client extends super.Client {
+    val temperature = entity("Temperature")
+    temperature.celsius = {() =>
       for {
-        celsius <- entity.celsius.as[Double]
-        kelvin <- entity.kelvin.as[Double]
-      } yield celsius < kelvin
+        values <- readAll[Double](exact("temperature/celsius") where {
+                    meta => for {location <- meta.location.as[String]} yield location === "A"
+                  })
+      } yield Try {values.min}.toOption
+    }
+    temperature.kelvin = {() =>
+      for {
+        values <- readAll[Double](exact("temperature/kelvin") where {
+                    meta => for {location <- meta.location.as[String]} yield location === "B"
+                  })
+      } yield Try {values.max}.toOption
+    }
+    temperature.where {
+      entity =>
+        for {
+          celsius <- entity.celsius.as[Double]
+          kelvin <- entity.kelvin.as[Double]
+        } yield celsius < kelvin
+    }
+
+    def readTemperature(): Future[String] = readOne(temperature.build()) map {
+      _.fold(s"No ${client.temperature.name}") {_.toString}
+    }
   }
 
-  def readTemperature(): X[Option[Entity.Instance]] = readOne(temperature.build())
+  override def shutdown() {
+    super[Scheduling].shutdown()
+    super[Remote].shutdown()
+    configuration.local.shutdown()
+  }
+
+  override def run() {
+    println(configuration.delimiter)
+    every(configuration.period) {() =>
+      println(Await.result(client.readTemperature(), configuration.timeout))
+      println(configuration.delimiter)
+    }
+  }
+
+  private object _client extends Client
 }
 
 object Client {
+  trait Configuration extends Scheduling.Configuration with akka.System.Remote.Configuration {
 
-  trait Local extends Client[Id] with amber.Client.Local
+    val name: String = "temperature-client"
+    val delimiter: String = "-" * 40
+    def period: FiniteDuration = 2.seconds
 
-  trait Remote extends Client[Future] with amber.Client.Remote {
-    override protected type Configuration <: Remote.Configuration
-  }
-
-  object Remote {
-    trait Configuration extends amber.Client.Remote.Configuration
+    override val local = ActorSystem(name, ConfigFactory.load.getConfig(name))
+    override val remote = "akka://temperature-server@127.0.0.1:2552"
   }
 }

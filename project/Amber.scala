@@ -143,7 +143,7 @@ object Amber extends Build {
   lazy val demo = module(
     name = "demo",
     dependencies = Seq(Akka.remote % "runtime", Logback.classic % "runtime")
-  ) dependsOn(core, simple, akka)
+  ) dependsOn(core, akka)
 
   val defaultSettings = Defaults.defaultSettings ++
                         Info.settings ++

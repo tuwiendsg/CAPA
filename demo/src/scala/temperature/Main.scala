@@ -19,20 +19,11 @@ package amber
 package demo
 package temperature
 
-import scala.util.Random
-
-trait System extends amber.System.Local {
-  object Temperature {
-
-    map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
-    map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
-
-    def createCelsius(location: String): Origin.Local[Int] = {
-      val temperature = origin.create("temperature/celsius") {
-        () => Random.nextInt(55) - 15
-      }
-      temperature("location") = location
-      temperature
-    }
+object Main extends Demo with App {
+  try {
+    run()
+    readLine()
+  } finally {
+    shutdown()
   }
 }

@@ -35,7 +35,7 @@ import util.{ConfigurableComponent, Filter, Filterable, NotNothing, Type}
 sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
 
-  implicit def X: Monad[X]
+  implicit protected def X: Monad[X]
 
   class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
@@ -146,8 +146,7 @@ sealed trait Client[X[+_]] {
 object Client {
 
   trait Local extends Client[Id] with origin.FinderComponent.Local {
-
-    override implicit val X = id
+    override implicit protected val X = id
   }
 
   trait Remote extends Client[Future]
@@ -155,9 +154,9 @@ object Client {
                with ConfigurableComponent {
 
     override protected type Configuration <: Remote.Configuration
-    implicit private def context: ExecutionContext = configuration.context
+    implicit protected def context: ExecutionContext = configuration.context
 
-    override implicit val X: Monad[Future] = new Monad[Future] {
+    override implicit protected val X: Monad[Future] = new Monad[Future] {
       override def point[A](a: => A) = Future.successful(a)
       override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
       override def bind[A, B](future: Future[A])(f: A => Future[B]) = future.flatMap(f)
