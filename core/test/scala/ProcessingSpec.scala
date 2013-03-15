@@ -73,6 +73,18 @@ class ProcessSpec extends ProcessingSpec {
   }
 
   "Processing.process" when {
+    "an origin was created before" should {
+      "invoke the process definition with the origin" in {
+        new Fixture {
+          val name = random[Origin.Name]
+          origin.create(name)(read)
+          process(definition)
+
+          verify(definition) isDefinedAt name
+        }
+      }
+    }
+
     "an origin is created with matching name and type" should {
       "invoke the process definition" in {
         new Fixture {

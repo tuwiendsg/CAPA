@@ -22,13 +22,13 @@ import scala.language.higherKinds
 import scala.collection.immutable.{Seq, Vector}
 
 import scalaz.syntax.equal._
-import scalaz.syntax.id._
 
 import util.{Observer, Type}
 import util.Events.observe
 
 trait Processing {
-  this: origin.FactoryComponent with family.MemberFactoryComponent =>
+  this: origin.FinderComponent.Local with origin.FactoryComponent
+                                     with family.MemberFactoryComponent =>
 
   object process {
 
@@ -36,18 +36,21 @@ trait Processing {
 
     def apply[A: Type, B: Type]
         (f: PartialFunction[Origin.Name, (Origin.Name, A => B)]): Observer = {
-      val observer = observe(origin.created) {
-        case o if o.returns[A] =>
-          val source = o.asInstanceOf[Origin[A]]
-          if (f isDefinedAt source.name) {
-            val (name, g) = f(source.name)
-            in(source.family).create[B](name) {
-              () =>
-                for {(Origin.Value(_, value), meta) <- source.read().run} yield (g(value), meta)
-            }
+      def onOrigin(source: Origin[A]) {
+        if (f isDefinedAt source.name) {
+          val (name, g) = f(source.name)
+          in(source.family).create[B](name) {
+            () =>
+              for {(Origin.Value(_, value), meta) <- source.read().run} yield (g(value), meta)
           }
+        }
+      }
+
+      val observer = observe(origin.created) {
+        case origin if origin.returns[A] => onOrigin(origin.asInstanceOf[Origin[A]])
       }
       synchronized {observers = observers :+ observer}
+      for {origin <- origins.find[A](Selections.all)} onOrigin(origin)
       observer
     }
 
