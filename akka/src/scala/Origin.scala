@@ -18,6 +18,8 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
+import scala.language.higherKinds
+
 import java.io.ObjectStreamException
 
 import scala.concurrent.{blocking, future, Future}
@@ -67,7 +69,7 @@ object Origin {
     override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
     override def equals(other: Any) = other match {
-      case that: Remote[_] =>
+      case that: amber.Origin[({type λ[+_]})#λ, _] =>
         (that canEqual this) &&
         (this.name === that.name) &&
         (this.family === that.family) &&
@@ -75,7 +77,9 @@ object Origin {
       case _ => false
     }
 
-    override def canEqual(other: Any) = other.isInstanceOf[Remote[_]]
+    override def canEqual(other: Any) =
+        other.isInstanceOf[Origin[({type λ[+_]})#λ, _]] &&
+        other.asInstanceOf[Origin[({type λ[+_]})#λ, _]].returns[A]
 
     override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 

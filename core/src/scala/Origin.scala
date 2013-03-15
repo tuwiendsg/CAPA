@@ -80,7 +80,7 @@ object Origin {
       override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
       override def equals(other: Any) = other match {
-        case that: Origin.Local[_] =>
+        case that: Origin[({type λ[+_]})#λ, _] =>
           (that canEqual this) &&
           (this.name === that.name) &&
           (this.family === that.family) &&
@@ -88,7 +88,9 @@ object Origin {
         case _ => false
       }
 
-      override def canEqual(other: Any) = other.isInstanceOf[Origin.Local[_]]
+      override def canEqual(other: Any) =
+        other.isInstanceOf[Origin[({type λ[+_]})#λ, _]] &&
+        other.asInstanceOf[Origin[({type λ[+_]})#λ, _]].returns[A]
 
       override lazy val toString = s"amber.Origin.Local[$typeA]($name, $family)"
     }
