@@ -24,6 +24,7 @@ import scala.collection.JavaConversions._
 
 import scalaz.Id.Id
 import scalaz.OptionT
+import scalaz.syntax.applicative._
 
 import util.Type
 
@@ -53,9 +54,10 @@ object BuilderComponent {
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (_read: OriginBuilder.Read[A]) =
         new Origin(name, family) {
-          override def read() =
-            for {(value, meta) <- _read(Origin.MetaInfo(meta))}
+          override def read() = OptionT((
+            for {(value, meta) <- _read(Origin.MetaInfo(meta)).run}
               yield (Origin.Value(name, value), meta)
+          ).point[Id])
         }
     }
   }

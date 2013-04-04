@@ -52,7 +52,7 @@ object System {
       log.info("Shutting down")
       super.shutdown()
       actors.finder ! PoisonPill
-      stopped emit ()
+      stopped.emit(())
       log.info("Shutdown successful")
     }
 
@@ -89,7 +89,7 @@ object System {
     override def shutdown() {
       log.info("Shutting down")
       super.shutdown()
-      stopped emit ()
+      stopped.emit(())
       log.info("Shutdown successful")
     }
   }

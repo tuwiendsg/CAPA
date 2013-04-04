@@ -42,7 +42,7 @@ trait System extends amber.System.Local
   override def shutdown() {
     log.info("Shutting down")
     super.shutdown()
-    stopped emit ()
+    stopped.emit(())
     log.info("Shutdown successful")
   }
 

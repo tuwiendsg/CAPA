@@ -20,7 +20,6 @@ import sbt.Keys._
 object Info {
 
   val version = "0.2-SNAPSHOT"
-  val scalaVersion = "2.10.0"
 
   val settings: Seq[Setting[_]] = Seq(
     Keys.version := version,
@@ -42,8 +41,11 @@ object Layout {
 }
 
 object Build {
+
+  val version = "2.10.1"
+
   val settings: Seq[Setting[_]] = Seq(
-    scalaVersion := Info.scalaVersion,
+    scalaVersion := version,
     scalacOptions ++= Seq("-target:jvm-1.6", "-deprecation", "-unchecked", "-feature",
                           "-Xlog-reflective-calls", "-Ywarn-adapted-args", "-encoding", "utf8"),
     javacOptions ++= Seq("-target", "6", "-source", "6", "-encoding", "utf8")
@@ -75,7 +77,7 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "2.1.1"
+    val version = "2.1.2"
     val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
     val actor = "com.typesafe.akka" %% "akka-actor" % version
     val remote = "com.typesafe.akka" %% "akka-remote" % version
@@ -83,22 +85,22 @@ object Dependency {
   }
 
   object Logback {
-    val version = "1.0.9"
+    val version = "1.0.10"
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
   object Scala {
-    val reflect = "org.scala-lang" % "scala-reflect" % Info.scalaVersion
+    val reflect = "org.scala-lang" % "scala-reflect" % Build.version
   }
 
   object Scalaz {
-    val version = "7.0.0-M7"
+    val version = "7.0.0-M8"
     val core = "org.scalaz" %% "scalaz-core" % version
     val iteratee = "org.scalaz" %% "scalaz-iteratee" % version
   }
 
   object SLF4J {
-    val version = "1.7.2"
+    val version = "1.7.3"
     val api = "org.slf4j" % "slf4j-api" % version
   }
 

@@ -47,8 +47,8 @@ object Path {
     override def /(end: String) = copy(child = child / end)
 
     override lazy val toString: String = "/" + (child match {
-      case End => parent
-      case Sub(_, _) => parent + child
+      case Path.End => parent
+      case Path.Sub(_, _) => parent + child
     })
   }
 
