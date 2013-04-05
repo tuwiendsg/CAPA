@@ -23,10 +23,6 @@ import scala.language.{higherKinds, implicitConversions}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.FiniteDuration
 
-import scalaz.Id.Id
-import scalaz.OptionT
-import scalaz.syntax.applicative._
-
 import util.{Events, EventSource, Logger, Type}
 
 trait FactoryComponent {
@@ -82,9 +78,7 @@ object FactoryComponent {
       override val created = EventSource[Origin[_]]()
 
       override def create[A: Type](name: Origin.Name)(read: OriginFactory.Read[A]) =
-        builder.build(name, Origin.Family.random()) {
-          meta => OptionT((read() map {(_, meta)}).point[Id])
-        }
+        builder.build(name, Origin.Family.random()) {meta => read() map {(_, meta)}}
     }
 
     private object _builder extends OriginBuilder {

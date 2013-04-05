@@ -17,6 +17,8 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.concurrent.duration._
+
 import org.scalatest.{BeforeAndAfterEach, OptionValues, WordSpec}
 import org.scalatest.matchers.ShouldMatchers
 
@@ -27,4 +29,7 @@ trait Spec extends WordSpec
            with ShouldMatchers
            with OptionValues
            with Mocking
-           with Randoms
+           with Randoms {
+
+  protected val timeout: FiniteDuration = 1.second
+}

@@ -33,7 +33,6 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
                        with FinderComponent.Remote
                        with amber.origin.FinderBehaviors.Remote {
 
-  override implicit val context = system.dispatcher
   val remote = ActorSystem("FinderRemoteSpec-Server", ConfigFactory.load.getConfig("server"))
   val actor = remote.actorOf(Props(new FinderComponent.Actor(local)),
                              name = FinderComponent.Actor.name)

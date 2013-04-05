@@ -29,7 +29,7 @@ import util.{MultiTrie, NotNothing, Type}
 
 sealed trait FinderComponent[X[+_]] {
 
-  protected type Origin[+A] <: amber.Origin[X, A]
+  protected type Origin[+A] <: amber.Origin[A]
   def origins: OriginFinder
 
   type Selection = MultiTrie.Selection

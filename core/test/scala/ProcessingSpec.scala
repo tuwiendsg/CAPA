@@ -19,11 +19,6 @@ package amber
 
 import scala.collection.immutable.HashMap
 
-import scalaz.Id._
-import scalaz.OptionT
-import scalaz.syntax.applicative._
-import scalaz.syntax.comonad._
-
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{never, verify, when}
 
@@ -46,7 +41,7 @@ trait ProcessingSpec extends Spec
       val meta = mock[Origin.MetaInfo]("Origin.MetaInfo")
       when(meta.selectDynamic(anything())) thenAnswer {
         args: Array[AnyRef] =>
-          origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name]).run.copoint
+          origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name])
       }
       when(origin.read()) thenAnswer {
         _: Array[AnyRef] => read(meta) map {case (value, meta) => (Origin.Value(name, value), meta)}
@@ -160,7 +155,7 @@ class ProcessSpec extends ProcessingSpec {
               process(definition)
               origin.create(input)(read)
 
-              val (result, _) = built.last.read().run.copoint.value
+              val (result, _) = built.last.read().value
 
               result.name should be(output)
               result.value should be(value)
@@ -176,12 +171,10 @@ class ProcessSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)) thenReturn OptionT(None.point[Id])
-              when(underlying.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn None
+              when(underlying.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -196,11 +189,9 @@ class ProcessSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -213,7 +204,7 @@ class ProcessSpec extends ProcessingSpec {
               process(definition)
               origin.create(input)(read)
 
-              built.last.read().run.copoint should not be('defined)
+              built.last.read() should not be('defined)
               verify(processor, never()).apply(anything())
             }
           }
@@ -328,7 +319,7 @@ class MapSpec extends ProcessingSpec {
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              val (result, _) = built.last.read().run.copoint.value
+              val (result, _) = built.last.read().value
 
               result.name should be(output)
               result.value should be(value)
@@ -344,12 +335,10 @@ class MapSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)) thenReturn OptionT(None.point[Id])
-              when(underlying.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn None
+              when(underlying.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -364,11 +353,9 @@ class MapSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -381,7 +368,7 @@ class MapSpec extends ProcessingSpec {
               map(input, output)(mapper)
               origin.create(input)(read)
 
-              built.last.read().run.copoint should not be('defined)
+              built.last.read() should not be('defined)
               verify(mapper, never()).apply(anything())
             }
           }
@@ -492,7 +479,7 @@ class OperationSpec extends ProcessingSpec {
               operation(output)(function)
               origin.create(input)(read)
 
-              val (result, _) = built.last.read().run.copoint.value
+              val (result, _) = built.last.read().value
 
               result.name should be(input / output)
               result.value should be(value)
@@ -508,12 +495,10 @@ class OperationSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)) thenReturn OptionT(None.point[Id])
-              when(underlying.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn None
+              when(underlying.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -528,11 +513,9 @@ class OperationSpec extends ProcessingSpec {
 
               val name = random[String]
               val value = new B
-              when(built.last.selectDynamic(name)).thenReturn(
-                OptionT(Some(new Origin.MetaInfo.Value(value)).point[Id])
-              )
+              when(built.last.selectDynamic(name)) thenReturn Some(new Origin.MetaInfo.Value(value))
 
-              val (_, meta) = built.last.read().run.copoint.value
+              val (_, meta) = built.last.read().value
 
               meta.selectDynamic(name).as[Any].value should be(value)
             }
@@ -545,7 +528,7 @@ class OperationSpec extends ProcessingSpec {
               operation(output)(function)
               origin.create(input)(read)
 
-              built.last.read().run.copoint should not be('defined)
+              built.last.read() should not be('defined)
               verify(function, never()).apply(anything())
             }
           }

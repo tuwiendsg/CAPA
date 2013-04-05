@@ -19,26 +19,24 @@ package amber
 
 import scala.language.higherKinds
 
-import scala.concurrent.Future
-
-import scalaz.Comonad
-import scalaz.Id.{id, Id}
+import scala.concurrent.{Await, Future}
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
-import util.{Filter, FutureComonad, NotNothing, Type}
+import util.{Filter, NotNothing, Type}
 
-sealed trait OriginBehaviors[X[+_]] {
+sealed trait OriginBehaviors {
   this: Spec =>
 
-  type Origin[+A] <: amber.Origin[X, A]
-  def X: Comonad[X]
+  type Origin[+A] <: amber.Origin[A]
 
   def fixture: Fixture
 
   trait Fixture {
 
+    def read[A](origin: Origin[A]): Option[(Origin.Value[A], Origin.MetaInfo)]
+    def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name): Option[Origin.MetaInfo.Value[_]]
     def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]): Origin[A]
 
     def create[A: NotNothing : Type](): Origin[A] = create(random[Origin.Name])
@@ -84,7 +82,7 @@ sealed trait OriginBehaviors[X[+_]] {
       "return None " in {
         val origin = fixture.create[Any]()
 
-        X.copoint(origin.selectDynamic(random[Origin.MetaInfo.Name]).run).as[Any] should not be('defined)
+        fixture.getMeta(origin, random[Origin.MetaInfo.Name]).as[Any] should not be('defined)
       }
     }
 
@@ -96,7 +94,7 @@ sealed trait OriginBehaviors[X[+_]] {
 
         origin(name) = value
 
-        X.copoint(origin.selectDynamic(name).run).as[A].value should be(value)
+        fixture.getMeta(origin, name).as[A].value should be(value)
       }
     }
 
@@ -141,7 +139,7 @@ sealed trait OriginBehaviors[X[+_]] {
           when(read()) thenReturn Some(random[String])
           val origin = fixture.create(read)
 
-          val (Origin.Value(name, _), _) = X.copoint(origin.read().run).value
+          val (Origin.Value(name, _), _) = fixture.read(origin).value
           name should be(origin.name)
         }
 
@@ -151,7 +149,7 @@ sealed trait OriginBehaviors[X[+_]] {
           when(read()) thenReturn Some(result)
           val origin = fixture.create(read)
 
-          val (Origin.Value(_, value), _) = X.copoint(origin.read().run).value
+          val (Origin.Value(_, value), _) = fixture.read(origin).value
           value should be(result)
         }
       }
@@ -165,7 +163,7 @@ sealed trait OriginBehaviors[X[+_]] {
         val value = new A
         origin(name) = value
 
-        val (_, meta) = X.copoint(origin.read().run).value
+        val (_, meta) = fixture.read(origin).value
         meta.selectDynamic(name).as[Any].value should be(value)
       }
     }
@@ -176,7 +174,7 @@ sealed trait OriginBehaviors[X[+_]] {
         when(read()) thenReturn None
         val origin = fixture.create(read)
 
-        X.copoint(origin.read().run) should not be('defined)
+        fixture.read(origin) should not be('defined)
       }
     }
   }
@@ -184,19 +182,29 @@ sealed trait OriginBehaviors[X[+_]] {
 
 object OriginBehaviors {
 
-  trait Local extends OriginBehaviors[Id] {
+  trait Local extends OriginBehaviors {
     this: Spec =>
 
     override type Origin[+A] <: Origin.Local[A]
 
-    override val X = id
+    override def fixture: Fixture
+    trait Fixture extends super.Fixture {
+      override def read[A](origin: Origin[A]) = origin.read()
+      override def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name) =
+        origin.selectDynamic(name)
+    }
   }
 
-  trait Remote extends OriginBehaviors[Future] with FutureComonad {
+  trait Remote extends OriginBehaviors {
     this: Spec =>
 
     override type Origin[+A] <: Origin.Remote[A]
 
-    override val X = implicitly[Comonad[Future]]
+    override def fixture: Fixture
+    trait Fixture extends super.Fixture {
+      override def read[A](origin: Origin[A]) = Await.result(origin.read().run, timeout)
+      override def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name) =
+        Await.result(origin.selectDynamic(name).run, timeout)
+    }
   }
 }

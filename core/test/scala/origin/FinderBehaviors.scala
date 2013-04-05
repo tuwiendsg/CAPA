@@ -21,12 +21,12 @@ package origin
 import scala.language.higherKinds
 
 import scala.collection.immutable.Set
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 import scalaz.Comonad
 import scalaz.Id.{id, Id}
 
-import util.{FutureComonad, NotNothing, Type}
+import util.{NotNothing, Type}
 
 sealed trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
@@ -93,9 +93,14 @@ object FinderBehaviors {
     override val X = id
   }
 
-  trait Remote extends FinderBehaviors[Future] with FutureComonad {
+  trait Remote extends FinderBehaviors[Future] {
     this: Spec with FinderComponent.Remote =>
 
-    override val X = implicitly[Comonad[Future]]
+    override object X extends Comonad[Future] {
+      override def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
+      override def cobind[A, B](fa: Future[A])(f: Future[A] => B) = ???
+      override def cojoin[A](fa: Future[A]): Future[Future[A]] = ???
+      override def map[A, B](fa: Future[A])(f: A => B): Future[B] = ???
+    }
   }
 }

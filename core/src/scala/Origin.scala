@@ -32,16 +32,18 @@ import scalaz.syntax.equal._
 
 import util.{NotNothing, Path, Type}
 
-sealed trait Origin[X[+_], +A] extends Dynamic with Equals {
+sealed trait Origin[+A] extends Dynamic with Equals {
+
+  type Reading[+A]
 
   def name: Origin.Name
   def family: Origin.Family
 
-  def selectDynamic(name: Origin.MetaInfo.Name): OptionT[X, Origin.MetaInfo.Value[_]]
+  def selectDynamic(name: Origin.MetaInfo.Name): Reading[Origin.MetaInfo.Value[_]]
   def update[B: Type](name: Origin.MetaInfo.Name, value: B)
 
   def returns[B: NotNothing : Type]: Boolean
-  def read(): OptionT[X, (Origin.Value[A], Origin.MetaInfo)]
+  def read(): Reading[(Origin.Value[A], Origin.MetaInfo)]
 }
 
 object Origin {
@@ -58,9 +60,13 @@ object Origin {
     implicit val hasEqual = equalA[Family]
   }
 
-  trait Local[+A] extends Origin[Id, A]
+  trait Local[+A] extends Origin[A] {
+    override type Reading[+A] = Option[A]
+  }
 
-  trait Remote[+A] extends Origin[Future, A]
+  trait Remote[+A] extends Origin[A] {
+    override type Reading[+A] = OptionT[Future, A]
+  }
 
   object Local {
     abstract class Default[+A](override val name: Origin.Name, override val family: Origin.Family)
@@ -68,8 +74,7 @@ object Origin {
 
       protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
 
-      override def selectDynamic(name: Origin.MetaInfo.Name) =
-        OptionT[Id, Origin.MetaInfo.Value[_]](Option(meta.get(name)))
+      override def selectDynamic(name: Origin.MetaInfo.Name) = Option(meta.get(name))
 
       override def update[A: Type](name: Origin.MetaInfo.Name, value: A) {
         meta.put(name, new Origin.MetaInfo.Value(value))
@@ -80,7 +85,7 @@ object Origin {
       override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
       override def equals(other: Any) = other match {
-        case that: Origin[({type λ[+_]})#λ, _] =>
+        case that: Origin[_] =>
           (that canEqual this) &&
           (this.name === that.name) &&
           (this.family === that.family) &&
@@ -88,9 +93,8 @@ object Origin {
         case _ => false
       }
 
-      override def canEqual(other: Any) =
-        other.isInstanceOf[Origin[({type λ[+_]})#λ, _]] &&
-        other.asInstanceOf[Origin[({type λ[+_]})#λ, _]].returns[A]
+      override def canEqual(other: Any) = other.isInstanceOf[Origin[_]] &&
+                                          other.asInstanceOf[Origin[_]].returns[A]
 
       override lazy val toString = s"amber.Origin.Local[$typeA]($name, $family)"
     }

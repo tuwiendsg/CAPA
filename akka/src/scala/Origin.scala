@@ -30,7 +30,6 @@ import _root_.akka.pattern.{ask, pipe}
 import _root_.akka.util.Timeout
 
 import scalaz.OptionT
-import scalaz.syntax.comonad._
 import scalaz.syntax.equal._
 
 import amber.util.{NotNothing, Type}
@@ -69,7 +68,7 @@ object Origin {
     override lazy val hashCode = 41 * (41 + name.hashCode) + family.hashCode
 
     override def equals(other: Any) = other match {
-      case that: amber.Origin[({type λ[+_]})#λ, _] =>
+      case that: amber.Origin[_] =>
         (that canEqual this) &&
         (this.name === that.name) &&
         (this.family === that.family) &&
@@ -77,9 +76,8 @@ object Origin {
       case _ => false
     }
 
-    override def canEqual(other: Any) =
-        other.isInstanceOf[Origin[({type λ[+_]})#λ, _]] &&
-        other.asInstanceOf[Origin[({type λ[+_]})#λ, _]].returns[A]
+    override def canEqual(other: Any) = other.isInstanceOf[Origin[_]] &&
+                                        other.asInstanceOf[Origin[_]].returns[A]
 
     override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 
@@ -95,8 +93,8 @@ object Origin {
     import context.dispatcher
 
     override def receive = {
-      case Request.Read => future {blocking {origin.read().run.copoint}} pipeTo sender
-      case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name).run.copoint
+      case Request.Read => future {blocking {origin.read()}} pipeTo sender
+      case Request.MetaInfo.Get(name) => sender ! origin.selectDynamic(name)
       case set: Request.MetaInfo.Set[_] => set(origin)
     }
   }

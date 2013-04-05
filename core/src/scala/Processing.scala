@@ -41,7 +41,7 @@ trait Processing {
           val (name, g) = f(source.name)
           in(source.family).create[B](name) {
             () =>
-              for {(Origin.Value(_, value), meta) <- source.read().run} yield (g(value), meta)
+              for {(Origin.Value(_, value), meta) <- source.read()} yield (g(value), meta)
           }
         }
       }

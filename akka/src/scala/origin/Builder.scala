@@ -23,10 +23,6 @@ import scala.collection.JavaConversions._
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 
-import scalaz.Id.Id
-import scalaz.OptionT
-import scalaz.syntax.applicative._
-
 import amber.util.{ConfigurableComponent, Type}
 
 trait BuilderComponent extends amber.origin.BuilderComponent
@@ -46,10 +42,9 @@ trait BuilderComponent extends amber.origin.BuilderComponent
           Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
         )
 
-        override def read() = OptionT((
-          for {(value, meta) <- _read(amber.Origin.MetaInfo(meta)).run}
+        override def read() =
+          for {(value, meta) <- _read(amber.Origin.MetaInfo(meta))}
             yield (amber.Origin.Value(name, value), meta)
-        ).point[Id])
       }
   }
 }

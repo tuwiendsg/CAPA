@@ -36,6 +36,7 @@ sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
 
   implicit protected def X: Monad[X]
+  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]]
 
   class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
       extends Filterable[Origin.MetaInfo, Query] {
@@ -44,14 +45,6 @@ sealed trait Client[X[+_]] {
 
   implicit def selectionToQuery(selection: Selection): Query =
     new Query(selection, Filter.tautology)
-
-  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]] =
-    origins.find(query.selection) flatMap {result =>
-        X.sequence(
-          for {origin <- result.to[Vector] if origin.returns[A]}
-            yield origin.asInstanceOf[Origin[A]].read().run
-        ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
-      }
 
   def readAll[A: NotNothing : Type](query: Query): X[Seq[A]] = read[A](query) map {_ map {_.value}}
   def readOne[A: NotNothing : Type](query: Query): X[Option[A]] =
@@ -147,6 +140,10 @@ object Client {
 
   trait Local extends Client[Id] with origin.FinderComponent.Local {
     override implicit protected val X = id
+    override def read[A: NotNothing : Type](query: Query) = for {
+      origin <- origins.find(query.selection).to[Vector] if origin.returns[A]
+      (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
+    } yield value
   }
 
   trait Remote extends Client[Future]
@@ -161,6 +158,14 @@ object Client {
       override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
       override def bind[A, B](future: Future[A])(f: A => Future[B]) = future.flatMap(f)
     }
+
+    override def read[A: NotNothing : Type](query: Query) =
+      origins.find(query.selection) flatMap {result =>
+        X.sequence(
+          for {origin <- result.to[Vector] if origin.returns[A]}
+            yield origin.asInstanceOf[Origin[A]].read().run
+        ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
+      }
   }
 
   object Remote {

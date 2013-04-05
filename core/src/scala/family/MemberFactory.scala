@@ -20,9 +20,6 @@ package family
 
 import scala.language.higherKinds
 
-import scalaz.Id.Id
-import scalaz.OptionT
-import scalaz.syntax.applicative._
 import scalaz.syntax.equal._
 
 import util.{Logger, Type}
@@ -73,9 +70,7 @@ object MemberFactoryComponent {
           }
           if (exists) None
           else Some(builder.build(name, family) {
-            meta => OptionT((read() map {
-              case (value, underlying) => (value, meta :+ underlying)
-            }).point[Id])
+            meta => read() map {case (value, underlying) => (value, meta :+ underlying)}
           })
         }
     }
