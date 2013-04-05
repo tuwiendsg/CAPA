@@ -43,9 +43,7 @@ trait ProcessingSpec extends Spec
         args: Array[AnyRef] =>
           origin.selectDynamic(args(0).asInstanceOf[Origin.MetaInfo.Name])
       }
-      when(origin.read()) thenAnswer {
-        _: Array[AnyRef] => read(meta) map {case (value, meta) => (Origin.Value(name, value), meta)}
-      }
+      when(origin.read()) thenAnswer {_: Array[AnyRef] => read(meta)}
     }
 }
 

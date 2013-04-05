@@ -78,7 +78,9 @@ object FactoryComponent {
       override val created = EventSource[Origin[_]]()
 
       override def create[A: Type](name: Origin.Name)(read: OriginFactory.Read[A]) =
-        builder.build(name, Origin.Family.random()) {meta => read() map {(_, meta)}}
+        builder.build(name, Origin.Family.random()) {
+          meta => read() map {a => (Origin.Value(name, a), meta)}
+        }
     }
 
     private object _builder extends OriginBuilder {

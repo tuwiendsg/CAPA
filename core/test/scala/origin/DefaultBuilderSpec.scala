@@ -31,7 +31,7 @@ class DefaultBuilderSpec extends Spec
   override type Origin[+A] = Origin.Local.Default[A]
   override val fixture = new Fixture {
     override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
-      builder.build(name, family) {meta => read() map {(_, meta)}}
+      builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
   }
 
   "Default.OriginBuilder" when {

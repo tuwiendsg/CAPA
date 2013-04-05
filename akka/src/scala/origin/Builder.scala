@@ -42,9 +42,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
           Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
         )
 
-        override def read() =
-          for {(value, meta) <- _read(amber.Origin.MetaInfo(meta))}
-            yield (amber.Origin.Value(name, value), meta)
+        override def read() = _read(amber.Origin.MetaInfo(meta))
       }
   }
 }

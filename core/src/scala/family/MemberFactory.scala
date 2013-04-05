@@ -70,7 +70,7 @@ object MemberFactoryComponent {
           }
           if (exists) None
           else Some(builder.build(name, family) {
-            meta => read() map {case (value, underlying) => (value, meta :+ underlying)}
+            meta => read() map {case (a, other) => (Origin.Value(name, a), meta :+ other)}
           })
         }
     }

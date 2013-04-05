@@ -35,7 +35,7 @@ trait BuilderComponent {
   }
 
   protected object OriginBuilder {
-    type Read[+A] = (Origin.MetaInfo) => Origin.Local.Reading[(A, Origin.MetaInfo)]
+    type Read[+A] = (Origin.MetaInfo) => Origin.Local.Reading[(Origin.Value[A], Origin.MetaInfo)]
   }
 }
 
@@ -50,9 +50,7 @@ object BuilderComponent {
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (_read: OriginBuilder.Read[A]) =
         new Origin(name, family) {
-          override def read() =
-            for {(value, meta) <- _read(Origin.MetaInfo(meta))}
-              yield (Origin.Value(name, value), meta)
+          override def read() = _read(Origin.MetaInfo(meta))
         }
     }
   }
