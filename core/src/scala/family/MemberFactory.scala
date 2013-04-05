@@ -26,7 +26,7 @@ import util.{Logger, Type}
 
 trait MemberFactoryComponent {
 
-  protected type Origin[+A] <: amber.Origin.Local[A]
+  protected type Origin[+A] <: Origin.Local[A]
   protected def in(family: Origin.Family): MemberFactory
 
   protected trait MemberFactory {
@@ -35,7 +35,7 @@ trait MemberFactoryComponent {
 
   protected object MemberFactory {
 
-    type Read[+A] = () => Option[(A, Origin.MetaInfo)]
+    type Read[+A] = () => Origin.Local.Reading[(A, Origin.MetaInfo)]
 
     trait Logging extends MemberFactory {
 

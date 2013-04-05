@@ -44,7 +44,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
         BuilderComponent.this.mock[Origin.Local[A]](s"mock.Origin.Local[$typeA]")
     }
 
-  override protected type Origin[+A] = amber.Origin.Local[A]
+  override protected type Origin[+A] = Origin.Local[A]
   override protected def builder = new OriginBuilder {
     override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                (read: OriginBuilder.Read[A]) = {

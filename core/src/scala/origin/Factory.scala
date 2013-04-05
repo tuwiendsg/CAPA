@@ -27,7 +27,7 @@ import util.{Events, EventSource, Logger, Type}
 
 trait FactoryComponent {
 
-  protected type Origin[+A] <: amber.Origin.Local[A]
+  protected type Origin[+A] <: Origin.Local[A]
   def origin: OriginFactory
 
   trait OriginFactory {
@@ -37,7 +37,7 @@ trait FactoryComponent {
 
   object OriginFactory {
 
-    sealed trait Read[A] extends (() => Option[A])
+    sealed trait Read[A] extends (() => Origin.Local.Reading[A])
 
     implicit def fromValue[A](f: () => A): Read[A] = new Read[A] {
       override def apply() = Option(f())

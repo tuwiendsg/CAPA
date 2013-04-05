@@ -56,7 +56,7 @@ object Origin {
     import Message.{Request, Response}
 
     override def returns[B: NotNothing](implicit typeB: Type[B]) = typeA <:< typeB
-    override def read() = OptionT(request[Response.Read[A]](Request.Read))
+    override def read() = OptionT(request[Response.Reading[A]](Request.Read))
 
     override def selectDynamic(name: String) =
       OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
@@ -126,7 +126,7 @@ object Origin {
 
     object Response {
 
-      type Read[+A] = Option[(amber.Origin.Value[A], amber.Origin.MetaInfo)]
+      type Reading[+A] = amber.Origin.Local.Reading[(amber.Origin.Value[A], amber.Origin.MetaInfo)]
 
       object MetaInfo {
         type Get = Option[amber.Origin.MetaInfo.Value[_]]

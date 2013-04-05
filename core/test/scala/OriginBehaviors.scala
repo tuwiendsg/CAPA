@@ -55,7 +55,7 @@ sealed trait OriginBehaviors {
   }
 
   object Fixture {
-    type Read[+A] = () => Option[A]
+    type Read[+A] = () => Origin.Local.Reading[A]
   }
 
   object anOrigin {

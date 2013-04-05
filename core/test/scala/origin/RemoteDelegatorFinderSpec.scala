@@ -23,8 +23,8 @@ class RemoteDelegatorFinderSpec extends Spec
                                 with DelegatorFinderBehaviors.Remote {
 
   override val finder = new FinderComponent
-  class FinderComponent extends amber.origin.FinderComponent.Remote {
-    override type Origin[+A] = amber.Origin.Remote[A]
+  class FinderComponent extends FinderComponent.Remote {
+    override type Origin[+A] = Origin.Remote[A]
     override val origins = mock[OriginFinder]("origin.Finder")
   }
 

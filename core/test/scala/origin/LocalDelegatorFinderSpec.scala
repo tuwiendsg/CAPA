@@ -23,8 +23,8 @@ class LocalDelegatorFinderSpec extends Spec
                                with DelegatorFinderBehaviors.Local {
 
   override val finder = new FinderComponent
-  class FinderComponent extends amber.origin.FinderComponent.Local {
-    override type Origin[+A] = amber.Origin.Local[A]
+  class FinderComponent extends FinderComponent.Local {
+    override type Origin[+A] = Origin.Local[A]
     override val origins = mock[OriginFinder]("origin.Finder")
   }
 

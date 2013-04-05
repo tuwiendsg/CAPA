@@ -61,16 +61,19 @@ object Origin {
   }
 
   trait Local[+A] extends Origin[A] {
-    override type Reading[+A] = Option[A]
+    override type Reading[+A] = Local.Reading[A]
   }
 
   trait Remote[+A] extends Origin[A] {
-    override type Reading[+A] = OptionT[Future, A]
+    override type Reading[+A] = Remote.Reading[A]
   }
 
   object Local {
+
+    type Reading[+A] = Option[A]
+
     abstract class Default[+A](override val name: Origin.Name, override val family: Origin.Family)
-                              (implicit typeA: Type[A]) extends amber.Origin.Local[A] {
+                              (implicit typeA: Type[A]) extends Origin.Local[A] {
 
       protected val meta = new ConcurrentHashMap[Origin.MetaInfo.Name, Origin.MetaInfo.Value[_]]
 
@@ -98,6 +101,10 @@ object Origin {
 
       override lazy val toString = s"amber.Origin.Local[$typeA]($name, $family)"
     }
+  }
+
+  object Remote {
+    type Reading[+A] = OptionT[Future, A]
   }
 
   sealed trait MetaInfo extends Dynamic with Serializable {
