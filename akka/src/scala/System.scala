@@ -42,7 +42,7 @@ object System {
 
     override val stopped = EventSource[Unit](configuration.system)
     override def origin: super.OriginFactory = _origin
-    override protected def in(f: amber.Origin.Family) = new MemberFactory with MemberFactory.Logging {
+    override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
       override protected val family = f
       @transient override protected val log =
         logger.create(s"amber.akka.family.MemberFactory($family)")

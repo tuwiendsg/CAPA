@@ -34,7 +34,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
   override protected def builder: OriginBuilder = _builder
 
   private object _builder extends OriginBuilder {
-    override def build[A: Type](name: amber.Origin.Name, family: amber.Origin.Family)
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                (_read: OriginBuilder.Read[A]) =
       new Origin(name, family) {
 
@@ -42,7 +42,7 @@ trait BuilderComponent extends amber.origin.BuilderComponent
           Props(new Origin.Actor(this)).withDispatcher("amber.origins.dispatcher")
         )
 
-        override def read() = _read(amber.Origin.MetaInfo(meta))
+        override def read() = _read(Origin.MetaInfo(meta))
       }
   }
 }

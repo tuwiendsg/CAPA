@@ -36,9 +36,16 @@ import amber.util.{NotNothing, Type}
 
 object Origin {
 
-  abstract class Local[+A](name: amber.Origin.Name, family: amber.Origin.Family)
-                          (implicit typeA: Type[A])
-      extends amber.Origin.Local.Default[A](name, family) with java.io.Serializable {
+  type Name = amber.Origin.Name
+  type Family = amber.Origin.Family
+  type Value[+A] = amber.Origin.Value[A]
+  type MetaInfo = amber.Origin.MetaInfo
+
+  val Value = amber.Origin.Value
+  val MetaInfo = amber.Origin.MetaInfo
+
+  abstract class Local[+A](name: Origin.Name, family: Origin.Family)(implicit typeA: Type[A])
+      extends Origin.Local.Default[A](name, family) with java.io.Serializable {
 
     private[akka] def actor: ActorRef
 
@@ -48,9 +55,10 @@ object Origin {
       new Origin.Serialized[A](name, family)(actor)
   }
 
-  class Remote[+A](override val name: amber.Origin.Name, override val family: amber.Origin.Family)
-                  (reference: ActorRef)
-                  (implicit timeout: Timeout, typeA: Type[A])
+  val Local = amber.Origin.Local
+
+  class Remote[+A](override val name: Origin.Name, override val family: Origin.Family)
+                  (reference: ActorRef)(implicit timeout: Timeout, typeA: Type[A])
       extends amber.Origin.Remote[A] with java.io.Serializable {
 
     import Message.{Request, Response}
@@ -61,7 +69,7 @@ object Origin {
     override def selectDynamic(name: String) =
       OptionT(request[Response.MetaInfo.Get](Request.MetaInfo.Get(name)))
 
-    override def update[B: Type](name: amber.Origin.MetaInfo.Name, value: B) {
+    override def update[B: Type](name: Origin.MetaInfo.Name, value: B) {
       reference ! Request.MetaInfo.Set(name, value)
     }
 
@@ -87,6 +95,8 @@ object Origin {
     private def request[B: ClassTag](message: Message) = ask(reference, message)(timeout).mapTo[B]
   }
 
+  val Remote = amber.Origin.Remote
+
   class Actor[+A](origin: amber.Origin.Local[A]) extends _root_.akka.actor.Actor {
 
     import Message.Request
@@ -99,7 +109,7 @@ object Origin {
     }
   }
 
-  class Serialized[A](name: amber.Origin.Name, family: amber.Origin.Family)
+  class Serialized[A](name: Origin.Name, family: Origin.Family)
                      (reference: ActorRef)(implicit typeA: Type[A]) extends java.io.Serializable {
 
     def returns[B: NotNothing](implicit typeB: Type[B]): Boolean = typeA <:< typeB
@@ -117,8 +127,8 @@ object Origin {
       case object Read extends Message
 
       object MetaInfo {
-        case class Get(name: amber.Origin.MetaInfo.Name) extends Message
-        case class Set[+A: Type](name: amber.Origin.MetaInfo.Name, value: A) extends Message {
+        case class Get(name: Origin.MetaInfo.Name) extends Message
+        case class Set[+A: Type](name: Origin.MetaInfo.Name, value: A) extends Message {
           def apply(origin: amber.Origin.Local[_]) {origin(name) = value}
         }
       }
@@ -126,10 +136,10 @@ object Origin {
 
     object Response {
 
-      type Reading[+A] = amber.Origin.Local.Reading[(amber.Origin.Value[A], amber.Origin.MetaInfo)]
+      type Reading[+A] = Origin.Local.Reading[(Origin.Value[A], Origin.MetaInfo)]
 
       object MetaInfo {
-        type Get = Option[amber.Origin.MetaInfo.Value[_]]
+        type Get = Option[Origin.MetaInfo.Value[_]]
       }
     }
   }

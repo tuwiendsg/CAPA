@@ -58,9 +58,8 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
     override protected def builder: OriginBuilder = _builder
 
     private object _builder extends OriginBuilder {
-      def build[A](name: amber.Origin.Name, family: amber.Origin.Family)
-                  (read: OriginBuilder.Read[A])
-                  (implicit typeA: Type[A]) = {
+      def build[A](name: Origin.Name, family: Origin.Family)
+                  (read: OriginBuilder.Read[A])(implicit typeA: Type[A]) = {
         val actor = mock[ActorRef]("mock.ActorRef")
         val origin = mock[Origin.Local[A]](s"mock.akka.Origin.Local[$typeA]")
         when(origin.name) thenReturn name
@@ -78,7 +77,7 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
   }
 
   override val fixture = new Fixture {
-    override def create[A: NotNothing](name: amber.Origin.Name)(implicit typeA: Type[A]) = {
+    override def create[A: NotNothing](name: Origin.Name)(implicit typeA: Type[A]) = {
       val origin = local.origin.create(name)(mock[local.OriginFactory.Read[A]]("Origin.read"))
       new Origin.Remote(name, origin.family)(origin.actor)(timeout, typeA)
     }
