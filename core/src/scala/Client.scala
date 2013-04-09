@@ -151,8 +151,8 @@ object Client {
                with ConfigurableComponent {
 
     override protected type Configuration <: Remote.Configuration
-    implicit protected def context: ExecutionContext = configuration.context
 
+    implicit protected def context: ExecutionContext = configuration.context
     override implicit protected val X: Monad[Future] = new Monad[Future] {
       override def point[A](a: => A) = Future.successful(a)
       override def map[A, B](future: Future[A])(f: A => B) = future.map(f)

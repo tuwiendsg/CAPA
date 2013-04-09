@@ -34,6 +34,15 @@ import scalaz.syntax.equal._
 
 import amber.util.{NotNothing, Type}
 
+sealed trait Origin[+A] extends java.io.Serializable {
+  this: amber.Origin[A] =>
+
+  private[akka] def actor: ActorRef
+  protected def write(): Origin.Serialized[A]
+
+  @throws[ObjectStreamException] def writeReplace(): AnyRef = write()
+}
+
 object Origin {
 
   type Name = amber.Origin.Name
@@ -45,21 +54,18 @@ object Origin {
   val MetaInfo = amber.Origin.MetaInfo
 
   abstract class Local[+A](name: Origin.Name, family: Origin.Family)(implicit typeA: Type[A])
-      extends Origin.Local.Default[A](name, family) with java.io.Serializable {
-
-    private[akka] def actor: ActorRef
+      extends Origin.Local.Default[A](name, family) with Origin[A] {
 
     override lazy val toString = s"akka.Origin.Local[$typeA]($name, $family)"
 
-    @throws[ObjectStreamException] def writeReplace(): AnyRef =
-      new Origin.Serialized[A](name, family)(actor)
+    override protected def write() = new Origin.Serialized[A](name, family)(actor)
   }
 
   val Local = amber.Origin.Local
 
   class Remote[+A](override val name: Origin.Name, override val family: Origin.Family)
                   (reference: ActorRef)(implicit timeout: Timeout, typeA: Type[A])
-      extends amber.Origin.Remote[A] with java.io.Serializable {
+      extends amber.Origin.Remote[A] with Origin[A] {
 
     import Message.{Request, Response}
 
@@ -84,13 +90,13 @@ object Origin {
       case _ => false
     }
 
-    override def canEqual(other: Any) = other.isInstanceOf[Origin[_]] &&
-                                        other.asInstanceOf[Origin[_]].returns[A]
+    override def canEqual(other: Any) = other.isInstanceOf[amber.Origin[_]] &&
+                                        other.asInstanceOf[amber.Origin[_]].returns[A]
 
     override lazy val toString = s"akka.Origin.Remote[$typeA]($name, $family)"
 
-    @throws[ObjectStreamException] def writeReplace(): AnyRef =
-      new Origin.Serialized[A](name, family)(reference)
+    override private[akka] val actor = reference
+    override protected def write() = new Origin.Serialized[A](name, family)(actor)
 
     private def request[B: ClassTag](message: Message) = ask(reference, message)(timeout).mapTo[B]
   }
@@ -109,8 +115,8 @@ object Origin {
     }
   }
 
-  class Serialized[A](name: Origin.Name, family: Origin.Family)
-                     (reference: ActorRef)(implicit typeA: Type[A]) extends java.io.Serializable {
+  class Serialized[+A](name: Origin.Name, family: Origin.Family)
+                      (reference: ActorRef)(implicit typeA: Type[A]) extends java.io.Serializable {
 
     def returns[B: NotNothing](implicit typeB: Type[B]): Boolean = typeA <:< typeB
 
