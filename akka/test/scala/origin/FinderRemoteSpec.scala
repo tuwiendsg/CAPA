@@ -52,7 +52,6 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
   }
 
   object local extends BuilderComponent with FinderComponent.Local
-                                        with amber.origin.FinderComponent.Local.Default
                                         with amber.origin.FactoryComponent.Default {
 
     override protected val actor: FinderComponent.Actor = _actor

@@ -28,7 +28,6 @@ object System {
   trait Local extends amber.System.Local
                with akka.origin.BuilderComponent
                with amber.origin.BuilderComponent.Logging
-               with amber.origin.FinderComponent.Local.Default
                with akka.origin.FinderComponent.Local
                with amber.family.FinderComponent.Default
                with amber.origin.FactoryComponent.Default

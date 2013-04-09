@@ -42,8 +42,8 @@ sealed trait FinderComponent[X[+_]] {
 
 object FinderComponent {
 
-  trait Local extends amber.origin.FinderComponent.Local with FinderComponent[Id] {
-    override protected type Origin[+A] <: Origin.Local[A]
+  trait Local extends amber.origin.FinderComponent.Local.Default with FinderComponent[Id] {
+    override protected type Origin[+A] = Origin.Local[A]
   }
 
   trait Remote extends amber.origin.FinderComponent.Remote
