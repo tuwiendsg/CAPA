@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package akka
 
-import _root_.akka.actor.{PoisonPill, Props}
+import _root_.akka.actor.PoisonPill
 
 import amber.util.{ConfigurableComponent, Logging}
 import akka.util.EventSource
@@ -42,6 +42,7 @@ object System {
 
     override val stopped = EventSource[Unit](configuration.system)
     override def origin: super.OriginFactory = _origin
+    override protected val actor: akka.origin.FinderComponent.Actor = _actor
     override protected def in(f: Origin.Family) = new MemberFactory with MemberFactory.Logging {
       override protected val family = f
       @transient override protected val log =
@@ -51,7 +52,7 @@ object System {
     override def shutdown() {
       log.info("Shutting down")
       super.shutdown()
-      actors.finder ! PoisonPill
+      actor.finder ! PoisonPill
       stopped.emit(())
       log.info("Shutdown successful")
     }
@@ -62,12 +63,9 @@ object System {
     }
 
     private object _origin extends OriginFactory
-    private val actors = Actors
-    private object Actors {
-      val finder = configuration.system.actorOf(
-        Props(new akka.origin.FinderComponent.Actor(Local.this)),
-        name = akka.origin.FinderComponent.Actor.name
-      )
+    private object _actor extends akka.origin.FinderComponent.Actor {
+      override val finder = akka.origin.FinderComponent.Actor.local(system)(Local.this)
+      private def system = configuration.system
     }
   }
 
@@ -85,12 +83,19 @@ object System {
     @transient private[this] val log = logger.create("amber.akka.System.Remote")
 
     override val stopped = EventSource[Unit](configuration.local)
+    override protected val actor: origin.FinderComponent.Actor = _actor
 
     override def shutdown() {
       log.info("Shutting down")
       super.shutdown()
+      actor.finder ! PoisonPill
       stopped.emit(())
       log.info("Shutdown successful")
+    }
+
+    private object _actor extends origin.FinderComponent.Actor {
+      override val finder = akka.origin.FinderComponent.Actor.remote(system)(Remote.this)
+      private def system = configuration.local
     }
   }
 

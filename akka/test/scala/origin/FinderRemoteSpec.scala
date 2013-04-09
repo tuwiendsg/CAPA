@@ -34,8 +34,6 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
                        with amber.origin.FinderBehaviors.Remote {
 
   val remote = ActorSystem("FinderRemoteSpec-Server", ConfigFactory.load.getConfig("server"))
-  val actor = remote.actorOf(Props(new FinderComponent.Actor(local)),
-                             name = FinderComponent.Actor.name)
 
   override def afterAll() {
     super.afterAll()
@@ -48,9 +46,20 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
     override val remote = "akka://FinderRemoteSpec-Server@127.0.0.1:2552"
   }
 
+  override protected val actor: FinderComponent.Actor = _actor
+  private object _actor extends FinderComponent.Actor {
+    override val finder = FinderComponent.Actor.remote(system)(FinderRemoteSpec.this)
+  }
+
   object local extends BuilderComponent with FinderComponent.Local
                                         with amber.origin.FinderComponent.Local.Default
-                                        with amber.origin.FactoryComponent.Default
+                                        with amber.origin.FactoryComponent.Default {
+
+    override protected val actor: FinderComponent.Actor = _actor
+    private object _actor extends FinderComponent.Actor {
+      override val finder = FinderComponent.Actor.local(remote)(local.this)
+    }
+  }
 
   trait BuilderComponent extends amber.origin.BuilderComponent {
 
