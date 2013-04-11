@@ -22,13 +22,9 @@ import scala.collection.JavaConversions._
 
 import _root_.akka.actor.Props
 
-import scalaz.Id.Id
-import scalaz.OptionT
-import scalaz.syntax.applicative._
-
 import amber.util.Type
 
-class OriginRemoteSpec extends Spec("OriginRemoteSpec")
+class RemoteOriginSpec extends Spec("RemoteOriginSpec")
                        with OriginBehaviors.Remote {
 
   override type Origin[+A] = Origin.Remote[A]
@@ -40,8 +36,7 @@ class OriginRemoteSpec extends Spec("OriginRemoteSpec")
         Props(new Origin.Actor(
           new Origin.Local.Default(name, family) {
             override def read() =
-              for {value <- _read()}
-                yield (Origin.Value(name, value), Origin.MetaInfo(meta))
+              for {value <- _read()} yield (Origin.Value(name, value), Origin.MetaInfo(meta))
           }
         )).withDispatcher("amber.origins.dispatcher")
       ))(timeout, typeA)

@@ -23,10 +23,10 @@ import org.mockito.Mockito.when
 
 import util.{NotNothing, Type}
 
-class DefaultFinderSpec extends Spec
-                        with mock.origin.BuilderComponent
-                        with FinderComponent.Local.Default
-                        with FinderBehaviors.Local {
+class DefaultLocalFinderSpec extends Spec
+                             with mock.origin.BuilderComponent
+                             with FinderComponent.Local.Default
+                             with FinderBehaviors.Local {
 
   override def mocker[A](implicit typeA: Type[A]) =
     super.mocker[A] andThen {case ((name, family, _), origin) =>
@@ -46,7 +46,7 @@ class DefaultFinderSpec extends Spec
     }
   }
 
-  "Default.OriginFinder" should {
+  "Default.Local.OriginFinder" should {
     behave like aFinder.forOrigins
   }
 }

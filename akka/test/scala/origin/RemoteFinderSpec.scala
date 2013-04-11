@@ -28,12 +28,12 @@ import org.mockito.Mockito.when
 
 import amber.util.{NotNothing, Type}
 
-class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
+class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
                                     ConfigFactory.load.getConfig("client")))
                        with FinderComponent.Remote
                        with amber.origin.FinderBehaviors.Remote {
 
-  val remote = ActorSystem("FinderRemoteSpec-Server", ConfigFactory.load.getConfig("server"))
+  val remote = ActorSystem("RemoteFinderSpec-Server", ConfigFactory.load.getConfig("server"))
 
   override def afterAll() {
     super.afterAll()
@@ -42,13 +42,13 @@ class FinderRemoteSpec extends Spec(ActorSystem("FinderRemoteSpec-Client",
 
   override protected type Configuration = FinderComponent.Remote.Configuration
   override protected object configuration extends FinderComponent.Remote.Configuration {
-    override val local = FinderRemoteSpec.this.system
-    override val remote = "akka://FinderRemoteSpec-Server@127.0.0.1:2552"
+    override val local = RemoteFinderSpec.this.system
+    override val remote = "akka://RemoteFinderSpec-Server@127.0.0.1:2552"
   }
 
   override protected val actor: FinderComponent.Actor = _actor
   private object _actor extends FinderComponent.Actor {
-    override val finder = FinderComponent.Actor.remote(system)(FinderRemoteSpec.this)
+    override val finder = FinderComponent.Actor.remote(system)(RemoteFinderSpec.this)
   }
 
   object local extends BuilderComponent with FinderComponent.Local
