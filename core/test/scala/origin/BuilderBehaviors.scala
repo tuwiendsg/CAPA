@@ -16,21 +16,21 @@
 
 package at.ac.tuwien.infosys
 package amber
-package akka
 package origin
 
-class BuilderSpec extends Spec("BuilderSpec")
-                  with BuilderComponent
-                  with amber.origin.BuilderBehaviors {
+import util.Type
 
-  override type Origin[+A] = Origin.Local[A]
+trait BuilderBehaviors extends OriginBehaviors.Local {
+  this: Spec with BuilderComponent =>
 
-  override protected type Configuration = BuilderComponent.Configuration
-  override protected object configuration extends BuilderComponent.Configuration {
-    override val system = BuilderSpec.this.system
+  override val fixture = new Fixture {
+    override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
+      builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
   }
 
-  "akka.OriginBuilder" should {
-    behave like aBuilder
+  def aBuilder() {
+    "build an origin" which {
+      behave like anOrigin
+    }
   }
 }
