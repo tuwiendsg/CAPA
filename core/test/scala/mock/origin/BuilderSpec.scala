@@ -20,7 +20,7 @@ package mock.origin
 
 import org.mockito.Mockito.verify
 
-class BuilderSpec extends Spec with BuilderComponent {
+class BuilderSpec extends Spec with BuilderComponent.Default with BuilderComponent.InSpec {
 
   trait Fixture {
 

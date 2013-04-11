@@ -18,33 +18,22 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
+import scala.language.higherKinds
+
 import scala.collection.immutable.List
 
 import org.scalatest.BeforeAndAfterEach
 
-import util.{Mocker, Type}
+import util.{Mocker, Mocking, Type}
 
-trait BuilderComponent extends amber.origin.BuilderComponent
-                       with BeforeAndAfterEach {
-  this: Spec =>
+trait BuilderComponent extends amber.origin.BuilderComponent with Mocking {
 
-  override def beforeEach() {
-    built = List.empty
-    build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
+  override protected type Origin[+A] <: Origin.Local[A]
+  def mocker[A: Type]: Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]]
 
-    super.beforeEach()
-  }
+  var built = List.empty[Origin[_]]
+  var build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
 
-  var built: List[Origin[_]] = _
-  var build: (Origin.Name, Origin.Family) => Unit = _
-
-  def mocker[A](implicit typeA: Type[A]) =
-    new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
-      def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) =
-        BuilderComponent.this.mock[Origin.Local[A]](s"mock.Origin.Local[$typeA]")
-    }
-
-  override protected type Origin[+A] = Origin.Local[A]
   override protected def builder = new OriginBuilder {
     override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                (read: OriginBuilder.Read[A]) = {
@@ -54,5 +43,30 @@ trait BuilderComponent extends amber.origin.BuilderComponent
 
       origin
     }
+  }
+}
+
+object BuilderComponent {
+
+  trait InSpec extends BeforeAndAfterEach {
+    this: Spec with BuilderComponent =>
+
+    override def beforeEach() {
+      built = List.empty
+      build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
+
+      super.beforeEach()
+    }
+  }
+
+  trait Default extends BuilderComponent {
+
+    override protected type Origin[+A] = Origin.Local[A]
+
+    override def mocker[A](implicit typeA: Type[A]) =
+      new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
+        def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) =
+          Default.this.mock[Origin[A]](s"mock.Origin.Local[$typeA]")
+      }
   }
 }

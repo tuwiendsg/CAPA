@@ -26,7 +26,7 @@ import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when
 
-import amber.util.{NotNothing, Type}
+import amber.util.{Mocker, NotNothing, Type}
 
 class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
                                     ConfigFactory.load.getConfig("client")))
@@ -51,36 +51,38 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
     override val finder = FinderComponent.Actor.remote(system)(RemoteFinderSpec.this)
   }
 
-  object local extends BuilderComponent with FinderComponent.Local
-                                        with amber.origin.FactoryComponent.Default {
-
-    override protected val actor: FinderComponent.Actor = _actor
-    private object _actor extends FinderComponent.Actor {
-      override val finder = FinderComponent.Actor.local(remote)(local.this)
-    }
-  }
-
-  trait BuilderComponent extends amber.origin.BuilderComponent {
+  object local extends amber.mock.origin.BuilderComponent
+               with FinderComponent.Local
+               with amber.origin.FactoryComponent.Default {
 
     override protected type Origin[+A] = Origin.Local[A]
-    override protected def builder: OriginBuilder = _builder
 
-    private object _builder extends OriginBuilder {
-      def build[A](name: Origin.Name, family: Origin.Family)
-                  (read: OriginBuilder.Read[A])(implicit typeA: Type[A]) = {
-        val actor = mock[ActorRef]("mock.ActorRef")
-        val origin = mock[Origin.Local[A]](s"mock.akka.Origin.Local[$typeA]")
-        when(origin.name) thenReturn name
-        when(origin.family) thenReturn family
-        when(origin.returns(anything(), anything())) thenAnswer {
-          args: Array[AnyRef] => typeA <:< args(1).asInstanceOf[Type[_]]
-        }
-        when(origin.writeReplace()) thenAnswer {
-          _: Array[AnyRef] => new Origin.Serialized[A](name, family)(actor)
-        }
+    override protected val actor: FinderComponent.Actor = _actor
+    override def mocker[A](implicit typeA: Type[A]) =
+      new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
+        def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) = {
+          val origin = RemoteFinderSpec.this.mock[Origin[A]](s"mock.Origin.Local[$typeA]")
+          val name = args._1
+          val family = args._2
 
-        origin
+          when(origin.name) thenReturn name
+          when(origin.family) thenReturn family
+          when(origin.returns(anything(), anything())) thenAnswer {
+            args: Array[AnyRef] => typeA <:< args(1).asInstanceOf[Type[_]]
+          }
+          when(origin.writeReplace()) thenAnswer {
+            _: Array[AnyRef] =>
+              new Origin.Serialized[A](name, family)(
+                RemoteFinderSpec.this.mock[ActorRef]("mock.ActorRef")
+              )
+          }
+
+          origin
+        }
       }
+
+    private object _actor extends FinderComponent.Actor {
+      override val finder = FinderComponent.Actor.local(remote)(local.this)
     }
   }
 

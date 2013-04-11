@@ -26,7 +26,8 @@ import org.mockito.Mockito.{verify, when}
 import util.Events
 
 class DefaultFactorySpec extends Spec
-                         with mock.origin.BuilderComponent
+                         with mock.origin.BuilderComponent.Default
+                         with mock.origin.BuilderComponent.InSpec
                          with FactoryComponent.Default
                          with FactoryBehaviors {
 

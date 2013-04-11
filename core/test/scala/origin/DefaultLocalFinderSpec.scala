@@ -24,7 +24,8 @@ import org.mockito.Mockito.when
 import util.{NotNothing, Type}
 
 class DefaultLocalFinderSpec extends Spec
-                             with mock.origin.BuilderComponent
+                             with mock.origin.BuilderComponent.Default
+                             with mock.origin.BuilderComponent.InSpec
                              with FinderComponent.Local.Default
                              with FinderBehaviors.Local {
 
