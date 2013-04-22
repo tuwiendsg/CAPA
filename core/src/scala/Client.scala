@@ -139,7 +139,7 @@ sealed trait Client[X[+_]] {
 object Client {
 
   trait Local extends Client[Id] with origin.FinderComponent.Local {
-    override implicit protected val X = id
+    override implicit protected def X = id
     override def read[A: NotNothing : Type](query: Query) = for {
       origin <- origins.find(query.selection).to[Vector] if origin.returns[A]
       (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
@@ -153,7 +153,7 @@ object Client {
     override protected type Configuration <: Remote.Configuration
 
     implicit protected def context: ExecutionContext = configuration.context
-    override implicit protected val X: Monad[Future] = new Monad[Future] {
+    override implicit protected def X: Monad[Future] = new Monad[Future] {
       override def point[A](a: => A) = Future.successful(a)
       override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
       override def bind[A, B](future: Future[A])(f: A => Future[B]) = future.flatMap(f)

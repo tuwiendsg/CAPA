@@ -90,7 +90,7 @@ object FinderBehaviors {
   trait Local extends FinderBehaviors[Id] {
     this: Spec with FinderComponent.Local =>
 
-    override val X = id
+    override def X = id
   }
 
   trait Remote extends FinderBehaviors[Future] {

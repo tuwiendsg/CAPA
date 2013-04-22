@@ -26,7 +26,7 @@ class BuilderSpec extends Spec("BuilderSpec")
   override type Origin[+A] = Origin.Local[A]
 
   override protected type Configuration = BuilderComponent.Configuration
-  override protected object configuration extends BuilderComponent.Configuration {
+  override protected object configuration extends Configuration {
     override val system = BuilderSpec.this.system
   }
 

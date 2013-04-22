@@ -64,13 +64,10 @@ object System {
 
     trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
 
-      override protected val finder = Remote.this
-
       override protected type Configuration = Client.Remote.Configuration
-      override protected def configuration: Configuration = _configuration
-      private object _configuration extends Client.Remote.Configuration {
-        override def context = Remote.this.configuration.context
-      }
+      override protected def configuration: Configuration = Remote.this.configuration
+
+      override protected val finder = Remote.this
     }
 
     private object _client extends Client

@@ -41,7 +41,7 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
   }
 
   override protected type Configuration = FinderComponent.Remote.Configuration
-  override protected object configuration extends FinderComponent.Remote.Configuration {
+  override protected object configuration extends Configuration {
     override val local = RemoteFinderSpec.this.system
     override val remote = "akka://RemoteFinderSpec-Server@127.0.0.1:2552"
   }

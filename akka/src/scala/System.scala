@@ -31,11 +31,8 @@ object System {
                with akka.origin.FinderComponent.Local
                with amber.family.FinderComponent.Default
                with amber.origin.FactoryComponent.Default
-               with amber.family.MemberFactoryComponent.Default
-               with ConfigurableComponent {
+               with amber.family.MemberFactoryComponent.Default {
     this: Logging =>
-
-    override protected type Configuration <: Local.Configuration
 
     @transient private[this] val log = logger.create("amber.akka.System.Local")
 
@@ -66,10 +63,6 @@ object System {
       override val finder = akka.origin.FinderComponent.Actor.local(system)(Local.this)
       private def system = configuration.system
     }
-  }
-
-  object Local {
-    trait Configuration extends akka.origin.BuilderComponent.Configuration
   }
 
   trait Remote extends amber.System.Remote
