@@ -91,7 +91,8 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
 }
 
 object Client {
-  trait Configuration extends Scheduling.Configuration with akka.System.Remote.Configuration {
+  trait Configuration extends Scheduling.Configuration
+                      with akka.origin.FinderComponent.Remote.Configuration {
 
     val name: String = "temperature-client"
     val delimiter: String = "-" * 40

@@ -21,16 +21,19 @@ package origin
 import scala.language.higherKinds
 
 import scala.collection.immutable.Set
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-import scalaz.Id.Id
+import scalaz.Id.{id, Id}
+import scalaz.Monad
 
-import util.{MultiTrie, NotNothing, Type}
+import util.{ConfigurableComponent, MultiTrie, NotNothing, Type}
 
 sealed trait FinderComponent[X[+_]] {
 
   protected type Origin[+A] <: amber.Origin[A]
+
   def origins: OriginFinder
+  implicit protected def X: Monad[X]
 
   type Selection = MultiTrie.Selection
   val Selections = MultiTrie.Selections
@@ -44,10 +47,25 @@ object FinderComponent {
 
   trait Local extends FinderComponent[Id] {
     override protected type Origin[+A] <: Origin.Local[A]
+    override implicit protected def X = id
   }
 
-  trait Remote extends FinderComponent[Future] {
+  trait Remote extends FinderComponent[Future] with ConfigurableComponent {
+
+    override protected type Configuration <: Remote.Configuration
     override protected type Origin[+A] <: Origin.Remote[A]
+
+    override implicit protected def X = futureMonad(configuration.context)
+  }
+
+  sealed trait Delegator[X[+_]] extends FinderComponent[X] {
+
+    protected val finder: FinderComponent[X]
+
+    override protected type Origin[+A] = finder.Origin[A]
+    override object origins extends OriginFinder {
+      override def find[A: NotNothing : Type](selection: Selection) = finder.origins.find(selection)
+    }
   }
 
   object Local {
@@ -78,13 +96,9 @@ object FinderComponent {
     }
   }
 
-  sealed trait Delegator[X[+_]] extends FinderComponent[X] {
-
-    protected val finder: FinderComponent[X]
-
-    override protected type Origin[+A] = finder.Origin[A]
-    override object origins extends OriginFinder {
-      override def find[A: NotNothing : Type](selection: Selection) = finder.origins.find(selection)
+  object Remote {
+    trait Configuration {
+      def context: ExecutionContext
     }
   }
 

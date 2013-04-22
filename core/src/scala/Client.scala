@@ -23,19 +23,17 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 import scala.collection.JavaConversions._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-import scalaz.Monad
-import scalaz.Id.{id, Id}
+import scalaz.Id.Id
 import scalaz.std.vector._
 import scalaz.syntax.monad._
 
-import util.{ConfigurableComponent, Filter, Filterable, NotNothing, Type}
+import util.{Filter, Filterable, NotNothing, Type}
 
 sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
 
-  implicit protected def X: Monad[X]
   def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]]
 
   class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
@@ -139,25 +137,15 @@ sealed trait Client[X[+_]] {
 object Client {
 
   trait Local extends Client[Id] with origin.FinderComponent.Local {
-    override implicit protected def X = id
     override def read[A: NotNothing : Type](query: Query) = for {
       origin <- origins.find(query.selection).to[Vector] if origin.returns[A]
       (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
     } yield value
   }
 
-  trait Remote extends Client[Future]
-               with origin.FinderComponent.Remote
-               with ConfigurableComponent {
+  trait Remote extends Client[Future] with origin.FinderComponent.Remote {
 
-    override protected type Configuration <: Remote.Configuration
-
-    implicit protected def context: ExecutionContext = configuration.context
-    override implicit protected def X: Monad[Future] = new Monad[Future] {
-      override def point[A](a: => A) = Future.successful(a)
-      override def map[A, B](future: Future[A])(f: A => B) = future.map(f)
-      override def bind[A, B](future: Future[A])(f: A => Future[B]) = future.flatMap(f)
-    }
+    implicit protected def context = configuration.context
 
     override def read[A: NotNothing : Type](query: Query) =
       origins.find(query.selection) flatMap {result =>
@@ -166,11 +154,5 @@ object Client {
             yield origin.asInstanceOf[Origin[A]].read().run
         ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
       }
-  }
-
-  object Remote {
-    trait Configuration {
-      def context: ExecutionContext
-    }
   }
 }

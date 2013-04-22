@@ -20,7 +20,7 @@ package akka
 
 import _root_.akka.actor.PoisonPill
 
-import amber.util.{ConfigurableComponent, Logging}
+import amber.util.Logging
 import akka.util.EventSource
 
 object System {
@@ -66,11 +66,8 @@ object System {
   }
 
   trait Remote extends amber.System.Remote
-               with akka.origin.FinderComponent.Remote
-               with ConfigurableComponent {
+               with akka.origin.FinderComponent.Remote {
     this: Logging =>
-
-    override protected type Configuration <: Remote.Configuration
 
     @transient private[this] val log = logger.create("amber.akka.System.Remote")
 
@@ -89,10 +86,5 @@ object System {
       override val finder = akka.origin.FinderComponent.Actor.remote(system)(Remote.this)
       private def system = configuration.local
     }
-  }
-
-  object Remote {
-    trait Configuration extends amber.System.Remote.Configuration
-                        with akka.origin.FinderComponent.Remote.Configuration
   }
 }

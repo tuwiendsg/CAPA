@@ -18,12 +18,23 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.concurrent.ExecutionContext
+
 class RemoteDelegatorFinderSpec extends Spec
                                 with FinderComponent.Delegator.Remote
                                 with DelegatorFinderBehaviors.Remote {
 
+  override protected type Configuration = FinderComponent.Remote.Configuration
+  override protected object configuration extends Configuration {
+    override def context = ExecutionContext.global
+  }
+
   override val finder = new FinderComponent
   class FinderComponent extends FinderComponent.Remote {
+
+    override protected type Configuration = FinderComponent.Remote.Configuration
+    override protected val configuration = RemoteDelegatorFinderSpec.this.configuration
+
     override type Origin[+A] = Origin.Remote[A]
     override val origins = mock[OriginFinder]("origin.Finder")
   }

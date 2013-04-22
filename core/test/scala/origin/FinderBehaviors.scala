@@ -31,7 +31,7 @@ import util.{NotNothing, Type}
 sealed trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
 
-  def X: Comonad[X]
+  def Y: Comonad[X]
   def fixture: Fixture
 
   class A
@@ -49,14 +49,14 @@ sealed trait FinderBehaviors[X[+_]] {
           val name = random[Origin.Name]
           val origin = fixture.create[A](name)
 
-          X.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
+          Y.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
         }
 
         "type is a super type" in {
           val name = random[Origin.Name]
           val origin = fixture.create[U](name)
 
-          val result = X.copoint(origins.find[A](Selections.exact(name))) map {
+          val result = Y.copoint(origins.find[A](Selections.exact(name))) map {
             _.asInstanceOf[Origin[Any]]
           }
           result should contain(origin.asInstanceOf[Origin[Any]])
@@ -68,14 +68,14 @@ sealed trait FinderBehaviors[X[+_]] {
           val name = random[Origin.Name]
           val origin = fixture.create[A](name)
 
-          X.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+          Y.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
         }
 
         "type is a different type" in {
           val name = random[Origin.Name]
           val origin = fixture.create[A](name)
 
-          val result = X.copoint(origins.find[B](Selections.exact(name))) map {
+          val result = Y.copoint(origins.find[B](Selections.exact(name))) map {
             _.asInstanceOf[Origin[Any]]
           }
           result should not(contain(origin.asInstanceOf[Origin[Any]]))
@@ -90,13 +90,13 @@ object FinderBehaviors {
   trait Local extends FinderBehaviors[Id] {
     this: Spec with FinderComponent.Local =>
 
-    override def X = id
+    override def Y = id
   }
 
   trait Remote extends FinderBehaviors[Future] {
     this: Spec with FinderComponent.Remote =>
 
-    override object X extends Comonad[Future] {
+    override object Y extends Comonad[Future] {
       override def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
       override def cobind[A, B](fa: Future[A])(f: Future[A] => B) = ???
       override def cojoin[A](fa: Future[A]): Future[Future[A]] = ???

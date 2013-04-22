@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 import scalaz.Id.Id
 
-import util.{ConfigurableComponent, Events}
+import util.Events
 
 sealed trait System[X[+_]] {
   def client: Client[X]
@@ -53,27 +53,19 @@ object System {
     private object _client extends Client
   }
 
-  trait Remote extends System[Future]
-               with origin.FinderComponent.Remote
-               with ConfigurableComponent {
-
-    override protected type Configuration <: Remote.Configuration
+  trait Remote extends System[Future] with origin.FinderComponent.Remote {
 
     override def client: Client = _client
     override def shutdown() {}
 
     trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
 
-      override protected type Configuration = Client.Remote.Configuration
+      override protected type Configuration = amber.origin.FinderComponent.Remote.Configuration
       override protected def configuration: Configuration = Remote.this.configuration
 
       override protected val finder = Remote.this
     }
 
     private object _client extends Client
-  }
-
-  object Remote {
-    trait Configuration extends Client.Remote.Configuration
   }
 }

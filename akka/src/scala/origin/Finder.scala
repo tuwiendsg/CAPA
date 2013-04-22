@@ -70,12 +70,12 @@ object FinderComponent {
   }
 
   object Remote {
-    trait Configuration {
+    trait Configuration extends amber.origin.FinderComponent.Remote.Configuration {
 
       def local: ActorSystem
       def remote: String
 
-      def context: ExecutionContext = local.dispatcher
+      override def context: ExecutionContext = local.dispatcher
       def finder: ActorRef = local.actorFor(s"${remote}/user/${Actor.name}")
       def timeout: FiniteDuration = FiniteDuration(
         local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
