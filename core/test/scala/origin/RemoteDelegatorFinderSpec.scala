@@ -18,7 +18,7 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import scala.concurrent.ExecutionContext
+import util.Executors
 
 class RemoteDelegatorFinderSpec extends Spec
                                 with FinderComponent.Delegator.Remote
@@ -26,7 +26,7 @@ class RemoteDelegatorFinderSpec extends Spec
 
   override protected type Configuration = FinderComponent.Remote.Configuration
   override protected object configuration extends Configuration {
-    override def context = ExecutionContext.global
+    override def context = Executors.CallingThread
   }
 
   override val finder = new FinderComponent
