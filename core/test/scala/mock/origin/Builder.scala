@@ -18,37 +18,95 @@ package at.ac.tuwien.infosys
 package amber
 package mock.origin
 
-import scala.collection.immutable.Vector
+import scala.language.higherKinds
 
-import org.scalatest.{BeforeAndAfterEach, Suite}
-import org.scalatest.mock.MockitoSugar.mock
+import scala.collection.immutable.List
 
-import util.NotNothing
+import scalaz.syntax.functor._
 
-trait BuilderComponent extends amber.origin.BuilderComponent
-                       with BeforeAndAfterEach {
-  this: Suite =>
+import org.scalatest.BeforeAndAfterEach
 
-  override def beforeEach() {
-    built = Vector.empty
-    build = mock[(Property.Name, Family, Any) => Unit]("mock.OriginBuilder.build")
+import util.{Mocker, Mocking, Type}
 
-    super.beforeEach()
-  }
+trait BuilderComponent extends amber.origin.BuilderComponent with Mocking {
 
-  var built: Vector[Origin[AnyRef]] = _
-  var build: (Property.Name, Family, Any) => Unit = _
+  def mocker[A: Type]: Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]]
 
-  override protected type Origin[+A <: AnyRef] = amber.Origin[A]
-  override protected def builder = new OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B): Origin[A] = {
-      val origin = amber.mock.Origin(name, family, read)
+  var built = List.empty[Origin[_]]
+  var build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
+
+  override protected type Origin[+A] <: amber.Origin[A]
+  override protected def builder: OriginBuilder = _builder
+
+  private object _builder extends OriginBuilder {
+
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                               (read: OriginBuilder.Read[A]) = {
+      val origin = mocker[A].mock((name, family, read))
       built = built :+ origin
-
-      BuilderComponent.this.build(name, family, read)
+      BuilderComponent.this.build(name, family)
 
       origin
+    }
+
+    override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+      val origin = mocker[B].mock((name, underlying.family, {meta =>
+        underlying.read().asInstanceOf[Reading[(Origin.Value[A], Origin.MetaInfo)]] map {
+          case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+        }
+      }))
+      built = built :+ origin
+      BuilderComponent.this.build(name, underlying.family)
+
+      origin
+    }
+  }
+}
+
+object BuilderComponent {
+
+  trait InSpec extends BeforeAndAfterEach {
+    this: Spec with BuilderComponent =>
+
+    override def beforeEach() {
+      built = List.empty
+      build = mock[(Origin.Name, Origin.Family) => Unit]("mock.OriginBuilder.build")
+
+      super.beforeEach()
+    }
+  }
+
+  trait Local extends amber.origin.BuilderComponent.Local with BuilderComponent {
+    override protected type Origin[+A] <: Origin.Local[A]
+  }
+
+  trait Remote extends amber.origin.BuilderComponent.Remote with BuilderComponent {
+    override protected type Origin[+A] <: Origin.Remote[A]
+  }
+
+  object Local {
+    trait Default extends BuilderComponent.Local {
+
+      override protected type Origin[+A] = Origin.Local[A]
+
+      override def mocker[A](implicit typeA: Type[A]) =
+        new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
+          def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) =
+            Default.this.mock[Origin[A]](s"mock.Origin.Local[$typeA]")
+        }
+    }
+  }
+
+  object Remote {
+    trait Default extends BuilderComponent.Remote {
+
+      override protected type Origin[+A] = Origin.Remote[A]
+
+      override def mocker[A](implicit typeA: Type[A]) =
+        new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
+          def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) =
+            Default.this.mock[Origin[A]](s"mock.Origin.Remote[$typeA]")
+        }
     }
   }
 }

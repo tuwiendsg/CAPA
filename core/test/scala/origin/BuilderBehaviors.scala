@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Sanjin Sehic
+ * Copyright 2013 Sanjin Sehic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,33 +18,44 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-import util.NotNothing
+import scala.concurrent.Future
 
-trait BuilderBehaviors extends OriginBehaviors {
-  this: Spec with BuilderComponent =>
+import scalaz.OptionT
 
-  val fixture = new OriginBehaviors.Fixture {
+import util.Type
 
-    protected type Origin[+A <: AnyRef] = BuilderBehaviors.this.Origin[A]
+sealed trait BuilderBehaviors {
+  this: Spec with OriginBehaviors with BuilderComponent =>
 
-    override def create[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-      (name: Property.Name, family: Family, read: B) =
-    builder.build(name, family, read)
-  }
-
-  def anOrigin {
-    behave like (AnOrigin withName fixture)
-    behave like (AnOrigin withFamily fixture)
-    behave like (AnOrigin withMetaInfo fixture)
-    behave like (AnOrigin withType fixture)
-    behave like (AnOrigin withRead fixture)
-  }
-
-  object aBuilder {
-    def onBuild {
-      "return the origin" which {
-        behave like anOrigin
-      }
+  def aBuilder {
+    "build an origin" which {
+      behave like anOrigin
     }
+
+    "build a mapped origin over an underlying origin" which {
+      behave like aMappedOrigin(new Mapper {
+        override def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) =
+          builder.map(underlying, name)(f)
+      })
+    }
+  }
+}
+
+object BuilderBehaviors extends {
+
+  trait Local extends BuilderBehaviors with OriginBehaviors.Local {
+    this: Spec with BuilderComponent.Local =>
+
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]) =
+      builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
+  }
+
+  trait Remote extends BuilderBehaviors with OriginBehaviors.Remote {
+    this: Spec with BuilderComponent.Remote =>
+
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]) =
+      builder.build(name, family) {meta => OptionT(Future.successful(read() map {
+        value => (Origin.Value(name, value), meta)
+      }))}
   }
 }

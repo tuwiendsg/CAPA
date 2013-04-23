@@ -19,34 +19,18 @@ package amber
 package demo
 package temperature
 
-import util.{Logging, Scheduling}
+trait Demo extends Runnable {
 
-trait Demo extends Runnable with Scheduling {
-  this: Logging =>
+  object server extends Server with util.SLF4JLogging
+  object client extends Client with util.SLF4JLogging
 
-  def system: temperature.System
-  def client: temperature.Client
-
-  protected val delimiter = "-" * 40
-  protected val locations = Seq("A", "B")
-  protected val origins = 5
+  def shutdown() {
+    client.shutdown()
+    server.shutdown()
+  }
 
   override def run() {
-    try {
-      for {
-        location <- locations
-        _ <- 1 to origins
-      } system.Temperature.createCelsius(location)
-      println(delimiter)
-      every(2.seconds) {
-        () =>
-          client.printTemperature()
-          println(delimiter)
-      }
-      readLine()
-    } finally {
-      shutdown()
-      system.shutdown()
-    }
+    server.run()
+    client.run()
   }
 }

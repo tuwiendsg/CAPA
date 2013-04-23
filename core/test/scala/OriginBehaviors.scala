@@ -17,252 +17,393 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.language.higherKinds
+
+import scala.concurrent.Await
+
 import org.mockito.Matchers.{anyObject => anything}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{verify, when}
 
-import Origin.{Meta, MetaInfo}
-import util.{Filter, NotNothing, Randoms}
+import util.Type
 
-trait OriginBehaviors {
+sealed trait OriginBehaviors {
   this: Spec =>
 
-  object AnOrigin {
+  type Origin[+A] <: amber.Origin[A]
 
-    def withName(fixture: OriginBehaviors.Fixture.WithNoRead) {
-      "has the specified name" in {
-        val name = random[Property.Name]
-        val origin = fixture.create[AnyRef](name = name)
+  def copoint[A, B](reading: Origin[A]#Reading[B]): Option[B]
+  def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]): Origin[A]
+
+  trait Mapper {
+    def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B): Origin[B]
+  }
+
+  trait Fixture {
+
+    val family = random[Origin.Family]
+    val read = mock[Fixture.Read[A]]("Origin.read")
+    val f = mock[A => B]("Origin.map")
+
+    def create(): Origin[A] = build(random[Origin.Name], family)(read)
+    def create(name: Origin.Name): Origin[A] = build(name, family)(read)
+    def create(family: Origin.Family): Origin[A] = build(random[Origin.Name], family)(read)
+    def create[A: Type](read: Fixture.Read[A]): Origin[A] = build(random[Origin.Name], family)(read)
+
+    def map(underlying: Origin[A])(implicit mapper: Mapper) =
+      mapper(underlying, random[Origin.Name])(f)
+
+    def map(underlying: Origin[A], name: Origin.Name)(implicit mapper: Mapper) =
+      mapper(underlying, name)(f)
+
+    def map[B: Type](underlying: Origin[A], f: A => B)(implicit mapper: Mapper) =
+      mapper(underlying, random[Origin.Name])(f)
+  }
+
+  object Fixture {
+    type Read[+A] = () => Origin.Local.Reading[A]
+  }
+
+  class A
+  class U extends A
+  class B
+  class V extends B
+
+  def anOrigin {
+    "has the specified name" in {
+      new Fixture {
+        val name = random[Origin.Name]
+        val origin = create(name)
 
         origin.name should be(name)
       }
     }
 
-    def withFamily(fixture: OriginBehaviors.Fixture.WithNoRead) {
-      "is in the specified family" in {
-        val family = random[Family]
-        val origin = fixture.create[AnyRef](family = family)
+    "is in the specified family" in {
+      new Fixture {
+        val origin = create(family)
 
         origin.family should be(family)
       }
     }
 
-    def withMetaInfo(fixture: OriginBehaviors.Fixture.WithNoRead) {
-      "if a meta value was never assigned" should {
-        "return None " in {
-          val origin = fixture.create[AnyRef]()
+    "if a meta value was never assigned" should {
+      "return None " in {
+        new Fixture {
+          val origin = create()
 
-          origin.meta[AnyRef](random[MetaInfo.Name]) should not be('defined)
-        }
-      }
-
-      "if a meta value was previously assigned" should {
-        "return the assigned value" when {
-          "requested type is same type as the assigned value" in {
-            class A
-            val name = random[MetaInfo.Name]
-            val value = new A
-            val origin = fixture.create[AnyRef]()
-
-            origin.meta(name) = value
-
-            origin.meta[A](name).value should be(value)
-          }
-
-          "requested type is a super type of the assigned value" in {
-            class A
-            class B extends A
-            val name = random[MetaInfo.Name]
-            val value = new B
-            val origin = fixture.create[AnyRef]()
-
-            origin.meta(name) = value
-
-            origin.meta[A](name).value should be(value)
-          }
-        }
-
-        "return None " when {
-          "requested type is a different type than the assigned value" in {
-            class A
-            class B
-            val name = random[MetaInfo.Name]
-            val value = new A
-            val origin = fixture.create[AnyRef]()
-
-            origin.meta(name) = value
-
-            origin.meta[B](name) should not be('defined)
-          }
-
-          "requested type is a sub type of the assigned value" in {
-            class A
-            class B extends A
-            val name = random[MetaInfo.Name]
-            val value = new A
-            val origin = fixture.create[AnyRef]()
-
-            origin.meta(name) = value
-
-            origin.meta[B](name) should not be('defined)
-          }
+          copoint(origin.selectDynamic(random[Origin.MetaInfo.Name])).as[Any] should not be('defined)
         }
       }
     }
 
-    def withType(fixture: OriginBehaviors.Fixture.WithNoRead) {
-      "does return the same type" in {
-        class A
-        val origin = fixture.create[A]()
+    "if a meta value was previously assigned" should {
+      "return the assigned value" in {
+        new Fixture {
+          val origin = create()
+
+          val name = random[Origin.MetaInfo.Name]
+          val value = random[Int]
+          origin(name) = value
+
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
+        }
+      }
+    }
+
+    "does return the same type" in {
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
         origin.returns[A] should be(true)
       }
+    }
 
-      "does return a super type" in {
-        class A
-        class B extends A
-        val origin = fixture.create[B]()
+    "does return a super type" in {
+      new Fixture {
+        val origin = create(mock[Fixture.Read[U]]("Origin.read"))
 
         origin.returns[A] should be(true)
       }
+    }
 
-      "does not return a different type" in {
-        class A
-        class B
-        val origin = fixture.create[A]()
-
-        origin.returns[B] should be(false)
-      }
-
-      "does not return a sub type" in {
-        class A
-        class B extends A
-        val origin = fixture.create[A]()
+    "does not return a different type" in {
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
         origin.returns[B] should be(false)
       }
     }
 
-    def withFilteredRead(fixture: OriginBehaviors.Fixture.WithFilteredRead) {
-      "invokes the specified filter" in {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        val origin = fixture.create[AnyRef] {() => None}
+    "does not return a sub type" in {
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
-        origin(filter)
-
-        verify(filter).apply(anything())
+        origin.returns[U] should be(false)
       }
+    }
 
-      "if it passes the specified filter" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        when(filter.apply(anything())) thenReturn true
+    "use the specified read function" in {
+      new Fixture {
+        when(read.apply()) thenReturn None
+        val origin = create()
 
-        "use the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
-          when(read.apply()) thenReturn None
-          val origin = fixture.create(read)
+        origin.read()
 
-          origin(filter)
+        verify(read).apply()
+      }
+    }
 
-          verify(read).apply()
-        }
+    "if reading is successful" should {
+      "return a value" which {
+        "has the same name as the origin" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val origin = create()
 
-        "if reading is successful" should {
-          "return a property" which {
-            "has the same name as the origin" in {
-              val origin = fixture.create {() => Some(random[String])}
-
-              val property = origin(filter).value
-              property.name should be(origin.name)
-            }
-
-            "contains the result of the specified read function" in {
-              val result = random[String]
-              val origin = fixture.create {() => Some(result)}
-
-              val property = origin(filter).value
-              property.value should be(result)
-            }
+            val (Origin.Value(name, _), _) = copoint(origin.read()).value
+            name should be(origin.name)
           }
         }
 
-        "if reading is unsuccessful" should {
-          "return None" in {
-            val origin = fixture.create[AnyRef] {() => None}
+        "contains the result of the specified read function" in {
+          new Fixture {
+            val result = new A
+            when(read()) thenReturn Some(result)
+            val origin = create()
 
-            origin(filter) should not be('defined)
+            val (Origin.Value(_, value), _) = copoint(origin.read()).value
+            value should be(result)
           }
         }
       }
 
-      "if it does not pass the specified filter" should {
-        val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
-        when(filter.apply(anything())) thenReturn false
+      "contains the origin's meta" in {
+        new Fixture {
+          when(read()) thenReturn Some(new A)
+          val origin = create()
 
-        "not invoke the specified read function" in {
-          val read = mock[Origin.Read.Unfiltered[AnyRef]]("Origin.read")
-          val origin = fixture.create(read)
+          val name = random[String]
+          val value = random[Int]
+          origin(name) = value
 
-          origin(filter)
-
-          verify(read, never()).apply()
-        }
-
-        "return None" in {
-          val origin = fixture.create[AnyRef]()
-
-          origin(filter) should not be('defined)
+          val (_, meta) = copoint(origin.read()).value
+          meta.selectDynamic(name).as[Any].value should be(value)
         }
       }
     }
 
-    def withUnfilteredRead(fixture: OriginBehaviors.Fixture.WithUnfilteredRead) {
-      val filter = mock[Filter[Origin.Meta.Readable]]("Filter")
+    "if reading is unsuccessful" should {
+      "return None" in {
+        new Fixture {
+          when(read()) thenReturn None
+          val origin = create()
 
-      "uses the specified read function" in {
-        val read = mock[Origin.Read.Filtered[AnyRef]]("Origin.read")
-        when(read.apply(anything())) thenReturn None
-        val origin = fixture.create(read)
-
-        origin(filter)
-
-        verify(read).apply(filter)
-      }
-
-      "if reading is successful" should {
-        "return a property" which {
-          "has the same name as the origin" in {
-            val origin = fixture.create {_ => Some(random[String])}
-
-            val property = origin(filter).value
-            property.name should be(origin.name)
-          }
-
-          "contains the result of the specified read function" in {
-            val result = random[String]
-            val origin = fixture.create {_ => Some(result)}
-
-            val property = origin(filter).value
-            property.value should be(result)
-          }
-        }
-      }
-
-      "if reading is unsuccessful" should {
-        "return None" in {
-          val origin = fixture.create[AnyRef] {(_: Filter[Meta.Readable]) => None}
-
-          origin(filter) should not be('defined)
+          copoint(origin.read()) should not be('defined)
         }
       }
     }
 
-    def withRead(fixture: OriginBehaviors.Fixture) {
-      "if it is created with a filtered read" which {
-        behave like withFilteredRead(fixture)
+    "if mapped over" should {
+      behave like aMappedOrigin(new Mapper {
+        override def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) =
+          underlying.map(name)(f).asInstanceOf[Origin[B]]
+      })
+    }
+  }
+
+  def aMappedOrigin(implicit mapper: Mapper) {
+    "have the specified name" in {
+      new Fixture {
+        val name = random[Origin.Name]
+        val underlying = create()
+        val origin = map(underlying, name)
+
+        origin.name should be(name)
+      }
+    }
+
+    "be in same family" in {
+      new Fixture {
+        val underlying = create(family)
+        val origin = map(underlying)
+
+        origin.family should be(family)
+      }
+    }
+
+    "return None" when {
+      "a meta value was never assigned" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
+
+          copoint(origin.selectDynamic(random[Origin.MetaInfo.Name])).as[Any] should not be('defined)
+        }
+      }
+    }
+
+    "return the assigned value" when {
+      "a meta value was previously assigned to the mapped origin" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
+
+          val name = random[Origin.MetaInfo.Name]
+          val value = random[Int]
+          underlying(name) = random[Int]
+          origin(name) = value
+
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
+        }
       }
 
-      "if it is created with an unfiltered read" which {
-        behave like withUnfilteredRead(fixture)
+      "a meta value was previously assigned to the underlying origin" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
+
+          val name = random[Origin.MetaInfo.Name]
+          val value = random[Int]
+          underlying(name) = value
+
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
+        }
+      }
+    }
+
+    "return the same type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
+
+        origin.returns[B] should be(true)
+      }
+    }
+
+    "return a super type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => U]("Origin.map"))
+
+        origin.returns[A] should be(true)
+      }
+    }
+
+    "not return a different type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
+
+        origin.returns[A] should be(false)
+      }
+    }
+
+    "not return a sub type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
+
+        origin.returns[V] should be(false)
+      }
+    }
+
+    "use the underlying origin's read function" in {
+      new Fixture {
+        when(read()) thenReturn None
+        val underlying = create()
+        val origin = map(underlying)
+
+        origin.read()
+
+        verify(read).apply()
+      }
+    }
+
+    "invoke the specified map function with result of the underlying origin's read function" in {
+      new Fixture {
+        val result = new A
+        when(read()) thenReturn Some(result)
+        val underlying = create()
+        val origin = map(underlying)
+
+        origin.read()
+
+        verify(f).apply(result)
+      }
+    }
+
+    "return a result" when {
+      "reading is successful" which {
+        "has the same name as the mapped origin" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
+
+            val (Origin.Value(name, _), _) = copoint(origin.read()).value
+            name should be(origin.name)
+          }
+        }
+
+        "contains the result of the specified map function" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+
+            val result = new B
+            when(f(anything())) thenReturn result
+            val origin = map(underlying)
+
+            val (Origin.Value(_, value), _) = copoint(origin.read()).value
+            value should be(result)
+          }
+        }
+
+        "contains the mapped origin's meta" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
+
+            val name = random[String]
+            val value = random[Int]
+            underlying(name) = random[Int]
+            origin(name) = value
+
+            val (_, meta) = copoint(origin.read()).value
+            meta.selectDynamic(name).as[Any].value should be(value)
+          }
+        }
+
+        "contains the underlying origin's meta" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
+
+            val name = random[String]
+            val value = random[Int]
+            underlying(name) = value
+
+            val (_, meta) = copoint(origin.read()).value
+            meta.selectDynamic(name).as[Any].value should be(value)
+          }
+        }
+      }
+    }
+
+    "return None" when {
+      "reading is unsuccessful" in {
+        new Fixture {
+          when(read()) thenReturn None
+          val underlying = create()
+          val origin = map(underlying)
+
+          copoint(origin.read()) should not be('defined)
+        }
       }
     }
   }
@@ -270,43 +411,19 @@ trait OriginBehaviors {
 
 object OriginBehaviors {
 
-  object Fixture {
+  trait Local extends OriginBehaviors {
+    this: Spec =>
 
-    trait WithNoRead extends Randoms {
+    override type Origin[+A] <: Origin.Local[A]
 
-      protected type Origin[+A <: AnyRef] <: amber.Origin[A]
-
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name = random[Property.Name],
-         family: Family = random[Family]): Origin[A]
-    }
-
-    trait WithFilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Unfiltered[A]): Origin[A]
-    }
-
-    trait WithUnfilteredRead extends WithNoRead {
-      def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Filtered[A]): Origin[A]
-    }
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = reading
   }
 
-  trait Fixture extends Fixture.WithFilteredRead with Fixture.WithUnfilteredRead {
+  trait Remote extends OriginBehaviors {
+    this: Spec =>
 
-    def create[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-      (name: Property.Name, family: Family, read: B): Origin[A]
+    override type Origin[+A] <: Origin.Remote[A]
 
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (name: Property.Name, family: Family) =
-      create[A, Origin.Read.Unfiltered[A]](name, family, {() => None})
-
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Unfiltered[A]) =
-      create(random[Property.Name], random[Family], read)
-
-    override def create[A <: AnyRef : NotNothing : Manifest]
-        (read: Origin.Read.Filtered[A]) =
-      create(random[Property.Name], random[Family], read)
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = Await.result(reading.run, timeout)
   }
 }

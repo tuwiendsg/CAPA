@@ -19,31 +19,35 @@ package amber
 package util
 
 import scala.collection.immutable.Stream
-import scala.util.Random.alphanumeric
+import scala.util.Random.{alphanumeric, nextInt}
+
+import scalaz.Equal
+import scalaz.std.anyVal._
+import scalaz.syntax.equal._
 
 trait Randoms {
 
-  import Randoms.Manifest
+  def different[A: Equal : Random](value: A): A = random[A](value =/= (_: A))
+  def random[A: Random](p: A => Boolean): A = {Stream.continually(random[A]).dropWhile(!p(_)).head}
+  def random[A](implicit random: Random[A]): A = random.instance()
 
-  def different[A: Manifest](value: A): A = random[A](value != (_: A))
-
-  def random[A : Manifest](p: A => Boolean): A = {
-    Stream.continually(random[A]).dropWhile(!p(_)).head
+  trait Random[A] {
+    def instance(): A
   }
 
-  def random[A : NotNothing : Manifest]: A = randomFor(manifest[A]).asInstanceOf[A]
-
-  private def randomFor(m: Manifest[_]): Any = m match {
-    case Manifest.Family => Family.random()
-    case Manifest.PropertyName => Property.Name(random((_: String) forall {_ != '/'}))
-    case Manifest.String => new String(alphanumeric.take(10).toArray)
+  implicit object StringHasRandom extends Random[String] {
+    override def instance() = new String(alphanumeric.take(10).toArray)
   }
-}
 
-object Randoms {
-  private object Manifest {
-    val Family = manifest[Family]
-    val PropertyName = manifest[Property.Name]
-    val String = manifest[String]
+  implicit object IntHasRandom extends Random[Int] {
+    override def instance() = nextInt()
+  }
+
+  implicit object PathHasRandom extends Random[Path] {
+    override def instance() = Path(random((_: String) forall {_ =/= '/'}))
+  }
+
+  implicit object OriginFamilyHasRandom extends Random[Origin.Family] {
+    override def instance() = Origin.Family.random()
   }
 }

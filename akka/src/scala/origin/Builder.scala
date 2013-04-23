@@ -19,36 +19,118 @@ package amber
 package akka
 package origin
 
-import _root_.akka.actor.Actor.actorOf
+import scala.language.higherKinds
 
-import amber.util.{Filter, Logging, NotNothing}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 
-trait BuilderComponent extends amber.origin.BuilderComponent {
-  this: Logging =>
+import _root_.akka.actor.{ActorSystem, Props}
+import _root_.akka.util.Timeout
 
-  override protected type Origin[+A <: AnyRef] = OriginRef[A]
-  override protected def builder: super.OriginBuilder = Builder
+import scalaz.OptionT
 
-  protected trait OriginBuilder extends super.OriginBuilder {
-    override def build[A <: AnyRef : NotNothing : Manifest, B : amber.Origin.Read[A]#apply]
-        (name: Property.Name, family: Family, read: B) = {
-      val log = logger.create("amber.akka.Origin(" + name + ")")
-      val origin = actorOf(
-        read match {
-          case f: Origin.Read.Unfiltered[A] =>
-            new OriginActor(name, log) {
-              override protected def read(filter: Filter[Origin.Meta.Readable]) =
-                if (filter(meta)) f() else None
-            }
-          case f: Origin.Read.Filtered[A] =>
-            new OriginActor(name, log) {
-              override protected def read(filter: Filter[Origin.Meta.Readable]) = f(filter)
-            }
+import amber.util.{ConfigurableComponent, Type}
+
+object BuilderComponent {
+
+  trait Local extends amber.origin.BuilderComponent.Local with ConfigurableComponent {
+
+    override protected type Configuration <: Local.Configuration
+
+    override protected type Origin[+A] = Origin.Local[A]
+    override protected def builder: OriginBuilder = _builder
+
+    private object _builder extends OriginBuilder {
+
+      private abstract class Origin[+A: Type](name: Origin.Name, family: Origin.Family)
+          extends Local.this.Origin[A](name, family) with OriginBuilder.OriginOps[A] {
+
+        override private[akka] lazy val actor = configuration.system.actorOf(
+          Props(new Origin.Actor.Local(this)).withDispatcher("amber.origins.dispatcher")
+        )
+      }
+
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]): Local.this.Origin[A] =
+        new Origin(name, family) {
+          override def read() = _read(meta)
         }
-      )
-      OriginRef(name, family)(origin.start())
+
+      override def map[A, B: Type](underlying: Local.this.Origin[A], name: Origin.Name)
+                                  (f: A => B): Local.this.Origin[B] =
+        new Origin(name, underlying.family) {
+
+          override def read() = underlying.read() map {
+            case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+          }
+
+          override def selectDynamic(name: Origin.MetaInfo.Name) =
+            super.selectDynamic(name) orElse underlying.selectDynamic(name)
+        }
     }
   }
 
-  private object Builder extends OriginBuilder
+  object Local {
+    trait Configuration {
+      def system: ActorSystem
+    }
+  }
+
+  trait Remote extends amber.origin.BuilderComponent.Remote with ConfigurableComponent {
+
+    override protected type Origin[+A] = Origin.Remote[A]
+    override protected type Configuration <: Remote.Configuration
+
+    override protected def builder: OriginBuilder = _builder
+
+    private object _builder extends OriginBuilder {
+
+      implicit private def context = configuration.context
+      implicit private def timeout: Timeout = configuration.timeout
+
+      private abstract class Origin[+A: Type](name: Origin.Name, family: Origin.Family)
+          extends Remote.this.Origin[A](name, family)
+          with Origin.MetaInfo.Local
+          with OriginBuilder.OriginOps[A] {
+
+        override private[akka] lazy val actor = configuration.local.actorOf(
+          Props(new Origin.Actor.Remote[A](this)).withDispatcher("amber.origins.dispatcher")
+        )
+
+        override def selectDynamic(name: Origin.MetaInfo.Name) =
+          OptionT(Future.successful(select(name)))
+      }
+
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (_read: OriginBuilder.Read[A]): Remote.this.Origin[A] =
+        new Origin[A](name, family) {
+          override def read() = _read(meta)
+        }
+
+      override def map[A, B: Type](underlying: Remote.this.Origin[A], name: Origin.Name)
+                                  (f: A => B): Remote.this.Origin[B] =
+        new Origin(name, underlying.family) {
+
+          override def read() = underlying.read() map {
+            case (Origin.Value(_, value), other) => (Origin.Value(name, f(value)), meta :+ other)
+          }
+
+          override def selectDynamic(name: Origin.MetaInfo.Name) =
+            super.selectDynamic(name) orElse underlying.selectDynamic(name)
+        }
+    }
+  }
+
+  object Remote {
+    trait Configuration extends amber.origin.BuilderComponent.Remote.Configuration {
+
+      def local: ActorSystem
+
+      override def context: ExecutionContext = local.dispatchers.lookup("amber.origins.dispatcher")
+      def timeout: FiniteDuration = FiniteDuration(
+        local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
+        MILLISECONDS
+      )
+    }
+  }
 }

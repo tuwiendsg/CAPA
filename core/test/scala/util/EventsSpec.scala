@@ -26,12 +26,13 @@ class EventsSpec extends Spec {
   "Events.Enriched" when {
     "two sources are merged" should {
       trait Fixture {
+
         class A
         class B
 
-        val eventsA = amber.mock.util.Events[A]()
-        val eventsB = amber.mock.util.Events[B]()
-        val observe = amber.mock.util.Events.Observe[AnyRef]()
+        val eventsA = EventSource[A]()
+        val eventsB = EventSource[B]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
       }
 
       "invoke a subscribed observer" when {
@@ -69,11 +70,12 @@ class EventsSpec extends Spec {
 
     "a source is mapped over with a mapper function" when {
       trait Fixture {
+
         class A
         class B
 
-        val events = amber.mock.util.Events[A]()
-        val observe = amber.mock.util.Events.Observe[AnyRef]()
+        val events = EventSource[A]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
         val mapper = mock[A => B]("Events.map")
       }
 
@@ -113,11 +115,12 @@ class EventsSpec extends Spec {
 
     "a source is filtered with a predicate function" when {
       trait Fixture {
+
         class A
 
         val event = new A
-        val events = amber.mock.util.Events[A]()
-        val observe = amber.mock.util.Events.Observe[AnyRef]()
+        val events = EventSource[A]()
+        val observe = mock[Events.Observe[Any]]("Events.observe")
         val predicate = mock[A => Boolean]("Events.filter")
       }
 

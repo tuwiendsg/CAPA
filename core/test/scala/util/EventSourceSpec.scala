@@ -18,13 +18,14 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.reflect.ClassTag
+
 class EventSourceSpec extends Spec with EventsBehaviors {
 
-  override protected type Events[A]  = EventSource[A]
-  override val fixture = new Fixture {
-    override def create[A : NotNothing : Manifest]() = EventSource[A]()
-    override def emit[A](events: EventSource[A])(event: A) {events.emit(event)}
-  }
+  override type Events[A] = EventSource[A]
+
+  override def create() = EventSource[A]()
+  override def emit(events: Events[A])(event: A) {events.emit(event)}
 
   "EventSource" should {
     behave like anEvents

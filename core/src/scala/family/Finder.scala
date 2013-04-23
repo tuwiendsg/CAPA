@@ -18,25 +18,22 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
-import java.util.List
-import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArrayList}
+import scala.language.higherKinds
 
-import scala.collection.immutable.{Seq, Vector}
+import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
+
+import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
 
-import scalaz._
-import Scalaz._
-
-import util.NotNothing
+import util.Type
 
 trait FinderComponent {
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {
-    def all(): Seq[Origin[_ <: AnyRef]]
-    def find(name: Family): Seq[Origin[_ <: AnyRef]]
+    def find(family: Origin.Family): Set[Origin[_]]
   }
 }
 
@@ -44,57 +41,50 @@ object FinderComponent {
 
   trait Default extends FinderComponent with origin.BuilderComponent {
 
-    abstract override protected def builder: OriginBuilder =
-      new Wrapper(super.builder)
-    override protected def families: FamilyFinder = Finder
+    abstract override protected def builder: OriginBuilder = _builder
+    override protected def families: FamilyFinder = _families
 
     protected trait FamilyFinder extends super.FamilyFinder {
 
-      private val families = new ConcurrentHashMap[Family, List[Origin[_ <: AnyRef]]]
+      private val families = new ConcurrentHashMap[Origin.Family, CopyOnWriteArraySet[Origin[_]]]
 
-      override def all() = {
-        val builder = Vector.newBuilder[Origin[_ <: AnyRef]]
-        for ((_, family) <- families) builder ++= family
-        builder.result()
-      }
+      override def find(family: Origin.Family) =
+        Option(families.get(family)).fold(Set.empty[Origin[_]]) {_.toSet}
 
-      override def find(family: Family) =
-        (for {
-           origins <- Option(families.get(family))
-         } yield Vector(origins: _*)) | Vector.empty
-
-      def add(origin: Origin[_ <: AnyRef]) {
+      def add(origin: Origin[_]) {
         val family = origin.family
         if (families get family eq null)
-          families.putIfAbsent(family, new CopyOnWriteArrayList[Origin[_ <: AnyRef]]())
+          families.putIfAbsent(family, new CopyOnWriteArraySet[Origin[_]]())
         families.get(family).add(origin)
       }
     }
 
-    private object Finder extends FamilyFinder
+    private object _builder extends OriginBuilder {
 
-    private class Wrapper(underlying: OriginBuilder) extends OriginBuilder {
-      override def build[A <: AnyRef : NotNothing : Manifest, B : Origin.Read[A]#apply]
-          (name: Property.Name, family: Family, read: B) = {
-        val result = underlying.build(name, family, read)
+      override def build[A: Type](name: Origin.Name, family: Origin.Family)
+                                 (read: OriginBuilder.Read[A]) = {
+        val result = Default.super.builder.build(name, family)(read)
+        families.add(result)
+        result
+      }
+
+      override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+        val result = Default.super.builder.map(underlying, name)(f)
         families.add(result)
         result
       }
     }
+
+    private object _families extends FamilyFinder
   }
 
   trait Delegator extends FinderComponent {
 
-    protected val delegatee: FinderComponent
+    protected val finder: FinderComponent
 
-    override protected type Origin[+A <: AnyRef] = delegatee.Origin[A]
-    override protected def families: super.FamilyFinder = Finder
-
-    protected trait FamilyFinder extends super.FamilyFinder {
-      override def all() = delegatee.families.all()
-      override def find(name: Family) = delegatee.families.find(name)
+    override protected type Origin[+A] = finder.Origin[A]
+    override protected object families extends FamilyFinder {
+      override def find(family: Origin.Family) = finder.families.find(family)
     }
-
-    private object Finder extends FamilyFinder
   }
 }

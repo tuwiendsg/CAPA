@@ -19,29 +19,41 @@ package amber
 package util
 
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.NANOSECONDS
 
-trait Scheduling extends Duration.Conversions {
+import scala.concurrent.duration.Duration
+import scala.util.Try
+
+trait Scheduling extends ConfigurableComponent {
   this: Logging =>
+
+  override protected type Configuration <: Scheduling.Configuration
 
   @transient private[this] val log: Logger = logger.create("amber.Scheduler")
 
-  private val scheduler = Executors.newScheduledThreadPool(1)
+  private val scheduler = Executors.newScheduledThreadPool(configuration.threads)
 
   def after(delay: Duration)(f: () => Unit) {
     scheduler.schedule(toRunnable(f), delay.length, delay.unit)
   }
 
-  def every(period: Duration, delay: Duration = 0.nanoseconds)(f: () => Unit) {
-    scheduler.scheduleAtFixedRate(toRunnable(f), delay.inNanoseconds, period.inNanoseconds, TimeUnit.NANOSECONDS)
+  def every(period: Duration, delay: Duration = Duration.Zero)(f: () => Unit) {
+    scheduler.scheduleAtFixedRate(toRunnable(f), delay.toNanos, period.toNanos, NANOSECONDS)
   }
 
   def shutdown() {scheduler.shutdown()}
 
   private def toRunnable(f: () => Unit) = new Runnable {
     override def run() {
-      try f()
-      catch {case ex: Exception => log.error("Scheduled task finished unsuccessfully!", Some(ex))}
+      Try {f()}.recover {
+        case ex: Exception => log.error("Scheduled task finished unsuccessfully!", Some(ex))
+      }
     }
+  }
+}
+
+object Scheduling {
+  trait Configuration {
+    def threads: Int = 1
   }
 }

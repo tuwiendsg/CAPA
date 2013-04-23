@@ -17,9 +17,10 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.concurrent.duration._
+
 import org.scalatest.{BeforeAndAfterEach, OptionValues, WordSpec}
 import org.scalatest.matchers.ShouldMatchers
-import org.scalatest.mock.MockitoSugar
 
 import util.{Mocking, Randoms}
 
@@ -27,6 +28,8 @@ trait Spec extends WordSpec
            with BeforeAndAfterEach
            with ShouldMatchers
            with OptionValues
-           with MockitoSugar
            with Mocking
-           with Randoms
+           with Randoms {
+
+  protected val timeout: FiniteDuration = 1.second
+}

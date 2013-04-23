@@ -37,4 +37,13 @@ object Logging {
     case object Warn extends Level
     case object Error extends Level
   }
+
+  trait Delegator extends Logging {
+
+    protected def logging: Logging
+
+    override protected object logger extends LoggerFactory {
+      override def create(name: Logger.Name) = logging.logger.create(name)
+    }
+  }
 }

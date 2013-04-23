@@ -18,65 +18,74 @@ package at.ac.tuwien.infosys
 package amber
 package util
 
+import scala.language.higherKinds
+
+import scala.reflect.ClassTag
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
 trait EventsBehaviors {
   this: Spec =>
 
-  protected type Events[A] <: amber.util.Events[A]
-  def fixture: Fixture
+  type Events[A] <: amber.util.Events[A]
+
+  class A
+
+  def create(): Events[A]
+  def emit(events: Events[A])(event: A)
 
   trait Fixture {
-    def create[A : NotNothing : Manifest](): Events[A]
-    def emit[A](events: Events[A])(event: A)
+    val event = new A
   }
 
   def anEvents {
-    class A
 
     "invoke a subscribed observer" in {
-      val event = new A
-      val events = fixture.create[A]()
-      val observe = amber.mock.util.Events.Observe[A]()
-      when(observe.isDefinedAt(event)) thenReturn true
+      new Fixture {
+        val events = create()
+        val observe = mock[Events.Observe[A]]("Events.observe")
+        when(observe.isDefinedAt(event)) thenReturn true
 
-      val observer = events.subscribe(observe)
-      try {
-        fixture.emit(events)(event)
-        verify(observe).apply(event)
-      } finally {
-        observer.dispose()
+        val observer = events.subscribe(observe)
+        try {
+          emit(events)(event)
+          verify(observe).apply(event)
+        } finally {
+          observer.dispose()
+        }
       }
     }
 
     "not invoke a subscribed observer" when {
       "it is not defined for the event" in {
-        val event = new A
-        val events = fixture.create[A]()
-        val observe = amber.mock.util.Events.Observe[A]()
-        when(observe.isDefinedAt(event)) thenReturn false
+        new Fixture {
+          val events = create()
+          val observe = mock[Events.Observe[A]]("Events.observe")
+          when(observe.isDefinedAt(event)) thenReturn false
 
-        val observer = events.subscribe(observe)
-        try {
-          fixture.emit(events)(event)
-          verify(observe, never()).apply(anything())
-        } finally {
-          observer.dispose()
+          val observer = events.subscribe(observe)
+          try {
+            emit(events)(event)
+            verify(observe, never()).apply(anything())
+          } finally {
+            observer.dispose()
+          }
         }
       }
 
       "it is disposed" in {
-        val event = new A
-        val events = fixture.create[A]()
-        val observe = amber.mock.util.Events.Observe[A]()
+        new Fixture {
+          val events = create()
+          val observe = mock[Events.Observe[A]]("Events.observe")
 
-        val observer = events.subscribe(observe)
-        observer.dispose()
-        fixture.emit(events)(event)
+          val observer = events.subscribe(observe)
+          observer.dispose()
+          emit(events)(event)
 
-        verify(observe, never()).isDefinedAt(anything())
-        verify(observe, never()).apply(anything())
+          verify(observe, never()).isDefinedAt(anything())
+          verify(observe, never()).apply(anything())
+        }
       }
     }
   }

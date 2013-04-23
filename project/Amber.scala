@@ -15,11 +15,11 @@
  */
 
 import sbt._
-import Keys._
+import sbt.Keys._
 
 object Info {
 
-  val version = "0.1.1"
+  val version = "0.2"
 
   val settings: Seq[Setting[_]] = Seq(
     Keys.version := version,
@@ -28,7 +28,7 @@ object Info {
                         "Insitute of Information Systems 184/1, " +
                         "Vienna University of Technology",
     organizationHomepage := Some(url("http://www.infosys.tuwien.ac.at/")),
-    licenses +=("Apache License Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
+    licenses += ("Apache License Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
     startYear := Some(2012)
   )
 }
@@ -41,9 +41,13 @@ object Layout {
 }
 
 object Build {
+
+  val version = "2.10.1"
+
   val settings: Seq[Setting[_]] = Seq(
-    scalaVersion := "2.9.2",
-    scalacOptions ++= Seq("-deprecation", "-unchecked"),
+    scalaVersion := version,
+    scalacOptions ++= Seq("-target:jvm-1.6", "-deprecation", "-unchecked", "-feature",
+                          "-Xlog-reflective-calls", "-Ywarn-adapted-args", "-encoding", "utf8"),
     javacOptions ++= Seq("-target", "6", "-source", "6", "-encoding", "utf8")
   )
 }
@@ -73,34 +77,40 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "1.3.1"
+    val version = "2.1.2"
     val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
-    val actor = "se.scalablesolutions.akka" % "akka-actor" % version
-    val testkit = "se.scalablesolutions.akka" % "akka-testkit" % version
+    val actor = "com.typesafe.akka" %% "akka-actor" % version
+    val remote = "com.typesafe.akka" %% "akka-remote" % version
+    val testkit = "com.typesafe.akka" %% "akka-testkit" % version
   }
 
   object Logback {
-    val version = "1.0.6"
+    val version = "1.0.10"
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
+  object Scala {
+    val reflect = "org.scala-lang" % "scala-reflect" % Build.version
+  }
+
   object Scalaz {
-    val version = "6.0.4"
+    val version = "7.0.0-M8"
     val core = "org.scalaz" %% "scalaz-core" % version
+    val iteratee = "org.scalaz" %% "scalaz-iteratee" % version
   }
 
   object SLF4J {
-    val version = "1.6.6"
+    val version = "1.7.3"
     val api = "org.slf4j" % "slf4j-api" % version
   }
 
   object ScalaTest {
-    val version = "1.8"
+    val version = "2.0.M5b"
     val core = "org.scalatest" %% "scalatest" % version
   }
 
   object Mockito {
-    val version = "1.9.0"
+    val version = "1.9.5"
     val all = "org.mockito" % "mockito-all" % version
   }
 }
@@ -119,6 +129,7 @@ object Amber extends Build {
     name = "core",
     dependencies = Seq(
                      Scalaz.core,
+                     Scalaz.iteratee,
                      SLF4J.api % "provided",
                      ScalaTest.core % "test",
                      Mockito.all % "test"
@@ -128,13 +139,13 @@ object Amber extends Build {
   lazy val simple = module("simple") dependsOn(core % "test->test;compile")
   lazy val akka = module(
     name = "akka",
-    dependencies = Seq(Akka.actor, Akka.testkit % "test"),
-    resolvers = Seq(Akka.repo)
+    resolvers = Seq(Akka.repo),
+    dependencies = Seq(Akka.actor, Akka.remote % "test", Akka.testkit % "test")
   ) dependsOn(core % "test->test;compile")
   lazy val demo = module(
     name = "demo",
-    dependencies = Seq(Logback.classic % "runtime")
-  ) dependsOn(core, simple, akka)
+    dependencies = Seq(Akka.remote % "runtime", Logback.classic % "runtime")
+  ) dependsOn(core, akka)
 
   val defaultSettings = Defaults.defaultSettings ++
                         Info.settings ++
@@ -149,8 +160,9 @@ object Amber extends Build {
     file(name),
     settings = defaultSettings ++
                Seq(
+                 fork in test := true,
                  Keys.resolvers ++= resolvers,
-                 libraryDependencies ++= dependencies
+                 libraryDependencies ++= dependencies :+ Scala.reflect
                )
   )
 }

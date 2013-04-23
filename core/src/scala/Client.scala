@@ -17,41 +17,42 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.collection.immutable.{HashMap, Seq, Stream, Vector}
+import scala.language.{dynamics, higherKinds, implicitConversions}
 
-import scalaz._
-import Scalaz._
+import java.util.concurrent.ConcurrentHashMap
 
-import util.{Filter, Filterable, NotNothing}
+import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
+import scala.collection.JavaConversions._
+import scala.concurrent.Future
 
-trait Client extends origin.FinderComponent {
+import scalaz.Id.Id
+import scalaz.std.vector._
+import scalaz.syntax.monad._
 
-  def select[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Stream[Property[A]] =
-    for {
-      origin <- origins.find(query.property).toStream if origin.returns[A]
-      property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
-    } yield property
+import util.{Filter, Filterable, NotNothing, Type}
 
-  def selectAll[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Stream[A] =
-    for {
-      origin <- origins.find(query.property).toStream
-      if (query.property == origin.name) && origin.returns[A]
-      property <- origin.asInstanceOf[Origin[A]].apply(query.filter)
-    } yield property.value
+sealed trait Client[X[+_]] {
+  this: origin.FinderComponent[X] =>
 
-  def selectOne[A <: AnyRef : NotNothing : Manifest]
-      (query: Query): Option[A] =
-    selectAll[A](query).headOption
+  def read[A: NotNothing : Type](query: Query): X[Seq[Origin.Value[A]]]
 
-  def selectAll(definition: Entity.Definition): Stream[Entity.Instance] =
-    definition.instances()
+  class Query(val selection: Selection, val filter: Filter[Origin.MetaInfo])
+      extends Filterable[Origin.MetaInfo, Query] {
+    override def where(filter: Filter[Origin.MetaInfo]): Query = new Query(selection, filter)
+  }
 
-  def selectOne(definition: Entity.Definition) =
-    selectAll(definition).headOption
+  implicit def selectionToQuery(selection: Selection): Query =
+    new Query(selection, Filter.tautology)
 
-  def entity(name: Entity.Name) = Entity.Definition(name, HashMap.empty, Filter.tautology)
+  def readAll[A: NotNothing : Type](query: Query): X[Seq[A]] = read[A](query) map {_ map {_.value}}
+  def readOne[A: NotNothing : Type](query: Query): X[Option[A]] =
+    readAll[A](query) map {_.headOption}
+
+  def readAll(definition: Entity.Definition): X[Seq[Entity.Instance]] = definition.instances()
+  def readOne(definition: Entity.Definition): X[Option[Entity.Instance]] =
+    readAll(definition) map {_.headOption}
+
+  def entity(name: Entity.Name) = new Entity.Definition.Builder(name)
 
   object Entity {
 
@@ -60,77 +61,98 @@ trait Client extends origin.FinderComponent {
     object Field {
 
       type Name = String
+      sealed trait Read[+A] extends ((Field.Name) => X[Seq[Value[A]]])
 
-      private[amber] case class Type[+A <: AnyRef : Manifest]
-          (name: Field.Name, query: Query) {
-
-        def values(): Stream[Value[A]] =
-          selectAll[A](query) map {Value(name, _)}
-
-        override lazy val toString = name + ": " + manifest[A]
+      implicit def readFromOption[A: util.Type](f: () => X[Option[A]]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
+      }
+      implicit def readFromSeq[A: util.Type](f: () => X[Seq[A]]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
       }
 
-      private[amber] case class Value[+A <: AnyRef : Manifest]
-          (name: Field.Name, value: A) {
-
-        def as[B : NotNothing : Manifest]: Option[B] =
-          if (manifest[A] <:< manifest[B]) Some(value.asInstanceOf[B])
-          else None
-
-        override lazy val toString = name + " = " + value
+      private[Entity] class Type[+A](val name: Field.Name)(read: Read[A]) {
+        def values(): X[Seq[Value[A]]] = read(name)
       }
 
-      private[amber] object Values {
-        def apply(types: Seq[Type[_ <: AnyRef]]): Seq[Stream[Value[_ <: AnyRef]]] =
-          types map {_.values()}
+      private[Entity] type Value[+A] = util.Value.Named[Field.Name, A]
+      private[Entity] val Value = util.Value.Named
+
+      private[Entity] object Values {
+        def apply(types: Set[Type[_]]): X[Seq[Seq[Value[_]]]] =
+          X.sequence(types.to[Vector] map {_.values()})
       }
     }
 
-    case class Definition private[amber]
-        (name: Entity.Name,
-         fields: HashMap[Field.Name, Field.Type[_ <: AnyRef]],
-         filter: Filter[Instance]) extends Filterable[Instance, Definition] {
+    class Definition private[Entity](val name: Entity.Name, val filter: Filter[Instance])
+                                    (types: Set[Field.Type[_]]) {
 
-      override def where(filter: Filter[Instance]) = copy(filter = filter)
+      lazy val fields: Set[Field.Name] = types map {_.name}
 
-      def field[A <: AnyRef : NotNothing : Manifest](name: Field.Name) =
-        field[A](name, Query(name, Filter.tautology))
+      def instances(): X[Seq[Instance]] = {
+        def cartesianProduct(values: X[Seq[Seq[Field.Value[_]]]]) =
+          values map {_.foldRight(Seq(Vector.empty[Field.Value[_]])) {
+            for {a <- _; bs <- _} yield bs :+ a
+          }}
 
-      def field[A <: AnyRef : NotNothing : Manifest]
-          (name: Field.Name, query: Query) =
-        copy(fields = fields.updated(name, Field.Type[A](name, query)))
-
-      def instances(): Stream[Instance] = {
-        def cartesianProduct(values: Seq[Stream[Field.Value[_ <: AnyRef]]]) =
-          values.foldRight(Stream(Stream.empty[Field.Value[_ <: AnyRef]])) {
-            for {a <- _; bs <- _} yield a #:: bs
-          }
-
-        Instances(
-          name,
-          cartesianProduct(Field.Values(Seq.empty ++ fields.values))
-        ) filter {filter(_)}
+        Instances(name, cartesianProduct(Field.Values(types))) map {_ filter {filter(_)}}
       }
 
-      override lazy val toString = name + fields.mkString("(", ", " ,")")
+      override lazy val toString = name + types.mkString("(", ", " ,")")
     }
 
-    case class Instance private[amber]
-        (name: Entity.Name, values: Seq[Field.Value[_ <: AnyRef]]) {
+    object Definition {
+      class Builder(val name: Entity.Name) extends Filterable[Instance, Unit] with Dynamic {
 
-      private lazy val properties =
-        HashMap.empty ++ (values map {value => (value.name, value)})
-      lazy val fields: Seq[Field.Name] = Vector(values map {_.name}: _*)
+        private var filter: Filter[Instance] = Filter.tautology
+        private val fields = new ConcurrentHashMap[Field.Name, Field.Type[_]]
 
-      def apply[A : NotNothing : Manifest](name: Field.Name): Option[A] =
-        properties.get(name) flatMap {_.as[A]}
+        override def where(filter: Filter[Instance]) {this.filter = filter}
+
+        def updateDynamic[A](name: String)(read: Field.Read[A]) {
+          fields put (name, new Field.Type[A](name)(read))
+        }
+
+        def build(): Definition = new Definition(name, filter)(fields.values.to[Set])
+      }
+    }
+
+    class Instance private[Entity](val name: Entity.Name)
+                                  (values: Seq[Field.Value[_]]) extends Dynamic {
+
+      private lazy val properties = HashMap.empty ++ (values map {v => (v.name, v)})
+      lazy val fields: Set[Field.Name] = (values map {_.name}).to[Set]
+
+      def selectDynamic(name: String): Option[Field.Value[_]] = properties.get(name)
 
       override lazy val toString = name + values.mkString("(", ", " ,")")
     }
 
-    private[amber] object Instances {
-      def apply(name: Entity.Name, values: Stream[Seq[Field.Value[_ <: AnyRef]]]): Stream[Instance] =
-        values map {Instance(name, _)}
+    private[Entity] object Instances {
+      def apply(name: Entity.Name, values: X[Seq[Seq[Field.Value[_]]]]): X[Seq[Instance]] =
+        values map {_ map {new Instance(name)(_)}}
     }
+  }
+}
+
+object Client {
+
+  trait Local extends Client[Id] with origin.FinderComponent.Local {
+    override def read[A: NotNothing : Type](query: Query) = for {
+      origin <- origins.find(query.selection).to[Vector] if origin.returns[A]
+      (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
+    } yield value
+  }
+
+  trait Remote extends Client[Future] with origin.FinderComponent.Remote {
+
+    implicit protected def context = configuration.context
+
+    override def read[A: NotNothing : Type](query: Query) =
+      origins.find(query.selection) flatMap {result =>
+        X.sequence(
+          for {origin <- result.to[Vector] if origin.returns[A]}
+            yield origin.asInstanceOf[Origin[A]].read().run
+        ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
+      }
   }
 }

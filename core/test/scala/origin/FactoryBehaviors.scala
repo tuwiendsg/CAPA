@@ -18,51 +18,37 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.reflect.runtime.universe.typeTag
+
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
 
-import util.NotNothing
-import util.Events.observe
+import util.Events
 
-trait FactoryBehaviors extends OriginBehaviors {
+trait FactoryBehaviors {
   this: Spec with FactoryComponent =>
 
-  val fixture = new OriginBehaviors.Fixture.WithFilteredRead {
+  class A
 
-    override protected type Origin[+A <: AnyRef] =
-      FactoryBehaviors.this.Origin[A]
-
-    override def create[A <: AnyRef : NotNothing : Manifest]
-      (name: Property.Name, family: Family) = origin.create[A](name) {() => None}
-
-    override def create[A <: AnyRef : NotNothing : Manifest]
-      (read: Origin.Read.Unfiltered[A]) = origin.create[A](random[Property.Name])(read)
-  }
-
-  def anOrigin {
-    behave like (AnOrigin withName fixture)
-    behave like (AnOrigin withMetaInfo fixture)
-    behave like (AnOrigin withType fixture)
-    behave like (AnOrigin withFilteredRead fixture)
+  trait Fixture {
+    val name = random[Origin.Name]
+    val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
   def aFactory {
-    "return the origin" which {
-      behave like anOrigin
-    }
-
     "notify the creation of the origin" when {
       "an origin is created" in {
-        class A
-        val observed = amber.mock.util.Events.Observe[Any]()
-        when(observed.isDefinedAt(anything())) thenReturn true
-        val observer = observe(origin.created)(observed)
+        new Fixture {
+          val observe = mock[Events.Observe[Any]]("Events.observe")
+          when(observe.isDefinedAt(anything())) thenReturn true
+          val observer = Events.observe(origin.created)(observe)
 
-        try {
-          val result = origin.create[A](random[Property.Name]) {() => None}
-          verify(observed).apply((result, manifest[A]))
-        } finally {
-          observer.dispose()
+          try {
+            val result = origin.create(name)(read)
+            verify(observe).apply(result)
+          } finally {
+            observer.dispose()
+          }
         }
       }
     }

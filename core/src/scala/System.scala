@@ -17,27 +17,63 @@
 package at.ac.tuwien.infosys
 package amber
 
+import scala.language.higherKinds
+
+import scala.concurrent.Future
+
+import scalaz.Id.Id
+
 import util.Events
 
-trait System extends origin.FinderComponent
-             with origin.FactoryComponent
-             with family.MemberFactoryComponent
-             with Collecting
-             with Processing
-             with Processing.Default.Conversions
-             with Processing.Default.Operations {
-
-  def client: Client
+sealed trait System[X[+_]] {
+  def client: Client[X]
   def stopped: Events[Unit]
+  def shutdown()
+}
 
-  collect.start()
+object System {
 
-  def shutdown() {
-    collect.stop()
-    process.shutdown()
+  trait Local extends System[Id]
+              with origin.FinderComponent.Local
+              with family.FinderComponent
+              with origin.FactoryComponent.Local
+              with Processing.Local
+              with Processing.Local.Default.Conversions
+              with Processing.Local.Default.Operations {
+
+    override def client: Client = _client
+    override def shutdown() {
+      process.shutdown()
+    }
+
+    trait Client extends Client.Local with amber.origin.FinderComponent.Delegator.Local {
+      override protected val finder = Local.this
+    }
+
+    private object _client extends Client
   }
 
-  trait Client extends amber.Client {
-    protected type Origin[+A <: AnyRef] = System.this.Origin[A]
+  trait Remote extends System[Future]
+               with origin.FinderComponent.Remote
+               with family.FinderComponent
+               with origin.FactoryComponent.Remote
+               with Processing.Remote
+               with Processing.Remote.Default.Conversions
+               with Processing.Remote.Default.Operations {
+
+    override def client: Client = _client
+    override def shutdown() {
+      process.shutdown()
+    }
+
+    trait Client extends Client.Remote with amber.origin.FinderComponent.Delegator.Remote {
+
+      override protected type Configuration = amber.origin.FinderComponent.Remote.Configuration
+      override protected def configuration: Configuration = Remote.this.configuration
+
+      override protected val finder = Remote.this
+    }
+
+    private object _client extends Client
   }
 }

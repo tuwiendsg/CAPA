@@ -22,7 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 import scala.collection.JavaConversions._
 
-class EventSource[A : NotNothing] extends Events[A] {
+class EventSource[A: NotNothing] extends Events[A] {
 
   private val observers = new CopyOnWriteArrayList[Observer]
 
@@ -55,5 +55,5 @@ class EventSource[A : NotNothing] extends Events[A] {
 }
 
 object EventSource {
-  def apply[A : NotNothing]() = new EventSource[A]
+  def apply[A: NotNothing]() = new EventSource[A]
 }

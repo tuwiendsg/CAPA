@@ -18,25 +18,25 @@ package at.ac.tuwien.infosys
 package amber
 package family
 
+import org.mockito.Mockito.when
+
+import util.Type
+
 class DefaultFinderSpec extends Spec
-                        with mock.origin.BuilderComponent
+                        with mock.origin.BuilderComponent.Local.Default
+                        with mock.origin.BuilderComponent.InSpec
                         with FinderComponent.Default
                         with FinderBehaviors {
 
-  override val fixture = new Fixture {
-    override def create(family: Family) =
-      builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](random[Property.Name], family, () => None)
-  }
+  override def mocker[A: Type] =
+    super.mocker[A] andThen {case ((_, family, _), origin) =>
+      when(origin.family) thenReturn family
+    }
+
+  override def build(family: Origin.Family) =
+    builder.build(random[Origin.Name], family)(mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
 
   "Default.FamilyFinder" should {
-    behave like (aFinder forFamilies)
-
-    "add an origin" when {
-      "the origin is built" in {
-        val origin = builder.build[AnyRef, Origin.Read.Unfiltered[AnyRef]](random[Property.Name], random[Family], () => None)
-
-        families.all() should contain(origin)
-      }
-    }
+    behave like aFamiliesFinder
   }
 }

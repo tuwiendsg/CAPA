@@ -20,42 +20,29 @@ package simple
 
 import amber.util.{EventSource, Logging}
 
-trait System extends simple.origin.BuilderComponent
-             with amber.origin.FinderComponent.Default
+trait System extends amber.System.Local
+             with amber.origin.BuilderComponent.Local.Default
+             with amber.origin.BuilderComponent.Logging.Local
+             with amber.origin.FinderComponent.Local.Default
              with amber.family.FinderComponent.Default
-             with amber.origin.FactoryComponent.Default
-             with amber.family.MemberFactoryComponent.Default
-             with amber.System {
+             with amber.origin.FactoryComponent.Local.Default {
   this: Logging =>
 
   @transient private[this] val log = logger.create("amber.simple.System")
 
   override val stopped = EventSource[Unit]()
-  override val client: super.Client = new Client {}
-  override def origin: super.OriginFactory = Factory
-  override protected def in(f: Family) =
-    new MemberFactory with MemberFactory.Logging {
-      override protected val family = f
-      @transient override protected val log =
-        logger.create("amber.simple.family.MemberFactory(" + family + ")")
-    }
+  override def origin: super.OriginFactory = _origin
 
   override def shutdown() {
     log.info("Shutting down")
     super.shutdown()
-    stopped emit ()
+    stopped.emit(())
     log.info("Shutdown successful")
   }
 
-  trait Client extends super.Client
-               with amber.origin.FinderComponent.Delegator {
-    override protected val delegatee = System.this
-  }
-
   trait OriginFactory extends super.OriginFactory with OriginFactory.Logging {
-    @transient override protected val log =
-      logger.create("amber.simple.origin.Factory")
+    @transient override protected val log = logger.create("amber.simple.origin.Factory")
   }
 
-  private object Factory extends OriginFactory
+  private object _origin extends OriginFactory
 }

@@ -18,54 +18,80 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
-trait FinderBehaviors {
-  this: Spec with FinderComponent =>
+import scala.language.higherKinds
 
-  val fixture: Fixture
+import scala.concurrent.{Await, Future}
+
+import scalaz.Id.Id
+
+import util.{NotNothing, Type}
+
+trait FinderBehaviors[X[+_]] {
+  this: Spec with FinderComponent[X] =>
+
+  def copoint[A](value: X[A]): A
+  def build[A: NotNothing : Type](name: Origin.Name): Origin[A]
+
+  class A
+  class U extends A
+  class B
 
   trait Fixture {
-    def create(name: Property.Name): Origin[_ <: AnyRef]
+    val name = random[Origin.Name]
   }
 
-  object aFinder {
-    def forOrigins {
-      "find an origin" when {
-        "using the origin's name" in {
-          val name = random[Property.Name]
-          val origin = fixture.create(name)
+  def anOriginFinder {
+    "find an origin" when {
+      "type is the same" in {
+        new Fixture {
+          val origin = build[A](name)
 
-          origins.find(name) should contain(origin)
-        }
-
-        "using the name of an origin's parent" in {
-          val parent = random[Property.Name]
-          val origin = fixture.create(parent / random[String])
-
-          origins.find(parent) should contain(origin)
+          copoint(origins.find[A](Selections.exact(name))) should contain(origin)
         }
       }
 
-      "not find an origin" when {
-        "using a name different from the origin's name" in {
-          val name = random[Property.Name]
-          val origin = fixture.create(name)
+      "type is a super type" in {
+        new Fixture {
+          val origin = build[U](name)
 
-          origins.find(different(name)) should not(contain(origin))
+          val result = copoint(origins.find[A](Selections.exact(name)))
+          result should contain(origin.asInstanceOf[Any])
         }
-
-        "using the name of an origin's child" in {
-          val name = random[Property.Name]
-          val origin = fixture.create(name)
-
-          origins.find(name / random[String]) should not(contain(origin))
-        }
-      }
-
-      "return all origins" in {
-        val origin = fixture.create(random[Property.Name])
-
-        origins.all() should contain(origin)
       }
     }
+
+    "not find an origin" when {
+      "type is a sub type" in {
+        new Fixture {
+          val origin = build[A](name)
+
+          copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+        }
+      }
+
+      "type is a different type" in {
+        new Fixture {
+          val origin = build[A](name)
+
+          val result = copoint(origins.find[B](Selections.exact(name)))
+          result should not(contain(origin.asInstanceOf[Any]))
+        }
+      }
+    }
+  }
+}
+
+object FinderBehaviors {
+
+  trait Local extends FinderBehaviors[Id] {
+    this: Spec with FinderComponent.Local =>
+
+    override def copoint[A](value: Id[A]) = value
+  }
+
+  trait Remote extends FinderBehaviors[Future] {
+    this: Spec with FinderComponent.Remote =>
+
+    override def copoint[A](future: Future[A]) = Await.result(future, timeout)
   }
 }

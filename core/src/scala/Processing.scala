@@ -17,36 +17,45 @@
 package at.ac.tuwien.infosys
 package amber
 
-import scala.collection.immutable.{Seq, Vector}
+import scala.language.higherKinds
 
-import util.Observer
+import scala.collection.immutable.{Seq, Vector}
+import scala.concurrent.Future
+
+import scalaz.Id.Id
+import scalaz.syntax.equal._
+import scalaz.syntax.functor._
+
+import util.{Observer, Type}
 import util.Events.observe
 
-trait Processing {
-  this: origin.FactoryComponent with family.MemberFactoryComponent =>
+trait Processing[X[+_]] {
+  this: origin.FinderComponent[X] with origin.FactoryComponent
+                                  with family.FinderComponent =>
 
-  protected type Origin[+A <: AnyRef] <: amber.Origin[A]
-  val process = ProcessorFactory
-  val map = MapperFactory
-  val operation = OperationFactory
-
-  object ProcessorFactory {
+  object process {
 
     private var observers = Vector.empty[Observer]
 
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
-        (f: PartialFunction[Property.Name, (Property.Name, A => B)]): Observer = {
-      val observer = observe(origin.created) {
-        case (o, _) if o.returns[A] =>
-          val source = o.asInstanceOf[Origin[A]]
-          if (f isDefinedAt source.name) {
-            val (name, g) = f(source.name)
-            in(source.family).create(name) {
-              filter => source(filter) map {property => g(property.value)}
+    def apply[A: Type, B: Type]
+        (f: PartialFunction[Origin.Name, (Origin.Name, A => B)]): Observer = {
+      def onOrigin(source: Origin[A]) {
+        if (f isDefinedAt source.name) {
+          val (name, g) = f(source.name)
+          source.family.synchronized {
+            val exists = families.find(source.family) exists {
+              origin => (name === origin.name) && origin.returns[B]
             }
+            if (!exists) source.map(name)(g)
           }
+        }
+      }
+
+      val observer = observe(origin.created) {
+        case origin if origin.returns[A] => onOrigin(origin.asInstanceOf[Origin[A]])
       }
       synchronized {observers = observers :+ observer}
+      origins.find[A](Selections.all) map {for {origin <- _} onOrigin(origin)}
       observer
     }
 
@@ -60,57 +69,60 @@ trait Processing {
     }
   }
 
-  object MapperFactory {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
-        (input: Property.Name, output: Property.Name)(f: A => B): Observer =
-      process {
-        case name if input == name => output -> f
-      }
+  object map {
+    def apply[A: Type, B: Type](input: Origin.Name, output: Origin.Name)(f: A => B): Observer =
+      process {case `input` => output -> f}
   }
 
-  object OperationFactory {
-    def apply[A <: AnyRef : Manifest, B <: AnyRef : Manifest]
-        (operation: Operation.Name)(f: A => B): Observer =
-      process {
-        case name => (name / operation) -> f
-      }
+  object operation {
+    def apply[A: Type, B: Type](operation: Operation.Name)(f: A => B): Observer =
+      process {case name => (name / operation) -> f}
   }
 }
 
 object Processing {
+
+  trait Local extends Processing[Id] {
+    this: origin.FinderComponent.Local with origin.FactoryComponent.Local
+                                       with family.FinderComponent =>
+  }
+
+  trait Remote extends Processing[Future] {
+    this: origin.FinderComponent.Remote with origin.FactoryComponent.Remote
+                                        with family.FinderComponent =>
+  }
+
   object Default {
-    trait Conversions {
-      this: Processing =>
 
-      import java.lang.{Double, Integer, Long}
+    sealed trait Conversions[X[+_]] {
+      this: Processing[X] =>
 
-      process[Integer, Long] {case name => name -> {x => x.toLong}}
-      process[Integer, Double] {case name => name -> {x => x.toDouble}}
+      process[Int, Long] {case name => name -> {x => x.toLong}}
+      process[Int, Double] {case name => name -> {x => x.toDouble}}
       process[Long, Double] {case name => name -> {x => x.toDouble}}
     }
 
-    trait Operations {
-      this: Processing =>
+    sealed trait Operations[X[+_]] {
+      this: Processing[X] =>
 
-      import java.lang.{Double, Integer, Long}
       import scala.math.sqrt
 
-      operation[Seq[Integer], Integer]("min") {xs => xs.min}
-      operation[Seq[Integer], Integer]("max") {xs => xs.max}
-      operation[Seq[Integer], Long]("sum") {
+      operation[Seq[Int], Int]("min") {xs => xs.min}
+      operation[Seq[Int], Int]("max") {xs => xs.max}
+      operation[Seq[Int], Long]("sum") {
         xs => xs map {_.longValue} reduceLeft {_ + _}
       }
-      operation[Seq[Integer], Double]("avg") {
-        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+      operation[Seq[Int], Double]("avg") {
+        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
       }
-      operation[Seq[Integer], Double]("stddev") {
+      operation[Seq[Int], Double]("stddev") {
         xs =>
-          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
       }
 
@@ -118,32 +130,58 @@ object Processing {
       operation[Seq[Long], Long]("max") {xs => xs.max}
       operation[Seq[Long], Long]("sum") {xs => xs reduceLeft {_ + _}}
       operation[Seq[Long], Double]("avg") {
-        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+        xs => (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
       }
       operation[Seq[Long], Double]("stddev") {
         xs =>
-          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.length
+          val average = (xs map {_.doubleValue} reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
       }
 
       operation[Seq[Double], Double]("min") {xs => xs.min}
       operation[Seq[Double], Double]("max") {xs => xs.max}
       operation[Seq[Double], Double]("sum") {xs => xs reduceLeft {_ + _}}
-      operation[Seq[Double], Double]("avg") {xs => (xs reduceLeft {_ + _}) / xs.length}
+      operation[Seq[Double], Double]("avg") {xs => (xs reduceLeft {_ + _}) / xs.size}
       operation[Seq[Double], Double]("stddev") {
         xs =>
-          val average = (xs reduceLeft {_ + _}) / xs.length
+          val average = (xs reduceLeft {_ + _}) / xs.size
           val variance = (xs.foldLeft(0D) {
             (result, x) =>
             val diff = (x - average)
             result + diff * diff
-          }) / xs.length
+          }) / xs.size
           sqrt(variance)
+      }
+    }
+  }
+
+  object Local {
+    object Default {
+
+      trait Conversions extends Processing.Default.Conversions[Id] {
+        this: Processing.Local =>
+      }
+
+      trait Operations extends Processing.Default.Operations[Id] {
+        this: Processing.Local =>
+      }
+    }
+  }
+
+  object Remote {
+    object Default {
+
+      trait Conversions extends Processing.Default.Conversions[Future] {
+        this: Processing.Remote =>
+      }
+
+      trait Operations extends Processing.Default.Operations[Future] {
+        this: Processing.Remote =>
       }
     }
   }
