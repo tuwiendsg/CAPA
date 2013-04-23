@@ -19,7 +19,7 @@ import sbt.Keys._
 
 object Info {
 
-  val version = "0.2-SNAPSHOT"
+  val version = "0.2"
 
   val settings: Seq[Setting[_]] = Seq(
     Keys.version := version,
