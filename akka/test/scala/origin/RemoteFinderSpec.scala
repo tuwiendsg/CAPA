@@ -90,11 +90,9 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
       }
   }
 
-  override val fixture = new Fixture {
-    override def create[A: NotNothing](name: Origin.Name)(implicit typeA: Type[A]) = {
-      val origin = local.origin.create(name)(mock[local.OriginFactory.Read[A]]("Origin.read"))
-      Origin.Remote(name, origin.family)(RemoteFinderSpec.this, origin.actor)(typeA, configuration.context, timeout)
-    }
+  override def build[A: NotNothing](name: Origin.Name)(implicit typeA: Type[A]) = {
+    val origin = local.origin.create(name)(mock[local.OriginFactory.Read[A]]("Origin.read"))
+    Origin.Remote(name, origin.family)(RemoteFinderSpec.this, origin.actor)(typeA, configuration.context, timeout)
   }
 
   "akka.Remote.OriginFinder" should {

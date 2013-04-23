@@ -21,27 +21,27 @@ package family
 trait FinderBehaviors {
   this: Spec with FinderComponent =>
 
-  def fixture: Fixture
+  def build(family: Origin.Family): Origin[_]
 
   trait Fixture {
-    def create(family: Origin.Family): Origin[_]
+    val family = random[Origin.Family]
   }
 
-  object aFinder {
-    def forFamilies() {
-      "find an origin" when {
-        "using the origin's family" in {
-          val family = random[Origin.Family]
-          val origin = fixture.create(family)
+  def aFamiliesFinder {
+    "find an origin" when {
+      "using the origin's family" in {
+        new Fixture {
+          val origin = build(family)
 
           families.find(family) should contain(origin)
         }
       }
+    }
 
-      "not find an origin" when {
-        "using a family different from the origin's family" in {
-          val family = random[Origin.Family]
-          val origin = fixture.create(family)
+    "not find an origin" when {
+      "using a family different from the origin's family" in {
+        new Fixture {
+          val origin = build(family)
 
           families.find(different(family)) should not(contain(origin))
         }

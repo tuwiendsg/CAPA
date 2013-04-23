@@ -27,7 +27,7 @@ import util.Type
 sealed trait BuilderBehaviors {
   this: Spec with OriginBehaviors with BuilderComponent =>
 
-  def aBuilder() {
+  def aBuilder {
     "build an origin" which {
       behave like anOrigin
     }
@@ -46,20 +46,16 @@ object BuilderBehaviors extends {
   trait Local extends BuilderBehaviors with OriginBehaviors.Local {
     this: Spec with BuilderComponent.Local =>
 
-    override val fixture = new Fixture {
-      override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
-        builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
-    }
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]) =
+      builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
   }
 
   trait Remote extends BuilderBehaviors with OriginBehaviors.Remote {
     this: Spec with BuilderComponent.Remote =>
 
-    override val fixture = new Fixture {
-      override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
-        builder.build(name, family) {
-          meta => OptionT(Future.successful(read() map {value => (Origin.Value(name, value), meta)}))
-        }
-    }
+    override def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]) =
+      builder.build(name, family) {meta => OptionT(Future.successful(read() map {
+        value => (Origin.Value(name, value), meta)
+      }))}
   }
 }

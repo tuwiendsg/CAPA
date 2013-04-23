@@ -40,6 +40,6 @@ class RemoteDelegatorFinderSpec extends Spec
   }
 
   "Remote.Delegator.OriginFinder" should {
-    behave like aDelegator.forOriginFinder
+    behave like aDelegator
   }
 }

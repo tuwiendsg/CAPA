@@ -35,7 +35,7 @@ trait FactoryBehaviors {
     val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
-  def aFactory() {
+  def aFactory {
     "notify the creation of the origin" when {
       "an origin is created" in {
         new Fixture {

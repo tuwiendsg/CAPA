@@ -26,8 +26,8 @@ import util.Events
 sealed trait DefaultFactoryBehaviors extends FactoryBehaviors {
   this: Spec with origin.BuilderComponent with FactoryComponent.Default =>
 
-  override def aFactory() {
-    super.aFactory()
+  override def aFactory {
+    super.aFactory
 
     "notify the creation of the origin" when {
       "an origin is built" in {
@@ -84,8 +84,8 @@ object DefaultFactoryBehaviors {
                              with DefaultFactoryBehaviors {
     this: Spec with mock.origin.BuilderComponent with FactoryComponent.Default =>
 
-    override def aFactory() {
-      super.aFactory()
+    override def aFactory {
+      super.aFactory
 
       "invoke the builder" in {
         new Fixture {

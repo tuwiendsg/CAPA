@@ -32,14 +32,8 @@ import util.{NotNothing, Type}
 sealed trait DefaultFinderBehaviors[X[+_]] extends FinderBehaviors[X] {
   this: Spec with origin.BuilderComponent with FinderComponent.Default[X] =>
 
-  override val fixture = new Fixture {
-    override def create[A: NotNothing : Type](name: Origin.Name) = {
-      val family = random[Origin.Family]
-      val read = mock[OriginBuilder.Read[A]]("Origin.read")
-
-      builder.build(name, family)(read)
-    }
-  }
+  override def build[A: NotNothing : Type](name: Origin.Name) =
+    builder.build(name, random[Origin.Family])(mock[OriginBuilder.Read[A]]("Origin.read"))
 }
 
 object DefaultFinderBehaviors {

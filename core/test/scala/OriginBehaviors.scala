@@ -19,39 +19,44 @@ package amber
 
 import scala.language.higherKinds
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 
 import org.mockito.Matchers.{anyObject => anything}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{verify, when}
 
-import util.{Filter, NotNothing, Type}
+import util.Type
 
 sealed trait OriginBehaviors {
   this: Spec =>
 
   type Origin[+A] <: amber.Origin[A]
 
-  def fixture: Fixture
+  def copoint[A, B](reading: Origin[A]#Reading[B]): Option[B]
+  def build[A: Type](name: Origin.Name, family: Origin.Family)(read: Fixture.Read[A]): Origin[A]
+
+  trait Mapper {
+    def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B): Origin[B]
+  }
 
   trait Fixture {
 
-    def read[A](origin: Origin[A]): Option[(Origin.Value[A], Origin.MetaInfo)]
-    def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name): Option[Origin.MetaInfo.Value[_]]
-    def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]): Origin[A]
+    val family = random[Origin.Family]
+    val read = mock[Fixture.Read[A]]("Origin.read")
+    val f = mock[A => B]("Origin.map")
 
-    def create[A: NotNothing : Type](): Origin[A] = create(random[Origin.Name])
+    def create(): Origin[A] = build(random[Origin.Name], family)(read)
+    def create(name: Origin.Name): Origin[A] = build(name, family)(read)
+    def create(family: Origin.Family): Origin[A] = build(random[Origin.Name], family)(read)
+    def create[A: Type](read: Fixture.Read[A]): Origin[A] = build(random[Origin.Name], family)(read)
 
-    def create[A: NotNothing : Type](name: Origin.Name): Origin[A] =
-      create(name, random[Origin.Family])
+    def map(underlying: Origin[A])(implicit mapper: Mapper) =
+      mapper(underlying, random[Origin.Name])(f)
 
-    def create[A: NotNothing : Type](family: Origin.Family): Origin[A] =
-      create(random[Origin.Name], family)
+    def map(underlying: Origin[A], name: Origin.Name)(implicit mapper: Mapper) =
+      mapper(underlying, name)(f)
 
-    def create[A: NotNothing : Type](name: Origin.Name, family: Origin.Family): Origin[A] =
-      create(name, family, mock[Fixture.Read[A]]("Origin.read"))
-
-    def create[A: Type](read: Fixture.Read[A]): Origin[A] =
-      create(random[Origin.Name], random[Origin.Family], read)
+    def map[B: Type](underlying: Origin[A], f: A => B)(implicit mapper: Mapper) =
+      mapper(underlying, random[Origin.Name])(f)
   }
 
   object Fixture {
@@ -61,119 +66,140 @@ sealed trait OriginBehaviors {
   class A
   class U extends A
   class B
+  class V extends B
 
-  object anOrigin {
+  def anOrigin {
     "has the specified name" in {
-      val name = random[Origin.Name]
-      val origin = fixture.create[Any](name)
+      new Fixture {
+        val name = random[Origin.Name]
+        val origin = create(name)
 
-      origin.name should be(name)
+        origin.name should be(name)
+      }
     }
 
     "is in the specified family" in {
-      val family = random[Origin.Family]
-      val origin = fixture.create[Any](family)
+      new Fixture {
+        val origin = create(family)
 
-      origin.family should be(family)
+        origin.family should be(family)
+      }
     }
 
     "if a meta value was never assigned" should {
       "return None " in {
-        val origin = fixture.create[Any]()
+        new Fixture {
+          val origin = create()
 
-        fixture.getMeta(origin, random[Origin.MetaInfo.Name]).as[Any] should not be('defined)
+          copoint(origin.selectDynamic(random[Origin.MetaInfo.Name])).as[Any] should not be('defined)
+        }
       }
     }
 
     "if a meta value was previously assigned" should {
       "return the assigned value" in {
-        val origin = fixture.create[Any]()
+        new Fixture {
+          val origin = create()
 
-        val name = random[Origin.MetaInfo.Name]
-        val value = random[Int]
-        origin(name) = value
+          val name = random[Origin.MetaInfo.Name]
+          val value = random[Int]
+          origin(name) = value
 
-        fixture.getMeta(origin, name).as[Int].value should be(value)
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
+        }
       }
     }
 
     "does return the same type" in {
-      val origin = fixture.create[A]()
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
-      origin.returns[A] should be(true)
+        origin.returns[A] should be(true)
+      }
     }
 
     "does return a super type" in {
-      val origin = fixture.create[U]()
+      new Fixture {
+        val origin = create(mock[Fixture.Read[U]]("Origin.read"))
 
-      origin.returns[A] should be(true)
+        origin.returns[A] should be(true)
+      }
     }
 
     "does not return a different type" in {
-      val origin = fixture.create[A]()
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
-      origin.returns[B] should be(false)
+        origin.returns[B] should be(false)
+      }
     }
 
     "does not return a sub type" in {
-      val origin = fixture.create[A]()
+      new Fixture {
+        val origin = create(mock[Fixture.Read[A]]("Origin.read"))
 
-      origin.returns[U] should be(false)
+        origin.returns[U] should be(false)
+      }
     }
 
     "use the specified read function" in {
-      val read = mock[Fixture.Read[_]]("Origin.read")
-      when(read.apply()) thenReturn None
-      val origin = fixture.create(read)
+      new Fixture {
+        when(read.apply()) thenReturn None
+        val origin = create()
 
-      origin.read()
+        origin.read()
 
-      verify(read).apply()
+        verify(read).apply()
+      }
     }
 
     "if reading is successful" should {
       "return a value" which {
         "has the same name as the origin" in {
-          val read = mock[Fixture.Read[String]]("Origin.read")
-          when(read()) thenReturn Some(random[String])
-          val origin = fixture.create(read)
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val origin = create()
 
-          val (Origin.Value(name, _), _) = fixture.read(origin).value
-          name should be(origin.name)
+            val (Origin.Value(name, _), _) = copoint(origin.read()).value
+            name should be(origin.name)
+          }
         }
 
         "contains the result of the specified read function" in {
-          val result = random[String]
-          val read = mock[Fixture.Read[String]]("Origin.read")
-          when(read()) thenReturn Some(result)
-          val origin = fixture.create(read)
+          new Fixture {
+            val result = new A
+            when(read()) thenReturn Some(result)
+            val origin = create()
 
-          val (Origin.Value(_, value), _) = fixture.read(origin).value
-          value should be(result)
+            val (Origin.Value(_, value), _) = copoint(origin.read()).value
+            value should be(result)
+          }
         }
       }
 
       "contains the origin's meta" in {
-        val read = mock[Fixture.Read[String]]("Origin.read")
-        when(read()) thenReturn Some(random[String])
-        val origin = fixture.create(read)
+        new Fixture {
+          when(read()) thenReturn Some(new A)
+          val origin = create()
 
-        val name = random[String]
-        val value = random[Int]
-        origin(name) = value
+          val name = random[String]
+          val value = random[Int]
+          origin(name) = value
 
-        val (_, meta) = fixture.read(origin).value
-        meta.selectDynamic(name).as[Any].value should be(value)
+          val (_, meta) = copoint(origin.read()).value
+          meta.selectDynamic(name).as[Any].value should be(value)
+        }
       }
     }
 
     "if reading is unsuccessful" should {
       "return None" in {
-        val read = mock[Fixture.Read[_]]("Origin.read")
-        when(read()) thenReturn None
-        val origin = fixture.create(read)
+        new Fixture {
+          when(read()) thenReturn None
+          val origin = create()
 
-        fixture.read(origin) should not be('defined)
+          copoint(origin.read()) should not be('defined)
+        }
       }
     }
 
@@ -185,180 +211,201 @@ sealed trait OriginBehaviors {
     }
   }
 
-  trait Mapper {
-    def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B): Origin[B]
-  }
-
-  def aMappedOrigin(mapper: Mapper) {
+  def aMappedOrigin(implicit mapper: Mapper) {
     "have the specified name" in {
-        val underlying = fixture.create[Any]()
+      new Fixture {
         val name = random[Origin.Name]
-        val origin = mapper(underlying, name)(identity)
+        val underlying = create()
+        val origin = map(underlying, name)
 
         origin.name should be(name)
       }
+    }
 
-      "be in same family" in {
-        val family = random[Origin.Family]
-        val underlying = fixture.create[Any](family)
-        val origin = mapper(underlying, random[Origin.Name])(identity)
+    "be in same family" in {
+      new Fixture {
+        val underlying = create(family)
+        val origin = map(underlying)
 
         origin.family should be(family)
       }
+    }
 
-      "return None" when {
-        "a meta value was never assigned" in {
-          val underlying = fixture.create[Any]()
-          val origin = mapper(underlying, random[Origin.Name])(identity)
+    "return None" when {
+      "a meta value was never assigned" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
 
-          fixture.getMeta(origin, random[Origin.MetaInfo.Name]).as[Any] should not be('defined)
+          copoint(origin.selectDynamic(random[Origin.MetaInfo.Name])).as[Any] should not be('defined)
         }
       }
+    }
 
-      "return the assigned value" when {
-        "a meta value was previously assigned to the mapped origin" in {
-          val underlying = fixture.create[Any]()
-          val origin = mapper(underlying, random[Origin.Name])(identity)
+    "return the assigned value" when {
+      "a meta value was previously assigned to the mapped origin" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
 
           val name = random[Origin.MetaInfo.Name]
           val value = random[Int]
           underlying(name) = random[Int]
           origin(name) = value
 
-          fixture.getMeta(origin, name).as[Int].value should be(value)
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
         }
+      }
 
-        "a meta value was previously assigned to the underlying origin" in {
-          val underlying = fixture.create[Any]()
-          val origin = mapper(underlying, random[Origin.Name])(identity)
+      "a meta value was previously assigned to the underlying origin" in {
+        new Fixture {
+          val underlying = create()
+          val origin = map(underlying)
 
           val name = random[Origin.MetaInfo.Name]
           val value = random[Int]
           underlying(name) = value
 
-          fixture.getMeta(origin, name).as[Int].value should be(value)
+          copoint(origin.selectDynamic(name)).as[Int].value should be(value)
         }
       }
+    }
 
-      "return the same type" in {
-        val underlying = fixture.create[B]()
-        val origin = mapper(underlying, random[Origin.Name])(mock[B => A]("Origin.map"))
+    "return the same type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
+
+        origin.returns[B] should be(true)
+      }
+    }
+
+    "return a super type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => U]("Origin.map"))
 
         origin.returns[A] should be(true)
       }
+    }
 
-      "return a super type" in {
-        val underlying = fixture.create[B]()
-        val origin = mapper(underlying, random[Origin.Name])(mock[B => U]("Origin.map"))
+    "not return a different type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
 
-        origin.returns[A] should be(true)
+        origin.returns[A] should be(false)
       }
+    }
 
-      "not return a different type" in {
-        val underlying = fixture.create[B]()
-        val origin = mapper(underlying, random[Origin.Name])(mock[B => A]("Origin.map"))
+    "not return a sub type" in {
+      new Fixture {
+        val underlying = create()
+        val origin = map(underlying, mock[A => B]("Origin.map"))
 
-        origin.returns[B] should be(false)
+        origin.returns[V] should be(false)
       }
+    }
 
-      "not return a sub type" in {
-        val underlying = fixture.create[B]()
-        val origin = mapper(underlying, random[Origin.Name])(mock[B => A]("Origin.map"))
-
-        origin.returns[U] should be(false)
-      }
-
-      "use the underlying origin's read function" in {
-        val read = mock[Fixture.Read[B]]("Origin.read")
-        when(read.apply()) thenReturn None
-        val underlying = fixture.create(read)
-        val origin = mapper(underlying, random[Origin.Name])(mock[B => A]("Origin.map"))
+    "use the underlying origin's read function" in {
+      new Fixture {
+        when(read()) thenReturn None
+        val underlying = create()
+        val origin = map(underlying)
 
         origin.read()
 
         verify(read).apply()
       }
+    }
 
-      "invoke the specified map function with result of the underlying origin's read function" in {
-        val result = random[String]
-        val read = mock[Fixture.Read[String]]("Origin.read")
-        when(read.apply()) thenReturn Some(result)
-        val underlying = fixture.create(read)
-        val map = mock[String => A]("Origin.map")
-        val origin = mapper(underlying, random[Origin.Name])(map)
+    "invoke the specified map function with result of the underlying origin's read function" in {
+      new Fixture {
+        val result = new A
+        when(read()) thenReturn Some(result)
+        val underlying = create()
+        val origin = map(underlying)
 
         origin.read()
 
-        verify(map).apply(result)
+        verify(f).apply(result)
       }
+    }
 
-      "return a result" when {
-        "reading is successful" which {
-          "has the same name as the mapped origin" in {
-            val read = mock[Fixture.Read[String]]("Origin.read")
-            when(read()) thenReturn Some(random[String])
-            val underlying = fixture.create(read)
-            val origin = mapper(underlying, random[Origin.Name])(identity)
+    "return a result" when {
+      "reading is successful" which {
+        "has the same name as the mapped origin" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
 
-            val (Origin.Value(name, _), _) = fixture.read(origin).value
+            val (Origin.Value(name, _), _) = copoint(origin.read()).value
             name should be(origin.name)
           }
+        }
 
-          "contains the result of the specified map function" in {
-            val read = mock[Fixture.Read[String]]("Origin.read")
-            when(read()) thenReturn Some(random[String])
-            val underlying = fixture.create(read)
+        "contains the result of the specified map function" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
 
-            val result = random[Int]
-            val map = mock[String => Int]("Origin.map")
-            when(map(anything())) thenReturn result
-            val origin = mapper(underlying, random[Origin.Name])(map)
+            val result = new B
+            when(f(anything())) thenReturn result
+            val origin = map(underlying)
 
-            val (Origin.Value(_, value), _) = fixture.read(origin).value
+            val (Origin.Value(_, value), _) = copoint(origin.read()).value
             value should be(result)
           }
+        }
 
-          "contains the mapped origin's meta" in {
-            val read = mock[Fixture.Read[String]]("Origin.read")
-            when(read()) thenReturn Some(random[String])
-            val underlying = fixture.create(read)
-            val origin = mapper(underlying, random[Origin.Name])(identity)
+        "contains the mapped origin's meta" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
 
             val name = random[String]
             val value = random[Int]
             underlying(name) = random[Int]
             origin(name) = value
 
-            val (_, meta) = fixture.read(origin).value
+            val (_, meta) = copoint(origin.read()).value
             meta.selectDynamic(name).as[Any].value should be(value)
           }
+        }
 
-          "contains the underlying origin's meta" in {
-            val read = mock[Fixture.Read[String]]("Origin.read")
-            when(read()) thenReturn Some(random[String])
-            val underlying = fixture.create(read)
-            val origin = mapper(underlying, random[Origin.Name])(identity)
+        "contains the underlying origin's meta" in {
+          new Fixture {
+            when(read()) thenReturn Some(new A)
+            val underlying = create()
+            when(f(anything())) thenReturn new B
+            val origin = map(underlying)
 
             val name = random[String]
             val value = random[Int]
             underlying(name) = value
 
-            val (_, meta) = fixture.read(origin).value
+            val (_, meta) = copoint(origin.read()).value
             meta.selectDynamic(name).as[Any].value should be(value)
           }
         }
       }
+    }
 
-      "return None" when {
-        "reading is unsuccessful" in {
-          val read = mock[Fixture.Read[A]]("Origin.read")
+    "return None" when {
+      "reading is unsuccessful" in {
+        new Fixture {
           when(read()) thenReturn None
-          val underlying = fixture.create(read)
-          val origin = mapper(underlying, random[Origin.Name])(identity)
+          val underlying = create()
+          val origin = map(underlying)
 
-          fixture.read(origin) should not be('defined)
+          copoint(origin.read()) should not be('defined)
         }
       }
+    }
   }
 }
 
@@ -369,12 +416,7 @@ object OriginBehaviors {
 
     override type Origin[+A] <: Origin.Local[A]
 
-    override def fixture: Fixture
-    trait Fixture extends super.Fixture {
-      override def read[A](origin: Origin[A]) = origin.read()
-      override def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name) =
-        origin.selectDynamic(name)
-    }
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = reading
   }
 
   trait Remote extends OriginBehaviors {
@@ -382,11 +424,6 @@ object OriginBehaviors {
 
     override type Origin[+A] <: Origin.Remote[A]
 
-    override def fixture: Fixture
-    trait Fixture extends super.Fixture {
-      override def read[A](origin: Origin[A]) = Await.result(origin.read().run, timeout)
-      override def getMeta[A](origin: Origin[A], name: Origin.MetaInfo.Name) =
-        Await.result(origin.selectDynamic(name).run, timeout)
-    }
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = Await.result(reading.run, timeout)
   }
 }

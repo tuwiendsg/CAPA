@@ -22,11 +22,10 @@ import scala.reflect.ClassTag
 
 class EventSourceSpec extends Spec with EventsBehaviors {
 
-  override type Events[A]  = EventSource[A]
-  override val fixture = new Fixture {
-    override def create[A: NotNothing : ClassTag]() = EventSource[A]()
-    override def emit[A](events: EventSource[A])(event: A) {events.emit(event)}
-  }
+  override type Events[A] = EventSource[A]
+
+  override def create() = EventSource[A]()
+  override def emit(events: Events[A])(event: A) {events.emit(event)}
 
   "EventSource" should {
     behave like anEvents

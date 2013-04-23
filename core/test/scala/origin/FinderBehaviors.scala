@@ -20,64 +20,62 @@ package origin
 
 import scala.language.higherKinds
 
-import scala.collection.immutable.Set
 import scala.concurrent.{Await, Future}
 
-import scalaz.Comonad
-import scalaz.Id.{id, Id}
+import scalaz.Id.Id
 
 import util.{NotNothing, Type}
 
 trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
 
-  def Y: Comonad[X]
-  def fixture: Fixture
+  def copoint[A](value: X[A]): A
+  def build[A: NotNothing : Type](name: Origin.Name): Origin[A]
 
   class A
   class U extends A
   class B
 
   trait Fixture {
-    def create[A: NotNothing : Type](name: Origin.Name): Origin[A]
+    val name = random[Origin.Name]
   }
 
   def anOriginFinder {
     "find an origin" when {
       "type is the same" in {
-        val name = random[Origin.Name]
-        val origin = fixture.create[A](name)
+        new Fixture {
+          val origin = build[A](name)
 
-        Y.copoint(origins.find[A](Selections.exact(name))) should contain(origin)
+          copoint(origins.find[A](Selections.exact(name))) should contain(origin)
+        }
       }
 
       "type is a super type" in {
-        val name = random[Origin.Name]
-        val origin = fixture.create[U](name)
+        new Fixture {
+          val origin = build[U](name)
 
-        val result = Y.copoint(origins.find[A](Selections.exact(name))) map {
-          _.asInstanceOf[Origin[Any]]
+          val result = copoint(origins.find[A](Selections.exact(name)))
+          result should contain(origin.asInstanceOf[Any])
         }
-        result should contain(origin.asInstanceOf[Origin[Any]])
       }
     }
 
     "not find an origin" when {
       "type is a sub type" in {
-        val name = random[Origin.Name]
-        val origin = fixture.create[A](name)
+        new Fixture {
+          val origin = build[A](name)
 
-        Y.copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+          copoint(origins.find[U](Selections.exact(name))) should not(contain(origin))
+        }
       }
 
       "type is a different type" in {
-        val name = random[Origin.Name]
-        val origin = fixture.create[A](name)
+        new Fixture {
+          val origin = build[A](name)
 
-        val result = Y.copoint(origins.find[B](Selections.exact(name))) map {
-          _.asInstanceOf[Origin[Any]]
+          val result = copoint(origins.find[B](Selections.exact(name)))
+          result should not(contain(origin.asInstanceOf[Any]))
         }
-        result should not(contain(origin.asInstanceOf[Origin[Any]]))
       }
     }
   }
@@ -88,17 +86,12 @@ object FinderBehaviors {
   trait Local extends FinderBehaviors[Id] {
     this: Spec with FinderComponent.Local =>
 
-    override def Y = id
+    override def copoint[A](value: Id[A]) = value
   }
 
   trait Remote extends FinderBehaviors[Future] {
     this: Spec with FinderComponent.Remote =>
 
-    override object Y extends Comonad[Future] {
-      override def copoint[A](fa: Future[A]): A = Await.result(fa, timeout)
-      override def cobind[A, B](fa: Future[A])(f: Future[A] => B) = ???
-      override def cojoin[A](fa: Future[A]): Future[Future[A]] = ???
-      override def map[A, B](fa: Future[A])(f: A => B): Future[B] = ???
-    }
+    override def copoint[A](future: Future[A]) = Await.result(future, timeout)
   }
 }

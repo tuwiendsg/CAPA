@@ -34,15 +34,13 @@ trait DelegatorFinderBehaviors[X[+_]] {
 
   class A
 
-  object aDelegator {
-    def forOriginFinder() {
-      "invoke the delegatee's find method" in {
-        val selection = Selections.all
+  def aDelegator {
+    "invoke the delegatee's find method" in {
+      val selection = Selections.all
 
-        origins.find[A](selection)
+      origins.find[A](selection)
 
-        verify(finder.origins).find(equalTo(selection))(anything(), equalTo(Type[A]))
-      }
+      verify(finder.origins).find(equalTo(selection))(anything(), equalTo(Type[A]))
     }
   }
 }

@@ -33,16 +33,10 @@ class DefaultFinderSpec extends Spec
       when(origin.family) thenReturn family
     }
 
-  override val fixture = new Fixture {
-    override def create(family: Origin.Family) = {
-      val name = random[Origin.Name]
-      val read = mock[OriginBuilder.Read[AnyRef]]("Origin.read")
-
-      builder.build(name, family)(read)
-    }
-  }
+  override def build(family: Origin.Family) =
+    builder.build(random[Origin.Name], family)(mock[OriginBuilder.Read[AnyRef]]("Origin.read"))
 
   "Default.FamilyFinder" should {
-    behave like aFinder.forFamilies
+    behave like aFamiliesFinder
   }
 }

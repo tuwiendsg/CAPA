@@ -29,6 +29,6 @@ class LocalDelegatorFinderSpec extends Spec
   }
 
   "Local.Delegator.OriginFinder" should {
-    behave like aDelegator.forOriginFinder
+    behave like aDelegator
   }
 }

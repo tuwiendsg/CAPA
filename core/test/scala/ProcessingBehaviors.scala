@@ -33,10 +33,10 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
                                         with mock.origin.BuilderComponent.InSpec {
   this: Spec with Processing[X] =>
 
-  def point[X, Y](origin: Origin[X])(value: Option[Y]): origin.Reading[Y]
-  def copoint[X, Y](reading: Origin[X]#Reading[Y]): Option[Y]
+  def point[A, B](origin: Origin[A])(value: Option[B]): origin.Reading[B]
+  def copoint[A, B](reading: Origin[A]#Reading[B]): Option[B]
 
-  def create[X: Type](name: Origin.Name)(read: Fixture.Read[X]): Origin[X]
+  def build[A: Type](name: Origin.Name)(read: Fixture.Read[A]): Origin[A]
 
   abstract override def mocker[A](implicit typeA: Type[A]) =
     super.mocker[A] andThen {case ((name, family, read), origin) =>
@@ -74,6 +74,8 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
 
     when(definition isDefinedAt input) thenReturn true
     when(definition apply input) thenReturn (output -> processor)
+
+    def create(): Origin[A] = build(input)(read)
   }
 
   object Fixture {
@@ -84,7 +86,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
     "invoke the process definition" when {
       "an origin was created before" in {
         new Fixture {
-          create(input)(read)
+          create()
           process(definition)
 
           verify(definition) isDefinedAt input
@@ -95,7 +97,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
       "an origin is created with matching name and type" in {
         new Fixture {
           process(definition)
-          create(input)(read)
+          create()
 
           verify(definition) isDefinedAt input
           verify(definition) apply input
@@ -109,7 +111,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
           when(definition isDefinedAt input) thenReturn false
 
           process(definition)
-          create(different(input))(read)
+          build(different(input))(read)
 
           verify(definition, never()) isDefinedAt input
           verify(definition, never()) apply input
@@ -119,7 +121,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
       "an origin is created with non-matching type" in {
         new Fixture {
           process(definition)
-          create(input)(mock[Fixture.Read[C]]("Origin.read"))
+          build(input)(mock[Fixture.Read[C]]("Origin.read"))
 
           verify(definition, never()) isDefinedAt input
           verify(definition, never()) apply input
@@ -131,7 +133,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
       "has expected name" in {
         new Fixture {
           process(definition)
-          create(input)(read)
+          create()
 
           built.last.name should be(output)
         }
@@ -140,7 +142,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
       "has same family as the underlying origin" in {
         new Fixture {
           process(definition)
-          val underlying = create(input)(read)
+          val underlying = create()
 
           built.last.family should be(underlying.family)
         }
@@ -149,7 +151,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
       "has expected type" in {
         new Fixture {
           process(definition)
-          create(input)(read)
+          create()
 
           built.last.returns[B] should be(true)
         }
@@ -159,7 +161,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
         "read the underlying origin" in {
           new Fixture {
             process(definition)
-            val underlying = create(input)(read)
+            val underlying = create()
             when(read()) thenReturn None
 
             built.last.read()
@@ -174,7 +176,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
             when(read()) thenReturn Some(value)
 
             process(definition)
-            create(input)(read)
+            create()
 
             built.last.read()
 
@@ -189,7 +191,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
             when(read()) thenReturn Some(new A)
 
             process(definition)
-            create(input)(read)
+            create()
 
             val (result, _) = copoint(built.last.read()).value
 
@@ -201,7 +203,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
         "if processor doesn't define a meta value, return the underlying origin's meta value" in {
           new Fixture {
             process(definition)
-            val underlying = create(input)(read)
+            val underlying = create()
             when(processor(anything())) thenReturn new B
             when(read()) thenReturn Some(new A)
 
@@ -220,7 +222,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
         "if processor does define a meta value, return that meta value" in {
           new Fixture {
             process(definition)
-            val underlying = create(input)(read)
+            val underlying = create()
             when(processor(anything())) thenReturn new B
             when(read()) thenReturn Some(new A)
 
@@ -240,7 +242,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
             when(read()) thenReturn None
 
             process(definition)
-            create(input)(read)
+            create()
 
             copoint(built.last.read()) should not be('defined)
             verify(processor, never()).apply(anything())
@@ -256,10 +258,10 @@ object ProcessingBehaviors {
   trait Local extends ProcessingBehaviors[Id] with mock.origin.BuilderComponent.Local {
     this: Spec with Processing.Local =>
 
-    override def point[X, Y](origin: Origin[X])(value: Option[Y]) = value
-    override def copoint[X, Y](reading: Origin[X]#Reading[Y]) = reading
+    override def point[A, B](origin: Origin[A])(value: Option[B]) = value
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = reading
 
-    override def create[X: Type](name: Origin.Name)(read: Fixture.Read[X]) =
+    override def build[A: Type](name: Origin.Name)(read: Fixture.Read[A]) =
       builder.build(name, random[Origin.Family]) {meta => read() map {
         value => (Origin.Value(name, value), meta)
       }}
@@ -268,10 +270,10 @@ object ProcessingBehaviors {
   trait Remote extends ProcessingBehaviors[Future] with mock.origin.BuilderComponent.Remote {
     this: Spec with Processing.Remote =>
 
-    override def point[X, Y](origin: Origin[X])(value: Option[Y]) = OptionT(Future.successful(value))
-    override def copoint[X, Y](reading: Origin[X]#Reading[Y]) = Await.result(reading.run, timeout)
+    override def point[A, B](origin: Origin[A])(value: Option[B]) = OptionT(Future.successful(value))
+    override def copoint[A, B](reading: Origin[A]#Reading[B]) = Await.result(reading.run, timeout)
 
-    override def create[X: Type](name: Origin.Name)(read: Fixture.Read[X]) =
+    override def build[A: Type](name: Origin.Name)(read: Fixture.Read[A]) =
       builder.build(name, random[Origin.Family]) {meta => OptionT(Future.successful(read() map {
         value => (Origin.Value(name, value), meta)
       }))}
