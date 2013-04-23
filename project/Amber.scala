@@ -78,14 +78,13 @@ object Dependency {
 
   object Akka {
     val version = "2.1.2"
-    val repo = "Akka Repo" at "http://repo.typesafe.com/typesafe/releases/"
     val actor = "com.typesafe.akka" %% "akka-actor" % version
     val remote = "com.typesafe.akka" %% "akka-remote" % version
     val testkit = "com.typesafe.akka" %% "akka-testkit" % version
   }
 
   object Logback {
-    val version = "1.0.10"
+    val version = "1.0.11"
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
@@ -94,13 +93,13 @@ object Dependency {
   }
 
   object Scalaz {
-    val version = "7.0.0-M8"
+    val version = "7.0.0-M9"
     val core = "org.scalaz" %% "scalaz-core" % version
     val iteratee = "org.scalaz" %% "scalaz-iteratee" % version
   }
 
   object SLF4J {
-    val version = "1.7.3"
+    val version = "1.7.5"
     val api = "org.slf4j" % "slf4j-api" % version
   }
 
@@ -128,6 +127,7 @@ object Amber extends Build {
   lazy val core = module(
     name = "core",
     dependencies = Seq(
+                     Scala.reflect,
                      Scalaz.core,
                      Scalaz.iteratee,
                      SLF4J.api % "provided",
@@ -139,7 +139,6 @@ object Amber extends Build {
   lazy val simple = module("simple") dependsOn(core % "test->test;compile")
   lazy val akka = module(
     name = "akka",
-    resolvers = Seq(Akka.repo),
     dependencies = Seq(Akka.actor, Akka.remote % "test", Akka.testkit % "test")
   ) dependsOn(core % "test->test;compile")
   lazy val demo = module(
@@ -153,16 +152,13 @@ object Amber extends Build {
                         Build.settings ++
                         Shell.settings
 
-  def module(name: String,
-             dependencies: Seq[ModuleID] = Nil,
-             resolvers: Seq[Resolver] = Nil) = Project(
+  def module(name: String, dependencies: Seq[ModuleID] = Nil) = Project(
     name,
     file(name),
     settings = defaultSettings ++
                Seq(
                  fork in test := true,
-                 Keys.resolvers ++= resolvers,
-                 libraryDependencies ++= dependencies :+ Scala.reflect
+                 libraryDependencies ++= dependencies
                )
   )
 }
