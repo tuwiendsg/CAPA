@@ -25,8 +25,8 @@ import scalaz.Id.Id
 import scalaz.syntax.equal._
 import scalaz.syntax.functor._
 
-import util.{Observer, Type}
-import util.Events.observe
+import amber.util.{Observer, Type}
+import amber.util.Events.observe
 
 trait Processing[X[+_]] {
   this: origin.FinderComponent[X] with origin.FactoryComponent

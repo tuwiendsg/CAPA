@@ -23,8 +23,8 @@ import scala.language.higherKinds
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
 import _root_.akka.util.Timeout
 
-import amber.util.{ConfigurableComponent, Events, Observer, Type}
-import akka.util.EventSource
+import amber.util.ConfigurableComponent
+import amber.akka.util.EventSource
 
 sealed trait FactoryComponent {
   this: amber.origin.FactoryComponent =>
@@ -95,7 +95,7 @@ object FactoryComponent {
   object Remote {
     trait Configuration extends BuilderComponent.Remote.Configuration {
       def remote: String
-      def factory: ActorRef = local.actorFor(s"${remote}/user/${Actor.name}")
+      def factory: ActorRef = local.actorFor(s"$remote/user/${Actor.name}")
     }
   }
 

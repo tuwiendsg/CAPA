@@ -18,12 +18,9 @@ package amber
 package akka
 package util
 
-import scala.reflect.ClassTag
+import amber.util.EventsBehaviors
 
-import amber.util.{EventsBehaviors, NotNothing}
-
-class EventSourceSpec extends Spec("EventSourceSpec")
-                      with EventsBehaviors {
+class EventSourceSpec extends Spec("EventSourceSpec") with EventsBehaviors {
 
   override type Events[A] = EventSource[A]
 

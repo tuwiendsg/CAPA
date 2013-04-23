@@ -29,8 +29,8 @@ import _root_.akka.actor.ActorSystem
 import scalaz.std.string._
 import scalaz.syntax.equal._
 
-import util.{Logging, Scheduling}
-import util.Value._
+import amber.util.{Logging, Scheduling}
+import amber.util.Value._
 
 trait Client extends akka.System.Remote with Scheduling with Runnable {
   this: Logging =>

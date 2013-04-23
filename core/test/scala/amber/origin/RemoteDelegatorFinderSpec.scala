@@ -17,7 +17,7 @@
 package amber
 package origin
 
-import util.Executors
+import amber.util.Executors
 
 class RemoteDelegatorFinderSpec extends Spec
                                 with FinderComponent.Delegator.Remote

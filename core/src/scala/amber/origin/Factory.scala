@@ -25,7 +25,7 @@ import scala.concurrent.duration.FiniteDuration
 import scalaz.OptionT
 import scalaz.syntax.functor._
 
-import util.{Events, EventSource, Logger, Type}
+import amber.util.{Events, EventSource, Logger, Type}
 
 sealed trait FactoryComponent {
 

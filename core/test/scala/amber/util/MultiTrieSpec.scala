@@ -22,7 +22,7 @@ import scala.collection.immutable.Set
 class MultiTrieSpec extends Spec {
 
   type Selection = MultiTrie.Selection
-  import MultiTrie.Selections
+  import amber.util.MultiTrie.Selections
 
   class A
 

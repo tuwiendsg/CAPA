@@ -28,7 +28,7 @@ import scalaz.Id.Id
 import scalaz.std.vector._
 import scalaz.syntax.monad._
 
-import util.{Filter, Filterable, NotNothing, Type}
+import amber.util.{Filter, Filterable, NotNothing, Type}
 
 sealed trait Client[X[+_]] {
   this: origin.FinderComponent[X] =>
@@ -138,7 +138,7 @@ object Client {
   trait Local extends Client[Id] with origin.FinderComponent.Local {
     override def read[A: NotNothing : Type](query: Query) = for {
       origin <- origins.find(query.selection).to[Vector] if origin.returns[A]
-      (value, meta) <- origin.asInstanceOf[Origin[A]].read() if query.filter(meta)
+      (value, meta) <- origin.read() if query.filter(meta)
     } yield value
   }
 
@@ -149,8 +149,7 @@ object Client {
     override def read[A: NotNothing : Type](query: Query) =
       origins.find(query.selection) flatMap {result =>
         X.sequence(
-          for {origin <- result.to[Vector] if origin.returns[A]}
-            yield origin.asInstanceOf[Origin[A]].read().run
+          for {origin <- result.to[Vector] if origin.returns[A]} yield origin.read().run
         ) map {for {r <- _; (value, meta) <- r.to[Seq] if query.filter(meta)} yield value}
       }
   }

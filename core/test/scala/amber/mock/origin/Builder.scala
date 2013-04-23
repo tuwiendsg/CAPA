@@ -25,7 +25,7 @@ import scalaz.syntax.functor._
 
 import org.scalatest.BeforeAndAfterEach
 
-import util.{Mocker, Mocking, Type}
+import amber.util.{Mocker, Mocking, Type}
 
 trait BuilderComponent extends amber.origin.BuilderComponent with Mocking {
 

@@ -23,7 +23,7 @@ trait SLF4JLogging extends Logging {
   override protected lazy val logger = new LoggerFactory {
     override def create(name: Logger.Name) = new Logger {
 
-      import Logging.Level._
+      import amber.util.Logging.Level._
 
       @transient private[this] lazy val log = SLF4JLoggerFactory.getLogger(name)
 

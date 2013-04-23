@@ -21,8 +21,7 @@ import _root_.akka.actor.ActorSystem
 
 import org.scalatest.BeforeAndAfterAll
 
-abstract class Spec(val system: ActorSystem) extends amber.Spec
-                                             with BeforeAndAfterAll {
+abstract class Spec(val system: ActorSystem) extends amber.Spec with BeforeAndAfterAll {
 
   def this(name: String) = this(ActorSystem(name))
 

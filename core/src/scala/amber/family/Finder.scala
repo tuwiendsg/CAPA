@@ -24,7 +24,7 @@ import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArraySet}
 import scala.collection.immutable.Set
 import scala.collection.JavaConversions._
 
-import util.Type
+import amber.util.Type
 
 trait FinderComponent {
 

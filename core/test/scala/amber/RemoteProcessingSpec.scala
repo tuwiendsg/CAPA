@@ -16,7 +16,7 @@
 
 package amber
 
-import util.Executors
+import amber.util.Executors
 
 class RemoteProcessingSpec extends Spec
                            with mock.origin.BuilderComponent.Remote.Default

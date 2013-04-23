@@ -26,7 +26,7 @@ import scalaz.Id.Id
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when
 
-import util.{NotNothing, Type}
+import amber.util.{NotNothing, Type}
 
 sealed trait DefaultFinderBehaviors[X[+_]] extends FinderBehaviors[X] {
   this: Spec with origin.BuilderComponent with FinderComponent.Default[X] =>

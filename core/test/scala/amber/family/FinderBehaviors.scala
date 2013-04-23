@@ -26,7 +26,7 @@ trait FinderBehaviors {
     val family = random[Origin.Family]
   }
 
-  def aFamiliesFinder {
+  def aFamiliesFinder() {
     "find an origin" when {
       "using the origin's family" in {
         new Fixture {

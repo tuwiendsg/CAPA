@@ -19,7 +19,7 @@ package util
 
 trait Logger {
 
-  import Logging.Level._
+  import amber.util.Logging.Level._
 
   def isDebugEnabled: Boolean = isEnabled(Debug)
   def debug(message: => String, cause: Option[Throwable] = None) {

@@ -26,15 +26,14 @@ import scala.collection.JavaConversions._
 import scala.concurrent.Future
 
 import scalaz.Equal.equalA
-import scalaz.Id.Id
 import scalaz.OptionT
 import scalaz.syntax.equal._
 
-import util.{NotNothing, Path, Type}
+import amber.util.{NotNothing, Path, Type}
 
 sealed trait Origin[+A] extends Dynamic with Equals {
 
-  type Reading[+A]
+  type Reading[+B]
 
   def name: Origin.Name
   def family: Origin.Family
@@ -65,12 +64,12 @@ object Origin {
   }
 
   trait Local[+A] extends Origin[A] {
-    override type Reading[+A] = Local.Reading[A]
+    override type Reading[+B] = Local.Reading[B]
     override def map[B: Type](name: Origin.Name)(f: A => B): Local[B]
   }
 
   trait Remote[+A] extends Origin[A] {
-    override type Reading[+A] = Remote.Reading[A]
+    override type Reading[+B] = Remote.Reading[B]
     override def map[B: Type](name: Origin.Name)(f: A => B): Remote[B]
   }
 

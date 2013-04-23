@@ -21,12 +21,12 @@ import scala.concurrent.Future
 
 import scalaz.OptionT
 
-import util.Type
+import amber.util.Type
 
 sealed trait BuilderBehaviors {
   this: Spec with OriginBehaviors with BuilderComponent =>
 
-  def aBuilder {
+  def aBuilder() {
     "build an origin" which {
       behave like anOrigin
     }

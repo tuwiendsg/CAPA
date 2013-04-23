@@ -19,8 +19,6 @@ package util
 
 import scala.language.higherKinds
 
-import scala.reflect.ClassTag
-
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{never, verify, when}
 
@@ -38,7 +36,7 @@ trait EventsBehaviors {
     val event = new A
   }
 
-  def anEvents {
+  def anEvents() {
 
     "invoke a subscribed observer" in {
       new Fixture {

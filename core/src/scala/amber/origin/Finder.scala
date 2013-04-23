@@ -25,7 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scalaz.Id.{id, Id}
 import scalaz.Monad
 
-import util.{ConfigurableComponent, MultiTrie, NotNothing, Type}
+import amber.util.{ConfigurableComponent, MultiTrie, NotNothing, Type}
 
 sealed trait FinderComponent[X[+_]] {
 

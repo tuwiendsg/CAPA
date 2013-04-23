@@ -21,7 +21,7 @@ import scala.language.higherKinds
 
 import java.io.ObjectStreamException
 
-import scala.concurrent.{blocking, future, ExecutionContext, Future}
+import scala.concurrent.{blocking, future, ExecutionContext}
 import scala.reflect.ClassTag
 
 import _root_.akka.actor.ActorRef

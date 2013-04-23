@@ -20,7 +20,7 @@ package akka
 import _root_.akka.actor.PoisonPill
 
 import amber.util.{ConfigurableComponent, Logging}
-import akka.util.EventSource
+import amber.akka.util.EventSource
 
 object System {
 

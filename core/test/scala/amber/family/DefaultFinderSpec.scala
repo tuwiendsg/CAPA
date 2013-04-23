@@ -19,7 +19,7 @@ package family
 
 import org.mockito.Mockito.when
 
-import util.Type
+import amber.util.Type
 
 class DefaultFinderSpec extends Spec
                         with mock.origin.BuilderComponent.Local.Default

@@ -20,7 +20,7 @@ package origin
 
 import com.typesafe.config.ConfigFactory
 
-import _root_.akka.actor.{ActorRef, ActorSystem, Props}
+import _root_.akka.actor.{ActorRef, ActorSystem}
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
@@ -105,7 +105,7 @@ class RemoteFactorySpec extends Spec(ActorSystem("RemoteFactorySpec-Client",
             val result = local.origin.create(name)(read)
                            .writeReplace().asInstanceOf[Origin.Serialized[AnyRef]]
                            .toRemote(RemoteFactorySpec.this)(configuration.context, timeout)
-            Thread.sleep(timeout.toMillis) // give sime time for netty to receive the message
+            Thread.sleep(timeout.toMillis) // give some time for netty to receive the message
             verify(observe).apply(result)
           } finally {
             observer.dispose()

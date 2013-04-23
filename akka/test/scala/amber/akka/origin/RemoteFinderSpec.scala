@@ -18,13 +18,9 @@ package amber
 package akka
 package origin
 
-import scala.concurrent.Future
-
 import com.typesafe.config.ConfigFactory
 
-import _root_.akka.actor.{ActorRef, ActorSystem, Props}
-
-import scalaz.OptionT
+import _root_.akka.actor.{ActorRef, ActorSystem}
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when

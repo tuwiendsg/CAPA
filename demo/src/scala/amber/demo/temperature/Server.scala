@@ -25,7 +25,7 @@ import com.typesafe.config.ConfigFactory
 
 import _root_.akka.actor.ActorSystem
 
-import util.Logging
+import amber.util.Logging
 
 trait Server extends akka.System.Local with Runnable {
   this: Logging =>

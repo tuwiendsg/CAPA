@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 import org.scalatest.{BeforeAndAfterEach, OptionValues, WordSpec}
 import org.scalatest.matchers.ShouldMatchers
 
-import util.{Mocking, Randoms}
+import amber.util.{Mocking, Randoms}
 
 trait Spec extends WordSpec
            with BeforeAndAfterEach

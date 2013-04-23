@@ -31,7 +31,7 @@ import _root_.akka.util.Timeout
 
 import scalaz.Id.Id
 
-import amber.util.{ConfigurableComponent, MultiTrie, NotNothing, Type}
+import amber.util.{ConfigurableComponent, NotNothing, Type}
 import amber.util.MultiTrie.Selection
 
 sealed trait FinderComponent[X[+_]] {
@@ -77,7 +77,7 @@ object FinderComponent {
                         with amber.origin.FinderComponent.Remote.Default.Configuration {
 
       def remote: String
-      def finder: ActorRef = local.actorFor(s"${remote}/user/${Actor.name}")
+      def finder: ActorRef = local.actorFor(s"$remote/user/${Actor.name}")
     }
   }
 

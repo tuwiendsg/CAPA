@@ -20,7 +20,7 @@ package util
 
 import scala.reflect.ClassTag
 
-import _root_.akka.actor.{Actor, PoisonPill}
+import _root_.akka.actor.Actor
 
 import amber.util.Events
 

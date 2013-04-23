@@ -17,7 +17,7 @@
 package amber
 package origin
 
-import util.Executors
+import amber.util.Executors
 
 class DefaultRemoteFactorySpec extends Spec
                                with mock.origin.BuilderComponent.Remote.Default

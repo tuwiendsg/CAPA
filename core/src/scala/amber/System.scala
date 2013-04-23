@@ -22,7 +22,7 @@ import scala.concurrent.Future
 
 import scalaz.Id.Id
 
-import util.Events
+import amber.util.Events
 
 sealed trait System[X[+_]] {
   def client: Client[X]

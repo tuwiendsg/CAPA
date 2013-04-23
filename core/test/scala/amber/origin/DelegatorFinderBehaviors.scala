@@ -26,14 +26,14 @@ import scalaz.Id.Id
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.verify
 
-import util.Type
+import amber.util.Type
 
 trait DelegatorFinderBehaviors[X[+_]] {
   this: Spec with FinderComponent.Delegator[X] =>
 
   class A
 
-  def aDelegator {
+  def aDelegator() {
     "invoke the delegatee's find method" in {
       val selection = Selections.all
 

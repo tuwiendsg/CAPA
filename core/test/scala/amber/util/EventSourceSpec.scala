@@ -17,8 +17,6 @@
 package amber
 package util
 
-import scala.reflect.ClassTag
-
 class EventSourceSpec extends Spec with EventsBehaviors {
 
   override type Events[A] = EventSource[A]

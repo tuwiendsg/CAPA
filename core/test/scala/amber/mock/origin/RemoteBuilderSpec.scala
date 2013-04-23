@@ -17,7 +17,7 @@
 package amber
 package mock.origin
 
-import util.Executors
+import amber.util.Executors
 
 class RemoteBuilderSpec extends Spec
                         with BuilderComponent.Remote.Default

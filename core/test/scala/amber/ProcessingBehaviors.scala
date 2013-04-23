@@ -26,7 +26,7 @@ import scalaz.OptionT
 import org.mockito.Matchers.{anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{never, verify, when}
 
-import util.Type
+import amber.util.Type
 
 sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
                                         with mock.origin.BuilderComponent.InSpec {
@@ -81,7 +81,7 @@ sealed trait ProcessingBehaviors[X[+_]] extends mock.origin.BuilderComponent
     type Read[+A] = () => Origin.Local.Reading[A]
   }
 
-  def aProcessing {
+  def aProcessing() {
     "invoke the process definition" when {
       "an origin was created before" in {
         new Fixture {

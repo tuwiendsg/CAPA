@@ -23,7 +23,7 @@ import scala.concurrent.Await
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
 
-import util.Type
+import amber.util.Type
 
 sealed trait OriginBehaviors {
   this: Spec =>
@@ -67,7 +67,7 @@ sealed trait OriginBehaviors {
   class B
   class V extends B
 
-  def anOrigin {
+  def anOrigin() {
     "has the specified name" in {
       new Fixture {
         val name = random[Origin.Name]

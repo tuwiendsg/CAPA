@@ -19,7 +19,7 @@ package util
 
 import scala.language.implicitConversions
 
-import scala.reflect.{classTag, ClassTag}
+import scala.reflect.ClassTag
 import scala.reflect.ManifestFactory.classType
 
 import org.scalatest.mock.MockitoSugar

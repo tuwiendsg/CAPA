@@ -23,7 +23,7 @@ import scala.concurrent.{Await, Future}
 
 import scalaz.Id.Id
 
-import util.{NotNothing, Type}
+import amber.util.{NotNothing, Type}
 
 trait FinderBehaviors[X[+_]] {
   this: Spec with FinderComponent[X] =>
@@ -39,7 +39,7 @@ trait FinderBehaviors[X[+_]] {
     val name = random[Origin.Name]
   }
 
-  def anOriginFinder {
+  def anOriginFinder() {
     "find an origin" when {
       "type is the same" in {
         new Fixture {

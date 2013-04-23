@@ -49,7 +49,7 @@ trait Type[A] extends Serializable with Equals {
 
   def <:<[B](other: Type[B]): Boolean = this.typeTag.tpe <:< other.typeTag.tpe
 
-  override lazy val hashCode = typeTag.hashCode
+  override lazy val hashCode = typeTag.hashCode()
 
   override def equals(other: Any) = other match {
     case that: Type[_] => (that canEqual this) && (this.typeTag == that.typeTag)

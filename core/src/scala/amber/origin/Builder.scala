@@ -27,7 +27,7 @@ import scalaz.OptionT.optionTMonadPlus
 import scalaz.std.option.optionInstance
 import scalaz.syntax.monad._
 
-import util.{ConfigurableComponent, Type}
+import amber.util.{ConfigurableComponent, Type}
 
 trait BuilderComponent {
 
@@ -50,7 +50,7 @@ trait BuilderComponent {
     trait OriginOps[+A] {
       this: Origin[A] =>
 
-      override type Reading[+A] = BuilderComponent.this.Reading[A]
+      override type Reading[+B] = BuilderComponent.this.Reading[B]
 
       override def map[B: Type](name: Origin.Name)(f: A => B): Origin[B] =
         builder.map(this, name)(f)

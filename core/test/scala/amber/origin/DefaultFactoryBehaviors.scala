@@ -20,13 +20,13 @@ package origin
 import org.mockito.Matchers.{any, anyObject => anything, eq => equalTo}
 import org.mockito.Mockito.{verify, when}
 
-import util.Events
+import amber.util.Events
 
 sealed trait DefaultFactoryBehaviors extends FactoryBehaviors {
   this: Spec with origin.BuilderComponent with FactoryComponent.Default =>
 
-  override def aFactory {
-    super.aFactory
+  override def aFactory() {
+    super.aFactory()
 
     "notify the creation of the origin" when {
       "an origin is built" in {

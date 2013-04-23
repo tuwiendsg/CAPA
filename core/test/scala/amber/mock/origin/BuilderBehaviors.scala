@@ -19,7 +19,7 @@ package mock.origin
 
 import org.mockito.Mockito.{verify, when}
 
-import util.Type
+import amber.util.Type
 
 sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
   this: Spec with BuilderComponent =>
@@ -43,7 +43,7 @@ sealed trait BuilderBehaviors extends BuilderComponent.InSpec {
     }
   }
 
-  def aMockBuilder {
+  def aMockBuilder() {
     "invoke the mocked build method" when {
       "an origin is built" in {
         new Fixture{

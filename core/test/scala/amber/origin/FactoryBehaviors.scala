@@ -17,12 +17,10 @@
 package amber
 package origin
 
-import scala.reflect.runtime.universe.typeTag
-
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
 
-import util.Events
+import amber.util.Events
 
 trait FactoryBehaviors {
   this: Spec with FactoryComponent =>
@@ -34,7 +32,7 @@ trait FactoryBehaviors {
     val read = mock[OriginFactory.Read[A]]("Origin.read")
   }
 
-  def aFactory {
+  def aFactory() {
     "notify the creation of the origin" when {
       "an origin is created" in {
         new Fixture {
