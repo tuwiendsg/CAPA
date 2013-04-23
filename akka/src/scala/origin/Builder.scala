@@ -98,7 +98,7 @@ object BuilderComponent {
         )
 
         override def selectDynamic(name: Origin.MetaInfo.Name) =
-            OptionT(Future.successful(select(name)))
+          OptionT(Future.successful(select(name)))
       }
 
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
@@ -126,7 +126,7 @@ object BuilderComponent {
 
       def local: ActorSystem
 
-      override def context: ExecutionContext = local.dispatcher
+      override def context: ExecutionContext = local.dispatchers.lookup("amber.origins.dispatcher")
       def timeout: FiniteDuration = FiniteDuration(
         local.settings.config.getMilliseconds("akka.actor.typed.timeout"),
         MILLISECONDS
