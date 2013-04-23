@@ -35,9 +35,6 @@ trait Server extends akka.System.Local with Runnable {
   override protected def configuration: Configuration = _configuration
   private object _configuration extends Configuration
 
-  map[Double, Double]("temperature/celsius", "temperature/kelvin") {x => x + 273.15}
-  map[Double, Double]("temperature/celsius", "temperature/fahrenheit") {x => x * 9 / 5 + 3}
-
   object Temperature {
     def createCelsius(location: String): Origin.Local[Int] = {
       val temperature = origin.create("temperature/celsius") {
@@ -60,7 +57,7 @@ trait Server extends akka.System.Local with Runnable {
 }
 
 object Server {
-  trait Configuration extends akka.origin.BuilderComponent.Configuration {
+  trait Configuration extends akka.System.Local.Configuration {
 
     val name: String = "temperature-server"
     val locations: Set[String] = Set("A", "B")

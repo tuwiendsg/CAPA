@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 Sanjin Sehic
+ * Copyright 2013 Sanjin Sehic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,14 @@
 
 package at.ac.tuwien.infosys
 package amber
-package akka
-package util
+package origin
 
-import scala.reflect.{classTag, ClassTag}
+class DefaultLocalFactorySpec extends Spec
+                              with mock.origin.BuilderComponent.Local.Default
+                              with FactoryComponent.Local.Default
+                              with DefaultFactoryBehaviors.OnMockBuilder.Local {
 
-import _root_.akka.actor.Actor
-
-import amber.util.Events
-
-private[akka] class ObserverActor[+A: ClassTag](f: Events.Observe[A]) extends Actor {
-  override def receive = {
-    case any if classTag[A].runtimeClass.isAssignableFrom(any.getClass) =>
-      val a = any.asInstanceOf[A]
-      if (f.isDefinedAt(a)) f(a)
+  "Default.Local.OriginFactory" should {
+    behave like aFactory
   }
-}
-
-private[akka] object ObserverActor {
-  def apply[A: ClassTag](f: Events.Observe[A]) = new ObserverActor(f)
 }

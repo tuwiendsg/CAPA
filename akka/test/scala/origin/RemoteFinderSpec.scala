@@ -19,9 +19,13 @@ package amber
 package akka
 package origin
 
+import scala.concurrent.Future
+
 import com.typesafe.config.ConfigFactory
 
 import _root_.akka.actor.{ActorRef, ActorSystem, Props}
+
+import scalaz.OptionT
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.when
@@ -31,7 +35,7 @@ import amber.util.{Mocker, NotNothing, Type}
 class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
                                     ConfigFactory.load.getConfig("client")))
                        with FinderComponent.Remote
-                       with amber.origin.FinderBehaviors.Remote {
+                       with amber.origin.DefaultFinderBehaviors.Remote {
 
   val remote = ActorSystem("RemoteFinderSpec-Server", ConfigFactory.load.getConfig("server"))
 
@@ -51,13 +55,17 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
     override val finder = FinderComponent.Actor.remote(system)(RemoteFinderSpec.this)
   }
 
-  object local extends amber.mock.origin.BuilderComponent
+  object local extends amber.mock.origin.BuilderComponent.Local
                with FinderComponent.Local
-               with amber.origin.FactoryComponent.Default {
+               with amber.origin.FactoryComponent.Local.Default {
 
     override protected type Origin[+A] = Origin.Local[A]
 
     override protected val actor: FinderComponent.Actor = _actor
+    private object _actor extends FinderComponent.Actor {
+      override val finder = FinderComponent.Actor.local(remote)(local.this)
+    }
+
     override def mocker[A](implicit typeA: Type[A]) =
       new Mocker[(Origin.Name, Origin.Family, OriginBuilder.Read[A]), Origin[A]] {
         def mock(args: (Origin.Name, Origin.Family, OriginBuilder.Read[A])) = {
@@ -80,20 +88,16 @@ class RemoteFinderSpec extends Spec(ActorSystem("RemoteFinderSpec-Client",
           origin
         }
       }
-
-    private object _actor extends FinderComponent.Actor {
-      override val finder = FinderComponent.Actor.local(remote)(local.this)
-    }
   }
 
   override val fixture = new Fixture {
     override def create[A: NotNothing](name: Origin.Name)(implicit typeA: Type[A]) = {
       val origin = local.origin.create(name)(mock[local.OriginFactory.Read[A]]("Origin.read"))
-      new Origin.Remote(name, origin.family)(origin.actor)(timeout, typeA)
+      Origin.Remote(name, origin.family)(RemoteFinderSpec.this, origin.actor)(typeA, configuration.context, timeout)
     }
   }
 
   "akka.Remote.OriginFinder" should {
-    behave like aFinder.forOrigins
+    behave like anOriginFinder
   }
 }

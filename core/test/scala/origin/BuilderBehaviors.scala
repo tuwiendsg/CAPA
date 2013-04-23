@@ -18,19 +18,48 @@ package at.ac.tuwien.infosys
 package amber
 package origin
 
+import scala.concurrent.Future
+
+import scalaz.OptionT
+
 import util.Type
 
-trait BuilderBehaviors extends OriginBehaviors.Local {
-  this: Spec with BuilderComponent =>
-
-  override val fixture = new Fixture {
-    override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
-      builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
-  }
+sealed trait BuilderBehaviors {
+  this: Spec with OriginBehaviors with BuilderComponent =>
 
   def aBuilder() {
     "build an origin" which {
       behave like anOrigin
+    }
+
+    "build a mapped origin over an underlying origin" which {
+      behave like aMappedOrigin(new Mapper {
+        override def apply[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) =
+          builder.map(underlying, name)(f)
+      })
+    }
+  }
+}
+
+object BuilderBehaviors extends {
+
+  trait Local extends BuilderBehaviors with OriginBehaviors.Local {
+    this: Spec with BuilderComponent.Local =>
+
+    override val fixture = new Fixture {
+      override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
+        builder.build(name, family) {meta => read() map {a => (Origin.Value(name, a), meta)}}
+    }
+  }
+
+  trait Remote extends BuilderBehaviors with OriginBehaviors.Remote {
+    this: Spec with BuilderComponent.Remote =>
+
+    override val fixture = new Fixture {
+      override def create[A: Type](name: Origin.Name, family: Origin.Family, read: Fixture.Read[A]) =
+        builder.build(name, family) {
+          meta => OptionT(Future.successful(read() map {value => (Origin.Value(name, value), meta)}))
+        }
     }
   }
 }

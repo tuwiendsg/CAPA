@@ -28,10 +28,12 @@ import amber.util.{Events, NotNothing}
 private[akka] class EventSource[A: NotNothing : ClassTag](factory: ActorRefFactory)
     extends amber.util.EventSource[A] {
 
-  override def subscribe(f: Events.Observe[A]) = {
-    val observer = new Observer(factory.actorOf(
-      Props(ObserverActor[A](f)).withDispatcher("amber.observers.dispatcher")
-    ))
+  override def subscribe(f: Events.Observe[A]) = subscribe(factory.actorOf(
+      Props(new Observer.Notifier[A](f)).withDispatcher("amber.observers.dispatcher")
+  ))
+
+  private[akka] def subscribe(reference: ActorRef): Observer = {
+    val observer = new Observer(reference)
     add(observer)
     observer
   }

@@ -16,21 +16,22 @@
 
 package at.ac.tuwien.infosys
 package amber
-package akka
 package origin
 
-class BuilderSpec extends Spec("BuilderSpec")
-                  with BuilderComponent
-                  with amber.origin.BuilderBehaviors {
+import util.Executors
 
-  override type Origin[+A] = Origin.Local[A]
+class DefaultRemoteFinderSpec extends Spec
+                              with mock.origin.BuilderComponent.Remote.Default
+                              with FinderComponent.Remote.Default
+                              with DefaultFinderBehaviors.Remote
+                              with DefaultFinderBehaviors.OnMockBuilder.Remote {
 
-  override protected type Configuration = BuilderComponent.Configuration
+  override protected type Configuration = FinderComponent.Remote.Default.Configuration
   override protected object configuration extends Configuration {
-    override val system = BuilderSpec.this.system
+    override val context = Executors.CallingThread
   }
 
-  "akka.OriginBuilder" should {
-    behave like aBuilder
+  "Default.Remote.OriginFinder" should {
+    behave like anOriginFinder
   }
 }

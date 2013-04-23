@@ -29,7 +29,7 @@ import util.Type
 
 trait FinderComponent {
 
-  protected type Origin[+A] <: Origin.Local[A]
+  protected type Origin[+A] <: amber.Origin[A]
   protected def families: FamilyFinder
 
   protected trait FamilyFinder {
@@ -60,9 +60,16 @@ object FinderComponent {
     }
 
     private object _builder extends OriginBuilder {
+
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family)(read)
+        families.add(result)
+        result
+      }
+
+      override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+        val result = Default.super.builder.map(underlying, name)(f)
         families.add(result)
         result
       }

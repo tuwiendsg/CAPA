@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Sanjin Sehic
+ * Copyright 2012 Sanjin Sehic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,25 @@
 
 package at.ac.tuwien.infosys
 package amber
-package origin
+package akka
+package util
 
-class DefaultLocalFinderSpec extends Spec
-                             with mock.origin.BuilderComponent.Local.Default
-                             with FinderComponent.Local.Default
-                             with DefaultFinderBehaviors.Local
-                             with DefaultFinderBehaviors.OnMockBuilder.Local {
+import scala.reflect.ClassTag
 
-  "Default.Local.OriginFinder" should {
-    behave like anOriginFinder
+import _root_.akka.actor.{Actor, PoisonPill}
+
+import amber.util.Events
+
+private[akka] object Observer {
+
+  class Notifier[+A](f: Events.Observe[A])(implicit classTag: ClassTag[A]) extends Actor {
+
+    private val klass = classTag.runtimeClass
+
+    override def receive = {
+      case any if klass.isAssignableFrom(any.getClass) =>
+        val a = any.asInstanceOf[A]
+        if (f.isDefinedAt(a)) f(a)
+    }
   }
 }

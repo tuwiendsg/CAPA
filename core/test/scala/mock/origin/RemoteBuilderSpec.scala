@@ -16,15 +16,20 @@
 
 package at.ac.tuwien.infosys
 package amber
-package origin
+package mock.origin
 
-class DefaultLocalFinderSpec extends Spec
-                             with mock.origin.BuilderComponent.Local.Default
-                             with FinderComponent.Local.Default
-                             with DefaultFinderBehaviors.Local
-                             with DefaultFinderBehaviors.OnMockBuilder.Local {
+import util.Executors
 
-  "Default.Local.OriginFinder" should {
-    behave like anOriginFinder
+class RemoteBuilderSpec extends Spec
+                        with BuilderComponent.Remote.Default
+                        with BuilderBehaviors.Remote {
+
+  override protected type Configuration = amber.origin.BuilderComponent.Remote.Configuration
+  override protected object configuration extends Configuration {
+    override def context = Executors.CallingThread
+  }
+
+  "mock.Remote.Builder" should {
+    behave like aMockBuilder
   }
 }

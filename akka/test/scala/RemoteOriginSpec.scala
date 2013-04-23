@@ -25,21 +25,27 @@ import _root_.akka.actor.Props
 import amber.util.Type
 
 class RemoteOriginSpec extends Spec("RemoteOriginSpec")
+                       with origin.BuilderComponent.Remote
                        with OriginBehaviors.Remote {
 
   override type Origin[+A] = Origin.Remote[A]
 
+  override protected type Configuration = origin.BuilderComponent.Remote.Configuration
+  override protected object configuration extends Configuration {
+    override val local = RemoteOriginSpec.this.system
+  }
+
   override val fixture = new Fixture {
     override def create[A](name: Origin.Name, family: Origin.Family, _read: Fixture.Read[A])
                           (implicit typeA: Type[A]) = {
-      new Origin.Remote[A](name, family)(system.actorOf(
-        Props(new Origin.Actor(
-          new Origin.Local.Default(name, family) {
-            override def read() =
-              for {value <- _read()} yield (Origin.Value(name, value), Origin.MetaInfo(meta))
-          }
-        )).withDispatcher("amber.origins.dispatcher")
-      ))(timeout, typeA)
+      Origin.Remote[A](name, family)(RemoteOriginSpec.this, system.actorOf(
+          Props(new Origin.Actor.Local(
+            new Origin.Local.Default(name, family) {
+              override def read() = for {value <- _read()} yield (Origin.Value(name, value), meta)
+              override def map[B: Type](name: Origin.Name)(f: A => B) = ???
+            }
+          )).withDispatcher("amber.origins.dispatcher")
+        ))(typeA, configuration.context, timeout)
     }
   }
 

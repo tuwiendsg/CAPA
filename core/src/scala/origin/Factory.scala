@@ -20,14 +20,19 @@ package origin
 
 import scala.language.{higherKinds, implicitConversions}
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+
+import scalaz.OptionT
+import scalaz.syntax.functor._
 
 import util.{Events, EventSource, Logger, Type}
 
-trait FactoryComponent {
+sealed trait FactoryComponent {
 
-  protected type Origin[+A] <: Origin.Local[A]
+  protected type Origin[+A] <: amber.Origin[A]
+  protected type Reading[+A]
+
   def origin: OriginFactory
 
   trait OriginFactory {
@@ -37,20 +42,7 @@ trait FactoryComponent {
 
   object OriginFactory {
 
-    sealed trait Read[A] extends (() => Origin.Local.Reading[A])
-
-    implicit def fromValue[A](f: () => A): Read[A] = new Read[A] {
-      override def apply() = Option(f())
-    }
-
-    implicit def fromOption[A](f: () => Option[A]): Read[A] = new Read[A] {
-      override def apply() = f()
-    }
-
-    implicit def fromFuture[A](f: () => Future[A])(implicit timeout: FiniteDuration): Read[A] =
-      new Read[A] {
-        override def apply() = Option(Await.result(f(), timeout))
-      }
+    trait Read[A] extends (() => Reading[A])
 
     trait Logging extends OriginFactory {
 
@@ -68,30 +60,95 @@ trait FactoryComponent {
 }
 
 object FactoryComponent {
+
+  trait Local extends FactoryComponent {
+    override protected type Origin[+A] <: Origin.Local[A]
+    override protected type Reading[+A] = Origin.Local.Reading[A]
+  }
+
+  trait Remote extends FactoryComponent {
+    override protected type Origin[+A] <: Origin.Remote[A]
+    override protected type Reading[+A] = Origin.Remote.Reading[A]
+  }
+
   trait Default extends FactoryComponent with BuilderComponent {
 
-    abstract override protected val builder: OriginBuilder = _builder
-    override def origin: OriginFactory = _origin
+    override def origin: OriginFactory
+
+    abstract override protected def builder: OriginBuilder = _builder
 
     trait OriginFactory extends super.OriginFactory {
 
-      override val created = EventSource[Origin[_]]()
-
+      override def created: EventSource[Origin[_]] = _created
       override def create[A: Type](name: Origin.Name)(read: OriginFactory.Read[A]) =
         builder.build(name, Origin.Family.random()) {
           meta => read() map {a => (Origin.Value(name, a), meta)}
         }
+
+      private object _created extends EventSource[Origin[_]]()
     }
 
-    private object _builder extends OriginBuilder {
+    protected trait OriginBuilder extends super.OriginBuilder {
+
       override def build[A: Type](name: Origin.Name, family: Origin.Family)
                                  (read: OriginBuilder.Read[A]) = {
         val result = Default.super.builder.build(name, family)(read)
         origin.created.emit(result)
         result
       }
+
+      override def map[A, B: Type](underlying: Origin[A], name: Origin.Name)(f: A => B) = {
+        val result = Default.super.builder.map(underlying, name)(f)
+        origin.created.emit(result)
+        result
+      }
     }
 
-    private object _origin extends OriginFactory
+    private object _builder extends OriginBuilder
+  }
+
+  object Local {
+    trait Default extends FactoryComponent.Local
+                  with BuilderComponent.Local
+                  with FactoryComponent.Default {
+
+      override protected type Reading[+A] = Origin.Local.Reading[A]
+
+      override def origin: OriginFactory = _origin
+
+      implicit protected class ReadValue[A](f: () => A) extends OriginFactory.Read[A] {
+        override def apply() = Option(f())
+      }
+
+      implicit protected class ReadOption[A](f: () => Option[A]) extends OriginFactory.Read[A] {
+        override def apply() = f()
+      }
+
+      private object _origin extends OriginFactory
+    }
+  }
+
+  object Remote {
+
+    trait Default extends FactoryComponent.Remote
+                  with BuilderComponent.Remote
+                  with FactoryComponent.Default {
+
+      override protected type Reading[+A] = Origin.Remote.Reading[A]
+
+      override def origin: OriginFactory = _origin
+      implicit private def context = configuration.context
+
+      implicit protected class ReadValue[A](f: () => Future[A]) extends OriginFactory.Read[A] {
+        override def apply() = OptionT(f() map {Option(_)})
+      }
+
+      implicit protected class ReadOption[A](f: () => Future[Option[A]])
+          extends OriginFactory.Read[A] {
+        override def apply() = OptionT(f())
+      }
+
+      private object _origin extends OriginFactory
+    }
   }
 }

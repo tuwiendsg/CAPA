@@ -16,15 +16,13 @@
 
 package at.ac.tuwien.infosys
 package amber
-package origin
+package mock.origin
 
-class DefaultBuilderSpec extends Spec
-                         with BuilderComponent.Default
-                         with BuilderBehaviors {
+class LocalBuilderSpec extends Spec
+                       with BuilderComponent.Local.Default
+                       with BuilderBehaviors.Local {
 
-  override type Origin[+A] = Origin.Local.Default[A]
-
-  "Default.OriginBuilder" should {
-    behave like aBuilder
+  "mock.Local.Builder" should {
+    behave like aMockBuilder
   }
 }
