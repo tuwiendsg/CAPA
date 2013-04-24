@@ -52,7 +52,7 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
     temperature.kelvin = {
       () => for {values <- temperature("kelvin", at = "B")} yield Try {values.max}
     }
-    temperature.where {entity => entity.celsius.as[Double].get < entity.kelvin.as[Double].get}
+    temperature.where {fields => fields.celsius.as[Double].get < fields.kelvin.as[Double].get}
 
     def readTemperature(): Future[String] = readOne(temperature.build()) map {
       _.fold(s"No ${client.temperature.name}") {_.toString}

@@ -87,7 +87,11 @@ sealed trait Client[X[+_]] {
       }
     }
 
-    class Definition private[Entity](val name: Entity.Name, val filter: Filter[Instance])
+    trait Fields extends Dynamic {
+      def selectDynamic(name: Field.Name): Option[Field.Value[_]]
+    }
+
+    class Definition private[Entity](val name: Entity.Name, val filter: Filter[Fields])
                                     (types: Set[Field.Type[_]]) {
 
       lazy val fields: Set[Field.Name] = types map {_.name}
@@ -105,14 +109,15 @@ sealed trait Client[X[+_]] {
     }
 
     object Definition {
-      class Builder(val name: Entity.Name) extends Filterable[Instance, Unit] with Dynamic {
 
-        private var filter: Filter[Instance] = Filter.tautology
+      class Builder(val name: Entity.Name) extends Filterable[Fields, Unit] with Dynamic {
+
+        private var filter: Filter[Fields] = Filter.tautology
         private val fields = new ConcurrentHashMap[Field.Name, Field.Type[_]]
 
-        override def where(filter: Filter[Instance]) {this.filter = filter}
+        override def where(filter: Filter[Fields]) {this.filter = filter}
 
-        def updateDynamic[A](name: String)(read: Field.Read[A]) {
+        def updateDynamic[A](name: Field.Name)(read: Field.Read[A]) {
           fields put (name, new Field.Type[A](name)(read))
         }
 
@@ -121,13 +126,12 @@ sealed trait Client[X[+_]] {
     }
 
     class Instance private[Entity](val name: Entity.Name)
-                                  (values: Seq[Field.Value[_]]) extends Dynamic {
+                                  (values: Seq[Field.Value[_]]) extends Fields {
 
       private lazy val properties = HashMap.empty ++ (values map {v => (v.name, v)})
       lazy val fields: Set[Field.Name] = (values map {_.name}).to[Set]
 
-      def selectDynamic(name: String): Option[Field.Value[_]] = properties.get(name)
-
+      override def selectDynamic(name: Field.Name) = properties.get(name)
       override lazy val toString = name + values.mkString("(", ", " ,")")
     }
 
