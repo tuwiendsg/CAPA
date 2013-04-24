@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.{HashMap, Seq, Set, Stream, Vector}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
+import scala.util.Try
 
 import scalaz.Id.Id
 import scalaz.std.vector._
@@ -62,11 +63,15 @@ sealed trait Client[X[+_]] {
       type Name = String
       sealed trait Read[+A] extends ((Field.Name) => X[Seq[Value[A]]])
 
+      implicit def readFromTry[A: util.Type](f: () => X[Try[A]]): Read[A] = new Read[A] {
+        override def apply(name: Field.Name) =
+          f() map {_ map {a => Stream(Value(name, a))} getOrElse Stream.empty}
+      }
       implicit def readFromOption[A: util.Type](f: () => X[Option[A]]): Read[A] = new Read[A] {
-        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map {Value(name, _)}}
       }
       implicit def readFromSeq[A: util.Type](f: () => X[Seq[A]]): Read[A] = new Read[A] {
-        override def apply(name: Field.Name) = f() map {_.to[Stream] map (Value(name, _))}
+        override def apply(name: Field.Name) = f() map {_.to[Stream] map {Value(name, _)}}
       }
 
       private[Entity] class Type[+A](val name: Field.Name)(read: Read[A]) {

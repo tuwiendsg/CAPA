@@ -17,17 +17,17 @@
 package amber
 package util
 
-import scalaz.syntax.std.option._
+import scala.util.Try
 
-class Filter[-A](conditional: A => Option[Boolean], default: Boolean) extends (A => Boolean) {
-  def apply(a: A) = conditional(a) | default
+class Filter[-A](conditional: A => Boolean, default: Boolean) extends (A => Boolean) {
+  def apply(a: A) = Try {conditional(a)} getOrElse default
 }
 
 object Filter {
 
-  val tautology: Filter[Any] = Filter(conditional = {_ => None}, default = true)
+  val tautology: Filter[Any] = Filter(conditional = {_ => true}, default = true)
 
-  def apply[A](conditional: A => Option[Boolean], default: Boolean) =
+  def apply[A](conditional: A => Boolean, default: Boolean): Filter[A] =
     new Filter(conditional, default)
 }
 
@@ -36,5 +36,5 @@ trait Filterable[A, B] {
   protected val filterDefault = false
 
   def where(filter: Filter[A]): B
-  def where(conditional: A => Option[Boolean]): B = where(Filter(conditional, filterDefault))
+  def where(conditional: A => Boolean): B = where(Filter(conditional, filterDefault))
 }

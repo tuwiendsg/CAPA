@@ -45,34 +45,23 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
   override def client: Client = _client
   trait Client extends super.Client {
 
-    import Selections.exact
-
     val temperature = entity("Temperature")
-    temperature.celsius = {() =>
-      for {
-        values <- readAll[Double](exact("temperature/celsius") where {
-                    meta => for {location <- meta.location.as[String]} yield location === "A"
-                  })
-      } yield Try {values.min}.toOption
+    temperature.celsius = {
+      () => for {values <- temperature("celsius", at = "A")} yield Try {values.min}
     }
-    temperature.kelvin = {() =>
-      for {
-        values <- readAll[Double](exact("temperature/kelvin") where {
-                    meta => for {location <- meta.location.as[String]} yield location === "B"
-                  })
-      } yield Try {values.max}.toOption
+    temperature.kelvin = {
+      () => for {values <- temperature("kelvin", at = "B")} yield Try {values.max}
     }
-    temperature.where {
-      entity =>
-        for {
-          celsius <- entity.celsius.as[Double]
-          kelvin <- entity.kelvin.as[Double]
-        } yield celsius < kelvin
-    }
+    temperature.where {entity => entity.celsius.as[Double].get < entity.kelvin.as[Double].get}
 
     def readTemperature(): Future[String] = readOne(temperature.build()) map {
       _.fold(s"No ${client.temperature.name}") {_.toString}
     }
+
+    private def temperature(name: String, at: String) =
+      readAll[Double](Selections.exact(s"temperature/$name") where {
+        _.location.as[String].get === at
+      })
   }
 
   override def shutdown() {
