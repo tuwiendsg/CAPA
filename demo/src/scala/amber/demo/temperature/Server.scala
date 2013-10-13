@@ -19,6 +19,7 @@ package demo
 package temperature
 
 import scala.collection.immutable.Set
+import scala.sys.process._
 import scala.util.Random
 
 import com.typesafe.config.ConfigFactory
@@ -34,31 +35,26 @@ trait Server extends akka.System.Local with Runnable {
   override protected def configuration: Configuration = _configuration
   private object _configuration extends Configuration
 
-  object Temperature {
-    def createCelsius(location: String): Origin.Local[Int] = {
-      val temperature = origin.create("temperature/celsius") {
-        () => Random.nextInt(55) - 15
-      }
-      temperature("location") = location
-      temperature
-    }
-  }
-
   override def shutdown() {
     super.shutdown()
     configuration.system.shutdown()
   }
 
   override def run() {
-    for {location <- configuration.locations; _ <- 1 to configuration.origins}
-      Temperature.createCelsius(location)
+    origin.create[BigDecimal]("temperature/celsius") {
+      () =>
+        val output = "/opt/vc/bin/vcgencmd measure_temp".!!
+        val start = output indexOf '=' + 1
+        val end = output indexOf '\''
+        BigDecimal(output.substring(start + 1, end))
+    }
   }
 }
 
 object Server {
   trait Configuration extends akka.System.Local.Configuration {
 
-    val name: String = "temperature-server"
+    val name: String = "raspberry-pi"
     val locations: Set[String] = Set("A", "B")
     val origins: Int = 5
 

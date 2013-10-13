@@ -21,15 +21,12 @@ package temperature
 trait Demo extends Runnable {
 
   object server extends Server with util.SLF4JLogging
-  object client extends Client with util.SLF4JLogging
 
   def shutdown() {
-    client.shutdown()
     server.shutdown()
   }
 
   override def run() {
     server.run()
-    client.run()
   }
 }
