@@ -52,7 +52,7 @@ trait Type[A] extends Serializable with Equals {
   override lazy val hashCode = typeTag.hashCode()
 
   override def equals(other: Any) = other match {
-    case that: Type[_] => (that canEqual this) && (this.typeTag == that.typeTag)
+    case that: Type[_] => (that canEqual this) && (this <:< that) && (that <:< this)
     case _ => false
   }
 

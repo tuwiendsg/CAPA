@@ -146,7 +146,7 @@ sealed trait OriginBehaviors {
         when(read.apply()) thenReturn None
         val origin = create()
 
-        origin.read()
+        copoint(origin.read())
 
         verify(read).apply()
       }

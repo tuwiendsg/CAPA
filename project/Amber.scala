@@ -42,7 +42,7 @@ object Layout {
 
 object Build {
 
-  val version = "2.10.1"
+  val version = "2.10.3"
 
   val settings: Seq[Setting[_]] = Seq(
     scalaVersion := version,
@@ -77,14 +77,14 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "2.1.2"
+    val version = "2.2.1"
     val actor = "com.typesafe.akka" %% "akka-actor" % version
     val remote = "com.typesafe.akka" %% "akka-remote" % version
     val testkit = "com.typesafe.akka" %% "akka-testkit" % version
   }
 
   object Logback {
-    val version = "1.0.11"
+    val version = "1.0.13"
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
@@ -104,7 +104,7 @@ object Dependency {
   }
 
   object ScalaTest {
-    val version = "2.0.M5b"
+    val version = "2.0.RC1"
     val core = "org.scalatest" %% "scalatest" % version
   }
 

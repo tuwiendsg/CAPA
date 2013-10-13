@@ -89,6 +89,6 @@ object Client {
     def period: FiniteDuration = 2.seconds
 
     override val local = ActorSystem(name, ConfigFactory.load.getConfig(name))
-    override val remote = "akka://temperature-server@127.0.0.1:2552"
+    override val remote = "akka.tcp://temperature-server@127.0.0.1:2552"
   }
 }

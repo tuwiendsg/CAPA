@@ -28,7 +28,7 @@ private[akka] class EventSource[A: NotNothing : ClassTag](factory: ActorRefFacto
     extends amber.util.EventSource[A] {
 
   override def subscribe(f: Events.Observe[A]) = subscribe(factory.actorOf(
-      Props(new Observer.Notifier[A](f)).withDispatcher("amber.observers.dispatcher")
+    Props(new Observer.Notifier[A](f)).withDispatcher("amber.observers.dispatcher")
   ))
 
   private[akka] def subscribe(reference: ActorRef): Observer = {
@@ -37,15 +37,15 @@ private[akka] class EventSource[A: NotNothing : ClassTag](factory: ActorRefFacto
     observer
   }
 
-  class Observer(ref: ActorRef) extends super.Observer(forwardTo(ref)) {
+  class Observer(reference: ActorRef) extends super.Observer(forwardTo(reference)) {
     override def dispose() {
       super.dispose()
-      ref ! PoisonPill
+      reference ! PoisonPill
     }
   }
 
-  private def forwardTo(ref: ActorRef): Events.Observe[A] = {
-    case any => ref ! any
+  private def forwardTo(reference: ActorRef): Events.Observe[A] = {
+    case any => reference ! any
   }
 }
 

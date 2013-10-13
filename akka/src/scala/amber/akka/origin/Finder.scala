@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException
 import scala.collection.immutable.Set
 import scala.concurrent.Future
 
-import _root_.akka.actor.{ActorRef, ActorSystem, Props}
+import _root_.akka.actor.{ActorRef, ActorSelection, ActorSystem, Props}
 import _root_.akka.pattern.{ask, pipe}
 import _root_.akka.util.Timeout
 
@@ -77,7 +77,7 @@ object FinderComponent {
                         with amber.origin.FinderComponent.Remote.Default.Configuration {
 
       def remote: String
-      def finder: ActorRef = local.actorFor(s"$remote/user/${Actor.name}")
+      def finder: ActorSelection = local.actorSelection(s"$remote/user/${Actor.name}")
     }
   }
 

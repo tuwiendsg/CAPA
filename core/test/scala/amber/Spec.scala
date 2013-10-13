@@ -18,14 +18,13 @@ package amber
 
 import scala.concurrent.duration._
 
-import org.scalatest.{BeforeAndAfterEach, OptionValues, WordSpec}
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.{BeforeAndAfterEach, Matchers, OptionValues, WordSpec}
 
 import amber.util.{Mocking, Randoms}
 
 trait Spec extends WordSpec
            with BeforeAndAfterEach
-           with ShouldMatchers
+           with Matchers
            with OptionValues
            with Mocking
            with Randoms {

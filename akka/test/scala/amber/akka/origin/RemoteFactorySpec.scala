@@ -20,7 +20,7 @@ package origin
 
 import com.typesafe.config.ConfigFactory
 
-import _root_.akka.actor.{ActorRef, ActorSystem}
+import _root_.akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
 import org.mockito.Matchers.{anyObject => anything}
 import org.mockito.Mockito.{verify, when}
@@ -42,7 +42,7 @@ class RemoteFactorySpec extends Spec(ActorSystem("RemoteFactorySpec-Client",
   override protected type Configuration = FactoryComponent.Remote.Configuration
   override protected object configuration extends Configuration {
     override val local = RemoteFactorySpec.this.system
-    override val remote = "akka://RemoteFactorySpec-Server@127.0.0.1:2552"
+    override val remote = "akka.tcp://RemoteFactorySpec-Server@127.0.0.1:2552"
   }
 
   override protected val actor: FactoryComponent.Actor = _actor
@@ -71,6 +71,7 @@ class RemoteFactorySpec extends Spec(ActorSystem("RemoteFactorySpec-Client",
             val origin = RemoteFactorySpec.this.mock[Origin[A]](s"mock.Origin.Local[$typeA]")
             val name = args._1
             val family = args._2
+            val reference = configuration.system.actorOf(Props(new dummy))
 
             when(origin.name) thenReturn name
             when(origin.family) thenReturn family
@@ -79,14 +80,18 @@ class RemoteFactorySpec extends Spec(ActorSystem("RemoteFactorySpec-Client",
             }
             when(origin.writeReplace()) thenAnswer {
               _: Array[AnyRef] =>
-                new Origin.Serialized[A](name, family)(
-                  RemoteFactorySpec.this.mock[ActorRef]("mock.ActorRef")
-                )
+                new Origin.Serialized[A](name, family)(reference)
             }
 
             origin
           }
         }
+
+      private class dummy extends Actor {
+        override def receive = {
+          case _ => /* ignore */
+        }
+      }
     }
   local // force initialization
 

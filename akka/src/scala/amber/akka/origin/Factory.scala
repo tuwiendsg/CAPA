@@ -20,7 +20,7 @@ package origin
 
 import scala.language.higherKinds
 
-import _root_.akka.actor.{ActorRef, ActorSystem, Props}
+import _root_.akka.actor.{ActorRef, ActorSelection, ActorSystem, Props}
 import _root_.akka.util.Timeout
 
 import amber.util.ConfigurableComponent
@@ -95,7 +95,7 @@ object FactoryComponent {
   object Remote {
     trait Configuration extends BuilderComponent.Remote.Configuration {
       def remote: String
-      def factory: ActorRef = local.actorFor(s"$remote/user/${Actor.name}")
+      def factory: ActorSelection = local.actorSelection(s"$remote/user/${Actor.name}")
     }
   }
 

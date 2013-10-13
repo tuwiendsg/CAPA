@@ -25,7 +25,10 @@ class EventSourceSpec extends Spec("EventSourceSpec") with EventsBehaviors {
   override type Events[A] = EventSource[A]
 
   override def create() = EventSource[A](system)
-  override def emit(events: Events[A])(event: A) {events.emit(event)}
+  override def emit(events: Events[A])(event: A) {
+    events.emit(event)
+    Thread.sleep(timeout.toMillis)
+  }
 
   "akka.EventSource" should {
     behave like anEvents
