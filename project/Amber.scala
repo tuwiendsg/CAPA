@@ -77,7 +77,7 @@ object Shell {
 object Dependency {
 
   object Akka {
-    val version = "2.2.1"
+    val version = "2.2.3"
     val actor = "com.typesafe.akka" %% "akka-actor" % version
     val remote = "com.typesafe.akka" %% "akka-remote" % version
     val testkit = "com.typesafe.akka" %% "akka-testkit" % version
@@ -104,7 +104,7 @@ object Dependency {
   }
 
   object ScalaTest {
-    val version = "2.0.RC1"
+    val version = "2.0"
     val core = "org.scalatest" %% "scalatest" % version
   }
 
