@@ -54,7 +54,7 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
       () => for {values <- temperature("kelvin")} yield Try {values.max}
     }
 
-    def checkTemperature() {
+    def notifyUser() {
       readOne(temperature.build()) map {
         _ map {
           temperature =>
@@ -83,7 +83,7 @@ trait Client extends akka.System.Remote with Scheduling with Runnable {
 
   override def run() {
     println(configuration.delimiter)
-    every(configuration.period) {() => client.checkTemperature()}
+    every(configuration.period) {() => client.notifyUser()}
   }
 
   private object _client extends Client
@@ -97,6 +97,6 @@ object Client {
     def period: FiniteDuration = 2.seconds
 
     override val local = ActorSystem(name, ConfigFactory.load.getConfig(name))
-    override val remote = "akka.tcp://raspberry-pi@192.168.0.23:2552"
+    override val remote = "akka.tcp://raspberry-pi@192.168.0.28:2552"
   }
 }
